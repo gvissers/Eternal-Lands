@@ -53,8 +53,6 @@ static Uint32 texture_cache_sorted[TEXTURE_CACHE_MAX];
 
 Uint32 compact_texture(texture_cache_t* texture)
 {
-	Uint32 size;
-
 	if (texture == 0)
 	{
 		return 0;
@@ -67,12 +65,10 @@ Uint32 compact_texture(texture_cache_t* texture)
 
 	glDeleteTextures(1, &texture->id);
 
-	size = texture->size;
-
 	texture->id = 0;
 	texture->size = 0;
 
-	return size;
+	return 0;
 }
 
 void bind_texture_id(const GLuint id)
