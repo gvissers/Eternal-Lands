@@ -94,7 +94,7 @@ void setup_video_mode(int fs, int mode)
 			window_height = video_modes[index].height;
 			bpp = video_modes[index].bpp;
 		}
-	} 
+	}
 	else // Windowed mode
 	{
 		int new_width = video_modes[index].width;
@@ -104,7 +104,7 @@ void setup_video_mode(int fs, int mode)
 		{
 			new_width = video_user_width;
 			new_height = video_user_height;
-		} 
+		}
 		else if (!disable_window_adjustment)
 		{
 #ifdef WINDOWS
@@ -372,7 +372,7 @@ void init_video()
 		GLubyte *my_string;
 		int have_hardware;
 
-		my_string=(GLubyte *)glGetString(GL_RENDERER);        
+		my_string=(GLubyte *)glGetString(GL_RENDERER);
         if (my_string == NULL) {
             len = 0;
             have_hardware = 0;
@@ -386,7 +386,7 @@ void init_video()
 			//let the user know there is a problem
 			LOG_TO_CONSOLE(c_red1,stencil_falls_back_on_software_accel);
 			LOG_ERROR("%s\n",stencil_falls_back_on_software_accel);
-			
+
 			//first, shut down this mode we have now.
 			SDL_GL_SetAttribute( SDL_GL_RED_SIZE, rgb_size[0] );
 			SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, rgb_size[1] );
@@ -398,7 +398,7 @@ void init_video()
 			if(full_screen)flags=SDL_OPENGL|SDL_FULLSCREEN;
 			SDL_SetVideoMode(window_width, window_height, bpp, flags);
 			have_stencil=0;
-	
+
 			my_string=(GLubyte *)glGetString(GL_RENDERER);
             if (my_string == NULL) {
                 len = 0;
@@ -462,16 +462,16 @@ void init_video()
 
 #ifdef ANTI_ALIAS
 	if (anti_alias) {
-		glHint(GL_POINT_SMOOTH_HINT,   GL_NICEST);	
-		glHint(GL_LINE_SMOOTH_HINT,    GL_NICEST);	
-		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);	
+		glHint(GL_POINT_SMOOTH_HINT,   GL_NICEST);
+		glHint(GL_LINE_SMOOTH_HINT,    GL_NICEST);
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 		glEnable(GL_POINT_SMOOTH);
 		glEnable(GL_LINE_SMOOTH);
 		glEnable(GL_POLYGON_SMOOTH);
 	} else {
-		glHint(GL_POINT_SMOOTH_HINT,   GL_FASTEST);	
-		glHint(GL_LINE_SMOOTH_HINT,    GL_FASTEST);	
-		glHint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST);	
+		glHint(GL_POINT_SMOOTH_HINT,   GL_FASTEST);
+		glHint(GL_LINE_SMOOTH_HINT,    GL_FASTEST);
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_FASTEST);
 		glDisable(GL_POINT_SMOOTH);
 		glDisable(GL_LINE_SMOOTH);
 		glDisable(GL_POLYGON_SMOOTH);
@@ -555,7 +555,7 @@ void evaluate_extension()
 			" all features.");
         LOG_TO_CONSOLE(c_yellow1, str);
 		LOG_DEBUG("%s\n",str);
-        
+
 	}
 	else
 	{
@@ -688,7 +688,7 @@ void init_gl_extensions()
 		LOG_DEBUG("%s\n",str);
 	}
 	/*	GL_EXT_texture_compression_s3tc		*/
-	
+
 	/*	GL_SGIS_generate_mipmap			*/
 	if (have_extension(sgis_generate_mipmap))
 	{
@@ -748,7 +748,7 @@ void init_gl_extensions()
 		LOG_DEBUG("%s\n",str);
 	}
 	/*	GL_EXT_framebuffer_object		*/
-	
+
 	/*	GL_EXT_draw_range_elements		*/
 	if (have_extension(ext_draw_range_elements))
 	{
@@ -1043,7 +1043,7 @@ void set_new_video_mode(int fs,int mode)
 #ifndef	NEW_TEXTURES
 	int alpha;
 #endif	/* NEW_TEXTURES */
-	
+
 	full_screen=fs;
 	video_mode=mode;
 
@@ -1080,18 +1080,7 @@ void set_new_video_mode(int fs,int mode)
 
 	if (use_vertex_buffers)
 	{
-		e3d_object * obj;
-
-#ifdef FASTER_MAP_LOAD
-		for (i = 0; i < cache_e3d->num_items; i++)
-#else
-		for (i = 0; i < cache_e3d->max_item; i++)
-#endif
-		{
-			if (!cache_e3d->cached_items[i]) continue;
-			obj= cache_e3d->cached_items[i]->cache_item;
-			free_e3d_va(obj);
-		}
+		ncache_compact_all(cache_e3d);
 		CHECK_GL_ERRORS();
 	}
 
@@ -1103,10 +1092,10 @@ void set_new_video_mode(int fs,int mode)
 
 	init_video();
 #ifndef WINDOWS
-	// Re-enable window manager events, since the killing of the video 
+	// Re-enable window manager events, since the killing of the video
 	// subsystem turns them off.
 	SDL_EventState (SDL_SYSWMEVENT, SDL_ENABLE);
-#endif	
+#endif
 	resize_root_window();
 	init_lights();
 	disable_local_lights();
@@ -1156,7 +1145,7 @@ void set_new_video_mode(int fs,int mode)
 		}
 #endif
 #endif	/* NEW_TEXTURES */
-	
+
 	//it is dependent on the window height...
 	init_hud_interface (HUD_INTERFACE_LAST);
 	new_minute();

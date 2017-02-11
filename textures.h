@@ -6,7 +6,7 @@
 #ifndef __TEXTURES_H__
 #define __TEXTURES_H__
 
-#include "cache.h"
+#include "ncache.h"
 #include "platform.h"
 #ifndef MAP_EDITOR
  #include "actors.h"
@@ -57,7 +57,6 @@ typedef enum
 typedef struct
 {
 	char file_name[128];		/*!< the filename of the texture */
-	cache_item_struct *cache_ptr;	/*!< a pointer to the cached item */
 	GLuint id;			/*!< the id of the texture */
 	Uint32 hash;			/*!< hash value of the name */
 	Uint32 size;			/*!< size of the texture */
@@ -446,7 +445,7 @@ int load_texture_cache (const char * file_name, int alpha);
  * \ingroup 	cache
  * \brief 	Inserts a texture into the cache system.
  *
- *      	Allocates the cache structure for the texture, but does 
+ *      	Allocates the cache structure for the texture, but does
  *      	not actually load the texture into texture memory yet.
  *
  * \param   	file_name The filename of the texture you wish to load.
@@ -538,7 +537,7 @@ static __inline__ int get_and_set_texture_id(int i)
  */
 char * load_bmp8_color_key_no_texture_img(char * FileName, img_struct * img);
 #endif
-                               
+
 #ifndef MAP_EDITOR2
 /*!
  * \ingroup 	load_bmp

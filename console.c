@@ -7,7 +7,7 @@
 #include "console.h"
 #include "asc.h"
 #include "buddy.h"
-#include "cache.h"
+#include "ncache.h"
 #include "cal.h"
 #include "chat.h"
 #include "consolewin.h"
@@ -231,7 +231,7 @@ struct compl_str tab_complete(const text_message *input, unsigned int cursor_pos
 		if(!have_last_complete) {
 			if(cursor_pos > 0 &&
 				strmrchr(input_string, input_string+cursor_pos-1, ' ') != NULL) {
-				/* If we have a space in the input string, we're pretty certain 
+				/* If we have a space in the input string, we're pretty certain
 				 * it's not a PM-name, command or channel name. */
 				return_value.type = NAME;
 			} else if(*input_string == '/' || *input_string == *char_slash_str) {
@@ -274,7 +274,7 @@ struct compl_str tab_complete(const text_message *input, unsigned int cursor_pos
 
 			/* Isolate the word we're currently typing (and completing) */
 			for(i = 0;
-				i < sizeof(last_complete) && 
+				i < sizeof(last_complete) &&
 				input_string[i] && i < cursor_pos &&
 				!isspace((unsigned char)input_string[i]);
 				i++) {
@@ -474,7 +474,7 @@ int add_emote(char *text, int len){
 	printf("Actor [%s] [%s]\n",text,id);
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 			act = actors_list[j];
@@ -508,7 +508,7 @@ int send_cmd(char *text, int len){
 	printf("Actor [%s] [%s]\n",text,id);
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 			act = actors_list[j];
@@ -546,7 +546,7 @@ int set_idle(char *text, int len){
 	printf("Actor [%s] [%s]\n",text,id);
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 				struct CalMixer *mixer;
@@ -558,7 +558,7 @@ int set_idle(char *text, int len){
 			while(*id){
 				int anim_id;
 				double anim_wg;
-				
+
 				anim_id=atoi(id);
 			id++;
 				while(*id!=' '&&*id!=0) id++;
@@ -566,7 +566,7 @@ int set_idle(char *text, int len){
 			id++;
 				while(*id!=' '&&*id!=0) id++;
 				printf("setting anim %i with weight %f\n",anim_id,anim_wg);
-				if(anim_wg<0) CalMixer_ClearCycle(mixer,actors_defs[act->actor_type].cal_frames[anim_id].anim_index, 0.0f);	
+				if(anim_wg<0) CalMixer_ClearCycle(mixer,actors_defs[act->actor_type].cal_frames[anim_id].anim_index, 0.0f);
 				else CalMixer_BlendCycle(mixer,actors_defs[act->actor_type].cal_frames[anim_id].anim_index,anim_wg, 0.1f);
 			}
 			printf("command added %s\n",id);
@@ -595,7 +595,7 @@ int set_action(char *text, int len){
 	printf("Actor [%s] [%s]\n",text,id);
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 				struct CalMixer *mixer;
@@ -606,7 +606,7 @@ int set_action(char *text, int len){
 			while(*id){
 				int anim_id;
 				double anim_wg;
-				
+
 				anim_id=atoi(id);
 			id++;
 				while(*id!=' '&&*id!=0) id++;
@@ -645,7 +645,7 @@ int horse_cmd(char* text, int len){
 	printf("Actor [%s] [%s] [%i]\n",text,id,atoi(id));
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 			act = actors_list[j];
@@ -677,7 +677,7 @@ int horse_cmd(char* text, int len){
 	UNLOCK_ACTORS_LISTS();
 
 	return 1;
-	
+
 }
 #endif
 
@@ -694,7 +694,7 @@ int set_neck(char *text, int len){
 	printf("Actor [%s] [%s]\n",text,id);
 	LOCK_ACTORS_LISTS();
 	for (j = 0; j < max_actors; j++){
-		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) && 
+		if (!strncasecmp(actors_list[j]->actor_name, text, strlen(text)) &&
 	  	   (actors_list[j]->actor_name[strlen(text)] == ' ' ||
 	    	   actors_list[j]->actor_name[strlen(text)] == '\0')){
 			act = actors_list[j];
@@ -789,7 +789,7 @@ int command_markpos(char *text, int len)
 	char *ptr = text;
 	char msg[512];
 	const char *usage = help_cmd_markpos_str;
-	
+
 	while (isspace(*ptr))
 		ptr++;
 	if (sscanf(ptr, "%d,%d ", &map_x, &map_y) != 2) {
@@ -875,7 +875,7 @@ int command_mark_color(char *text, int len)
 
 	if(*text) {
 		int r=-1,g,b;
-		
+
 		if(sscanf(text,"%d %d %d",&r,&g,&b)==3) {
 			if(!(r>=0&&r<=255&&g>=0&&g<=255&&b>=0&&b<=255)) r=-1; //don't set color
 		} else {
@@ -891,7 +891,7 @@ int command_mark_color(char *text, int len)
 			//set color
 				curmark_r=r;
 				curmark_g=g;
-				curmark_b=b;			
+				curmark_b=b;
 		}
 	}
 	safe_snprintf (str, sizeof(str), "Current marker color is (RGB): %d %d %d", curmark_r,curmark_g,curmark_b);
@@ -945,9 +945,9 @@ int command_quit(char *text, int len)
 
 int command_mem(char *text, int len)
 {
-	cache_dump_sizes(cache_system);
+	ncache_dump_sizes((const Cache*) cache_system);
 #ifdef	DEBUG
-	cache_dump_sizes(cache_e3d);
+	ncache_dump_sizes(cache_e3d);
 #endif	//DEBUG
 	return 1;
 }
@@ -1206,7 +1206,7 @@ int command_glinfo (const char *text, int len)
 	LOG_TO_CONSOLE (c_grey1, this_string);
 
 	free (this_string);
-	
+
 	return 1;
 }
 
@@ -1334,7 +1334,7 @@ int command_afk(char *text, int len)
 	}
 	if(!afk)
 	{
-		if (len > 0) 
+		if (len > 0)
 		{
 			safe_snprintf(afk_message, sizeof(afk_message), "%.*s", len, text);
 		}
@@ -1345,7 +1345,7 @@ int command_afk(char *text, int len)
 	}
 	return 1;
 }
-	
+
 int command_help(char *text, int len)
 {
 	// help can open the Enc!
@@ -1451,7 +1451,7 @@ static int command_cast_spell(char *text, int len)
 	int index = 0;
 	int valid_looking_message = 1;
 	Uint8 str[30];
-	
+
 	/* valid messages start with the CAST_SPELL message of 39 or 0x27 */
 	text = getparams(text);
 	if (!*text || strstr(text, "27")==NULL)
@@ -1459,7 +1459,7 @@ static int command_cast_spell(char *text, int len)
 	/* skip past everything until the CAST_SPELL message type */
 	else
 		text = strstr(text, "27");
-	
+
 	/* while we have hex digit pairs to process */
 	while (valid_looking_message && strlen(text)>0 && index<30)
 	{
@@ -1488,13 +1488,13 @@ static int command_cast_spell(char *text, int len)
 		if (valid_looking_message)
 			str[index++] = d[1] + 16*d[0];
 	}
-	
+
 	/* if we're now at the end of the text, we have some message bytes and it looks valid */
 	if (!*text && index && valid_looking_message)
 		send_spell(str, index);
 	else
 		LOG_TO_CONSOLE(c_red2, invalid_spell_string_str);
-	
+
 	return 1;
 }
 
@@ -1505,22 +1505,22 @@ static int command_show_spell(char *text, int len)
 	int i;
 	char out_str[128];
 	char mess_str[64];
-	
+
 	/* trap if we have no last spell or other invalid strings */
 	if (!*last_spell_name || strlen(last_spell_name)>59 || last_spell_len>30 || last_spell_len<=0)
 	{
 		LOG_TO_CONSOLE(c_green2, no_spell_to_show_str);
 		return 1;
 	}
-	
+
 	/* create the message body string, each byte in hex */
 	for(i=0; i<last_spell_len; i++)
-		sprintf(&mess_str[2*i], "%02x", last_spell_str[i]);	
+		sprintf(&mess_str[2*i], "%02x", last_spell_str[i]);
 	mess_str[last_spell_len*2] = 0;
 
 	safe_snprintf(out_str, sizeof(out_str), "%s %s", last_spell_name, mess_str );
 	LOG_TO_CONSOLE(c_green2, out_str);
-	
+
 	return 1;
 }
 
@@ -1563,7 +1563,7 @@ int command_ckdata(char *text, int len)
 	/* calculate, display checksum if we're not matching */
 	if (*filename && el_file_exists(filename) && get_file_digest(filename, digest))
 	{
-		int i;	
+		int i;
 		for(i=0; i<DIGEST_LEN; i++)
 			sprintf(&digest_str[2*i], "%02x", (int)digest[i]);
 		digest_str[DIGEST_LEN*2] = 0;
@@ -1591,9 +1591,9 @@ int command_ckdata(char *text, int len)
 		else
 			LOG_TO_CONSOLE(c_red2,"ckdata: File does not match expected checksum");
 	}
-	
+
 	return 1;
-	
+
 } /* end command_ckdata() */
 
 
@@ -1710,7 +1710,7 @@ add_command("horse", &horse_cmd);
 #ifdef NECK_ITEMS_DEBUG
 	add_command("set_neck", &set_neck);
 #endif
-	
+
 	add_command("emotes", &print_emotes);
 #ifdef EMOTES_DEBUG
 	add_command("add_emote", &add_emote);
@@ -1798,7 +1798,7 @@ void print_version_string (char *buf, size_t len)
 	safe_snprintf (buf, len, "%s %s", game_version_prefix_str, GIT_VERSION);
 #else
 	char extra[100];
-	
+
 	if (client_version_patch > 0)
 	{
 		safe_snprintf (extra, sizeof(extra), "p%d %s", client_version_patch, DEF_INFO);

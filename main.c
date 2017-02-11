@@ -111,14 +111,14 @@ void cleanup_mem(void)
 	/* 3d objects */
 	destroy_all_3d_objects();
 	/* caches */
-	cache_e3d->free_item = &destroy_e3d;
-	cache_delete(cache_e3d);
+    ncache_set_free(cache_e3d, &destroy_e3d);
+	ncache_delete(cache_e3d);
 	cache_e3d = NULL;
 #ifdef NEW_TEXTURES
 	free_texture_cache();
 #endif
 	// This should be fixed now  Sir_Odie
-	cache_delete(cache_system);
+	ncache_delete(cache_system);
 	cache_system = NULL;
 	/* map location information */
 	for (i = 0; continent_maps[i].name; i++)
@@ -128,7 +128,7 @@ void cleanup_mem(void)
 	free (continent_maps);
 
 	destroy_hash_table(server_marks);
-	
+
 	for (i = 0; i < video_modes_count; i++)
 	{
 		if (video_modes[i].name)
@@ -191,7 +191,7 @@ int start_rendering()
 			olc_process();
 #endif	//OLC
 			my_tcp_flush(my_socket);    // make sure the tcp output buffer is set
-			
+
 			if (have_a_map && cur_time > last_frame_and_command_update + 60) {
 				LOCK_ACTORS_LISTS();
 				next_command();
@@ -230,7 +230,8 @@ int start_rendering()
 #endif
 
 			//cache handling
-			if(cache_system)cache_system_maint();
+			if (cache_system)
+                ncache_system_maint();
 			//see if we need to exit
 			if(exit_now) {
 				done = 1;
@@ -356,7 +357,7 @@ char * check_server_id_on_command_line()
 		return "";
 
 	// FIXME!! This should parse for -options rather than blindly returning the last option!
-	
+
 	return gargv[gargc - 1];
 }
 

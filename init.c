@@ -709,9 +709,9 @@ void init_texture_cache()
 void init_e3d_cache()
 {
 	//cache_e3d= cache_init(1000, &destroy_e3d);	//TODO: autofree the name as well
-	cache_e3d = cache_init("E3d cache", 1500, NULL);	//no aut- free permitted
-	cache_set_compact(cache_e3d, &free_e3d_va);	// to compact, free VA arrays
-	cache_set_time_limit(cache_e3d, 5*60*1000);
+	cache_e3d = ncache_init("E3d cache");
+	ncache_set_compact(cache_e3d, &free_e3d_va);	// to compact, free VA arrays
+	ncache_set_time_limit(cache_e3d, 5*60*1000);
 }
 
 #ifndef FASTER_MAP_LOAD
@@ -810,7 +810,7 @@ void init_stuff()
 #endif
 
 	//Init the caches here, as the loading window needs them
-	cache_system_init(MAX_CACHE_SYSTEM);
+	ncache_system_init();
 	init_texture_cache();
 	init_e3d_cache();
 #ifndef FASTER_MAP_LOAD

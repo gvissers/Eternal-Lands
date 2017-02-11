@@ -108,7 +108,7 @@ void draw_3d_object_detail(object3d * object_id, Uint32 material_index, Uint32 u
 
 	//debug
 
-	if (object_id->self_lit && (!is_day || dungeon) && use_lightning) 
+	if (object_id->self_lit && (!is_day || dungeon) && use_lightning)
 	{
 		glColor3fv(object_id->color);
 	}
@@ -222,7 +222,7 @@ void draw_3d_object_detail(object3d * object_id, Uint32 material_index, Uint32 u
 	}
 	else
 	{
-		glDisable(GL_TEXTURE_2D);		
+		glDisable(GL_TEXTURE_2D);
 	}
 
 
@@ -289,7 +289,7 @@ void draw_3d_objects(unsigned int object_type)
 			l = get_3dobject_index(j);
 			if (objects_list[l] == NULL) continue;
 			//track the usage
-			cache_use(objects_list[l]->e3d_data->cache_ptr);
+			ncache_use(cache_e3d, objects_list[l]->e3d_data->file_name);
 		}
 		// and all done
 		return;
@@ -351,7 +351,7 @@ void draw_3d_objects(unsigned int object_type)
 		l = get_3dobject_index(j);
 		if (objects_list[l] == NULL) continue;
 		//track the usage
-		cache_use(objects_list[l]->e3d_data->cache_ptr);
+		ncache_use(cache_e3d, objects_list[l]->e3d_data->file_name);
 		if(!objects_list[l]->display) continue;	// not currently on the map, ignore it
 #ifdef CLUSTER_INSIDES_OLD
 		if (objects_list[l]->cluster && objects_list[l]->cluster != cluster)
@@ -375,7 +375,7 @@ void draw_3d_objects(unsigned int object_type)
 			anything_under_the_mouse(objects_list[l]->id, UNDER_MOUSE_3D_OBJ);
 		}
 	}
-	
+
 	if (!dungeon && (clouds_shadows || use_shadow_mapping))
 	{
 		ELglActiveTextureARB(detail_unit);
@@ -387,7 +387,7 @@ void draw_3d_objects(unsigned int object_type)
 	disable_buffer_arrays();
 
 	// restore the settings
-	if (is_selflit && (!is_day || dungeon)) 
+	if (is_selflit && (!is_day || dungeon))
 	{
 		glEnable(GL_LIGHTING);
 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -427,7 +427,7 @@ static e3d_object *load_e3d_cache(const char* file_name)
 	e3d_object *e3d_id;
 
 	//do we have it already?
-	e3d_id = cache_find_item(cache_e3d, file_name);
+	e3d_id = ncache_find_item(cache_e3d, file_name);
 	if (e3d_id) return e3d_id;
 
 	//e3d not found in the cache, so load it, and store it
@@ -441,15 +441,14 @@ static e3d_object *load_e3d_cache(const char* file_name)
 	// and fill in the data
 	my_strncp(e3d_id->file_name, file_name, sizeof(e3d_id->file_name));
 
+	ncache_add_item(cache_e3d, e3d_id->file_name, e3d_id, sizeof(*e3d_id));
+
 	e3d_id = load_e3d_detail(e3d_id);
 	if (!e3d_id)
 	{
 		LOG_ERROR("Can't load file \"%s\"!", file_name);
 		return NULL;
 	}
-
-	e3d_id->cache_ptr = cache_add_item(cache_e3d, e3d_id->file_name,
-		e3d_id, sizeof(*e3d_id));
 
 	return e3d_id;
 }
@@ -672,13 +671,13 @@ char * get_3dobject_at_location(float x_pos, float y_pos)
 #endif // NEW_SOUND
 
 void display_objects(void)
-{	
+{
 	CHECK_GL_ERRORS();
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_COLOR_MATERIAL);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-			
+
 	if (!dungeon && clouds_shadows)
 	{
 		//bind the detail texture
@@ -769,7 +768,7 @@ void display_alpha_objects(void)
 	glEnable(GL_COLOR_MATERIAL);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-			
+
 	if (!dungeon && clouds_shadows)
 	{
 		//bind the detail texture
@@ -807,7 +806,7 @@ void display_alpha_objects(void)
 }
 
 void display_blended_objects(void)
-{	
+{
 	CHECK_GL_ERRORS();
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
@@ -815,7 +814,7 @@ void display_blended_objects(void)
 	glEnable(GL_COLOR_MATERIAL);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-			
+
 	if (!dungeon && clouds_shadows)
 	{
 		//bind the detail texture
@@ -887,7 +886,7 @@ void destroy_all_3d_objects(void)
 		if (objects_list[i])
 		{
 			ec_remove_obstruction_by_object3d(objects_list[i]);
-			if(!cache_find_item(cache_e3d, objects_list[i]->file_name))
+			if(!ncache_find_item(cache_e3d, objects_list[i]->file_name))
 				destroy_e3d(objects_list[i]->e3d_data);
 			free(objects_list[i]);
 			objects_list[i] = NULL; // kill any reference to it
@@ -926,10 +925,7 @@ Uint32 free_e3d_va(e3d_object *e3d_id)
 		e3d_id->indices_vbo = 0;
 	}
 
-	if (e3d_id->cache_ptr != NULL)
-		return (e3d_id->cache_ptr->size - sizeof(*e3d_id));
-	else
-		return sizeof(*e3d_id);
+	return sizeof(*e3d_id);
 }
 
 void destroy_e3d(e3d_object *e3d_id)

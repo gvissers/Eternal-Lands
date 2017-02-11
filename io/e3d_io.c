@@ -331,7 +331,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	Uint8* index_pointer;
 	el_file_ptr file;
 	version_number version;
-	
+
 	if (cur_object == 0) return 0;
 
 	memset(cur_dir, 0, sizeof(cur_dir));
@@ -377,7 +377,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 
 		return 0;
 	}
-	
+
 	el_read(file, sizeof(e3d_header), &header);
 
 	cur_object->vertex_no = SDL_SwapLE32(header.vertex_no);
@@ -564,7 +564,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		SDL_SwapLE32(header.material_offset), cur_object->file_name);
 	// Now reading the materials
 	el_seek(file, SDL_SwapLE32(header.material_offset), SEEK_SET);
-	
+
 	cur_object->min_x = 1e10f;
 	cur_object->min_y = 1e10f;
 	cur_object->min_z = 1e10f;
@@ -575,7 +575,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 
 	for (i = 0; i < cur_object->material_no; i++)
 	{
-		
+
 		file_pos = el_tell(file);
 		el_read(file, sizeof(e3d_material), &material);
 		safe_snprintf(text_file_name, sizeof(text_file_name), "%s%s", cur_dir, material.material_name);
@@ -653,7 +653,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		free(cur_object->vertex_data);
 		cur_object->vertex_data = 0;
 #endif	//MAP_EDITOR
-		
+
 		ELglGenBuffersARB(1, &cur_object->indices_vbo);
 		ELglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB,
 			cur_object->indices_vbo);
@@ -664,7 +664,7 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		free(cur_object->indices);
 		cur_object->indices = 0;
 #endif	//MAP_EDITOR
-				
+
 		ELglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 		ELglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 	}
@@ -678,7 +678,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	LOG_DEBUG("Adding e3d file '%s' to cache.",
 		cur_object->file_name);
 
-	cache_adj_size(cache_e3d, mem_size, cur_object);
+    // XXX FIXME: done before item is added
+	ncache_adj_size(cache_e3d, cur_object->file_name, mem_size);
 #endif	//MAP_EDITOR
 	return cur_object;
 }

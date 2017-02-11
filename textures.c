@@ -45,7 +45,7 @@ Uint32 actor_texture_threads_done = 0;
 #define TEXTURE_CACHE_MAX 8192
 
 static texture_cache_t* texture_handles = NULL;
-static cache_struct* texture_cache = NULL;
+static Cache* texture_cache = NULL;
 static Uint32 texture_handles_used = 0;
 #ifdef FASTER_MAP_LOAD
 static Uint32 texture_cache_sorted[TEXTURE_CACHE_MAX];
@@ -434,8 +434,7 @@ Uint32 load_texture_cached(const char* file_name, const texture_type type)
 		texture_handles[slot].hash = idf.hash;
 		texture_handles[slot].type = type;
 		texture_handles[slot].id = 0;
-		texture_handles[slot].cache_ptr = cache_add_item(texture_cache,
-			texture_handles[slot].file_name,
+		ncache_add_item(texture_cache, texture_handles[slot].file_name,
 			&texture_handles[slot], 0);
 
 		texture_handles_used++;
@@ -644,9 +643,8 @@ static Uint32 load_texture_handle(const Uint32 handle)
 
 	if (load_texture(&texture_handles[handle]) != 0)
 	{
-		cache_adj_size(texture_cache,
-			texture_handles[handle].size,
-			&texture_handles[handle]);
+        ncache_set_size(texture_cache, texture_handles[handle].file_name,
+                        texture_handles[handle].size);
 
 		return 1;
 	}
@@ -669,10 +667,9 @@ static GLuint get_texture_id(const Uint32 handle)
 		return 0;
 	}
 
-	assert(texture_handles[handle].cache_ptr != 0);
 	assert(texture_handles[handle].id != 0);
 
-	cache_use(texture_handles[handle].cache_ptr);
+	ncache_use(texture_cache, texture_handles[handle].file_name);
 
 	return texture_handles[handle].id;
 }
@@ -1012,7 +1009,7 @@ static Uint32 load_to_coordinates(el_file_ptr file, const Uint32 x,
 		if ((image.width != tw) || (image.height != th))
 		{
 			LOG_ERROR("File '%s' has wrong size <%d, %d> instead "
-				"of <%d, %d>.", el_file_name(file), 
+				"of <%d, %d>.", el_file_name(file),
 				image.width, image.height, tw, th);
 			free_image(&image);
 			return 0;
@@ -1442,7 +1439,7 @@ static void load_enhanced_actor_threaded(const enhanced_actor_images_t* files,
 	{
 		open_for_coordinates_mask2(files->arms_tex,
 			files->arms_base, files->arms_mask, &arms_tex,
-			&arms_base, &arms_mask, 40, 40, &sizes, 
+			&arms_base, &arms_mask, 40, 40, &sizes,
 			&format);
 	}
 	if (files->hands_tex[0])
@@ -1456,7 +1453,7 @@ static void load_enhanced_actor_threaded(const enhanced_actor_images_t* files,
 	{
 		open_for_coordinates_mask2(files->head_tex,
 			files->head_base, files->head_mask, &head_tex,
-			&head_base, &head_mask, 32, 32, &sizes, 
+			&head_base, &head_mask, 32, 32, &sizes,
 			&format);
 	}
 	if (files->hair_tex[0])
@@ -2113,9 +2110,9 @@ void change_enhanced_actor(const Uint32 handle, enhanced_actor* actor)
  			sizeof(files)))
  		{
  			actor_texture_handles[handle].access_time = cur_time;
- 
+
  			CHECK_AND_UNLOCK_MUTEX(actor_texture_handles[handle].mutex);
- 
+
  			return;
  		}
  	}
@@ -2186,7 +2183,7 @@ int load_enhanced_actor_thread(void* done)
 			}
 			else
 			{
-				LOG_ERROR("Wrong actor state %d", actor->state); 
+				LOG_ERROR("Wrong actor state %d", actor->state);
 				free_image(&image);
 			}
 		}
@@ -2233,9 +2230,9 @@ void init_texture_cache()
 	Uint32 i;
 #endif	/* ELC */
 
-	texture_cache = cache_init("texture cache", TEXTURE_CACHE_MAX, 0);
-	cache_set_compact(texture_cache, compact_texture);
-	cache_set_time_limit(texture_cache, 5 * 60 * 1000);
+	texture_cache = ncache_init("texture cache");
+	ncache_set_compact(texture_cache, compact_texture);
+	ncache_set_time_limit(texture_cache, 5 * 60 * 1000);
 
 	texture_handles = calloc(TEXTURE_CACHE_MAX, sizeof(texture_cache_t));
 #ifdef	ELC
@@ -2298,7 +2295,7 @@ void free_texture_cache()
 
 	free(texture_handles);
 
-	cache_delete(texture_cache);
+	ncache_delete(texture_cache);
 	texture_cache = NULL;
 }
 
@@ -2314,8 +2311,7 @@ void unload_texture_cache()
 
 			texture_handles[i].id = 0;
 
-			cache_adj_size(texture_cache, -texture_handles[i].size,
-				&texture_handles[i]);
+            ncache_set_size(texture_cache, texture_handles[i].file_name, 0);
 		}
 	}
 
@@ -2428,7 +2424,7 @@ __inline__ static void set_texture_filter_parameter()
 			{
 				set_texture_filter(TF_TRILINEAR, 0.0f);
 			}
-		}		
+		}
 		else
 		{
 			if (anisotropic_filter > 1.0f)
@@ -2557,7 +2553,7 @@ static texture_struct *load_texture_SDL(el_file_ptr file, const char * file_name
 texture_struct *load_texture(const char * file_name, texture_struct *tex, Uint8 alpha)
 {
 	el_file_ptr file;
-	
+
 	Uint32 dds;
 
 	file = el_open_custom(file_name);
@@ -2828,7 +2824,7 @@ void	texture_mask3(texture_struct *texR, texture_struct *texG, texture_struct *t
 
 
 // get a texture id out of the texture cache
-// if null and we haven't failed to load it before, then reload it 
+// if null and we haven't failed to load it before, then reload it
 // (means it was previously freed)
 
 int get_texture_id(int i)
@@ -2839,7 +2835,7 @@ int get_texture_id(int i)
 	// don't look up an out of range texture
 	if (i<0 || i>=TEXTURE_CACHE_MAX)
 		return 0;
-	
+
 	if(!texture_cache[i].texture_id && !texture_cache[i].load_err)
 	{
 		// we need the alpha to know how to load it
@@ -3338,7 +3334,7 @@ int load_texture_cache_deferred(const char* file_name, int alpha)
 		texture_cache[texture_slot].alpha= alpha;
         texture_cache[texture_slot].has_alpha = 0;
 		return texture_slot;
-	} else {	
+	} else {
 		LOG_ERROR("Error: out of texture space\n");
 		return 0;	// ERROR!
 	}
@@ -3351,7 +3347,7 @@ void copy_bmp8_to_coordinates (texture_struct *tex, Uint8 *texture_space, int x_
 	int x, y, x_size, y_size;
 	Uint8 *texture_mem;
 
-	
+
 	x_size= tex->x_size;
 	y_size= tex->y_size;
 	texture_mem= tex->texture;
@@ -3634,13 +3630,13 @@ char * load_bmp8_color_key_no_texture_img(char * filename, img_struct * img)
 		}
 
 	}
-	
+
 	if(img)
 	{
 		img->x=x_size;
 		img->y=y_size;
 	}
-	
+
 	free(file_mem_start);
 	free(read_buffer);
 	gzclose(f);

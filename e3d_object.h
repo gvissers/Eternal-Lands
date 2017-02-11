@@ -6,7 +6,7 @@
 #ifndef	__E3D_OBJECT_H__
 #define	__E3D_OBJECT_H__
 
-#include "cache.h"
+#include "ncache.h"
 #include "platform.h"
 
 #ifdef __cplusplus
@@ -84,7 +84,6 @@ typedef struct
 	float max_size;
 	/** @} */
 
-	cache_item_struct *cache_ptr;	/**< pointer to a cache item. If this is !=NULL, this points to a valid cached item of this object */
 	char file_name[128];		/**< filename where this object is stored. */
 } e3d_object;
 
