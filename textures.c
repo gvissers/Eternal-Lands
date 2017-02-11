@@ -47,9 +47,6 @@ Uint32 actor_texture_threads_done = 0;
 static texture_cache_t* texture_handles = NULL;
 static Cache* texture_cache = NULL;
 static Uint32 texture_handles_used = 0;
-#ifdef FASTER_MAP_LOAD
-static Uint32 texture_cache_sorted[TEXTURE_CACHE_MAX];
-#endif
 
 Uint32 compact_texture(texture_cache_t* texture)
 {
@@ -395,35 +392,20 @@ int cache_cmp_identifier(const void *idfp, const void *idxp)
 Uint32 load_texture_cached(const char* file_name, const texture_type type)
 {
 	cache_identifier_t idf;
-	Uint32 i, len;
-	Uint32 *idxp, idx;
+	Uint32 len;
+	texture_cache_t *item;
 
 	len = get_file_name_len(file_name);
 	idf.hash = mem_hash(file_name, len);
 	safe_strncpy2(idf.file_name, file_name, sizeof(idf.file_name), len);
 
-	idxp = bsearch(&idf, texture_cache_sorted, texture_handles_used,
-		sizeof(Uint32), cache_cmp_identifier);
-	if (idxp)
-		return *idxp;
+	item = ncache_find_item(texture_cache, idf.file_name);
+	if (item)
+		return item - texture_handles;
 
 	if (texture_handles_used < TEXTURE_CACHE_MAX)
 	{
 		Uint32 slot = texture_handles_used;
-		for (i = 0; i < texture_handles_used; i++)
-		{
-			idx = texture_cache_sorted[i];
-			if (idf.hash < texture_handles[idx].hash
-				|| (idf.hash == texture_handles[idx].hash
-					&& strcasecmp(idf.file_name, texture_handles[idx].file_name) <= 0))
-			{
-				memmove(texture_cache_sorted+(i+1), texture_cache_sorted+i,
-					(texture_handles_used-i)*sizeof(Uint32));
-				break;
-			}
-		}
-
-		texture_cache_sorted[i] = slot;
 
 		safe_strncpy(texture_handles[slot].file_name, idf.file_name,
 			sizeof(texture_handles[slot].file_name));
