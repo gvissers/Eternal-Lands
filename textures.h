@@ -58,7 +58,9 @@ typedef struct
 {
 	char file_name[128];		/*!< the filename of the texture */
 	GLuint id;			/*!< the id of the texture */
+#ifndef FASTER_MAP_LOAD
 	Uint32 hash;			/*!< hash value of the name */
+#endif // FASTER_MAP_LOAD
 	Uint32 size;			/*!< size of the texture */
 	texture_type type;		/*!< the texture type, needed for loading and unloading */
 	Uint8 load_err;			/*!< if true, we tried to load this texture before and failed */

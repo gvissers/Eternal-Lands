@@ -372,34 +372,16 @@ static GLuint build_texture(image_t* image, const Uint32 wrap_mode_repeat,
 }
 
 #ifdef FASTER_MAP_LOAD
-typedef struct
-{
-	Uint32 hash;
-	char file_name[128];
-} cache_identifier_t;
-
-int cache_cmp_identifier(const void *idfp, const void *idxp)
-{
-	const cache_identifier_t *idf = idfp;
-	Uint32 idx = *((const Uint32*)idxp);
-	if (idf->hash < texture_handles[idx].hash)
-		return -1;
-	if (idf->hash > texture_handles[idx].hash)
-		return 1;
-	return strcasecmp(idf->file_name, texture_handles[idx].file_name);
-}
-
 Uint32 load_texture_cached(const char* file_name, const texture_type type)
 {
-	cache_identifier_t idf;
+	char key[128];
 	Uint32 len;
 	texture_cache_t *item;
 
 	len = get_file_name_len(file_name);
-	idf.hash = mem_hash(file_name, len);
-	safe_strncpy2(idf.file_name, file_name, sizeof(idf.file_name), len);
+	safe_strncpy2(key, file_name, sizeof(key), len);
 
-	item = ncache_find_item(texture_cache, idf.file_name);
+	item = ncache_find_item(texture_cache, key);
 	if (item)
 		return item - texture_handles;
 
@@ -407,13 +389,11 @@ Uint32 load_texture_cached(const char* file_name, const texture_type type)
 	{
 		Uint32 slot = texture_handles_used;
 
-		safe_strncpy(texture_handles[slot].file_name, idf.file_name,
+		safe_strncpy(texture_handles[slot].file_name, key,
 			sizeof(texture_handles[slot].file_name));
-		texture_handles[slot].hash = idf.hash;
 		texture_handles[slot].type = type;
 		texture_handles[slot].id = 0;
-		ncache_add_item(texture_cache, texture_handles[slot].file_name,
-			&texture_handles[slot], 0);
+		ncache_add_item(texture_cache, key, &texture_handles[slot], 0);
 
 		texture_handles_used++;
 
