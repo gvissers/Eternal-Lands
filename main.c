@@ -111,7 +111,6 @@ void cleanup_mem(void)
 	/* 3d objects */
 	destroy_all_3d_objects();
 	/* caches */
-    ncache_set_free(cache_e3d, &destroy_e3d);
 	ncache_delete(cache_e3d);
 	cache_e3d = NULL;
 #ifdef NEW_TEXTURES

@@ -69,7 +69,7 @@ public:
      * Create a new, empty, cache with name \a name.
      * \param name The name of the cache
      */
-    Cache(const char* name);
+    Cache(const char* name, FreeHandler free_item);
     //! Destructor
     virtual ~Cache();
 
@@ -281,13 +281,16 @@ extern Cache *cache_system;
  * \ingroup cache
  * \brief   initializes a new cache
  *
- * Initializes a new cache with name \a name.
+ * Initializes a new cache with name \a name. The parameter \a free_item is a
+ * pointer to a function that frees the data associated with the item when it
+ * is removed from the cache or when the cache itself is deleted.
  *
  * \param name     The name of the new cache
+ * \param free_item Handler to free item data upon deletion from the cache.
  * \retval Cache*  A pointer to a newly created cache.
  * \callgraph
  */
-Cache *ncache_init(const char* name);
+Cache *ncache_init(const char* name, void (*free_item)());
 /*!
  * \ingroup cache
  * \brief Deletes a cache

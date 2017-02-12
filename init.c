@@ -12,6 +12,7 @@
 #include "astrology.h"
 #include "init.h"
 #include "2d_objects.h"
+#include "3d_objects.h"
 #include "actor_scripts.h"
 #include "asc.h"
 #include "books.h"
@@ -396,9 +397,9 @@ void read_bin_cfg()
 	}
 
 	if(zoom_level != 0.0f) resize_root_window();
-	
+
 	have_saved_langsel = cfg_mem.have_saved_langsel;
-	
+
 	use_small_items_window = cfg_mem.misc_bool_options & 1;
 	manual_size_items_window = (cfg_mem.misc_bool_options >> 1) & 1;
 	allow_equip_swap = (cfg_mem.misc_bool_options >> 2) & 1;
@@ -660,9 +661,9 @@ void save_bin_cfg()
 	for(i=0;i<ITEM_EDIT_QUANT;i++){
 		cfg_mem.quantity[i]=quantities.quantity[i].val;
 	}
-	
+
 	cfg_mem.have_saved_langsel = have_saved_langsel;
-	
+
 	cfg_mem.misc_bool_options = 0;
 	cfg_mem.misc_bool_options |= use_small_items_window;
 	cfg_mem.misc_bool_options |= manual_size_items_window << 1;
@@ -708,8 +709,7 @@ void init_texture_cache()
 
 void init_e3d_cache()
 {
-	//cache_e3d= cache_init(1000, &destroy_e3d);	//TODO: autofree the name as well
-	cache_e3d = ncache_init("E3d cache");
+	cache_e3d = ncache_init("E3d cache", &destroy_e3d);
 	ncache_set_compact(cache_e3d, &free_e3d_va);	// to compact, free VA arrays
 	ncache_set_time_limit(cache_e3d, 5*60*1000);
 }

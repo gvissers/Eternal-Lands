@@ -9,12 +9,12 @@
 CacheSystem *cache_system;
 Cache *cache_e3d;
 
-Cache::Cache(const char* name):
+Cache::Cache(const char* name, FreeHandler free_item):
     _name(name),
     _cache(),
     _LRU_time(cur_time),
     _time_limit(0), // 0 == no time based LRU check
-    _free_item(nullptr),
+    _free_item(free_item),
     _compact_item(nullptr)
 {
     cache_system->add(name, this, 0);
@@ -178,13 +178,6 @@ Uint32 CacheSystem::maintenance()
         return 0;
 
     Uint32 freed = 0;
-#ifdef ELC
-    // make sure we are in a safe place
-    if (get_show_window(game_root_win))
-#endif // ELC
-    for (auto name_value: _cache)
-        freed += (reinterpret_cast<Cache*>(name_value.second.data))->clean_unused();
-
     for (auto name_value: _cache)
         freed += (reinterpret_cast<Cache*>(name_value.second.data))->compact();
 
@@ -234,9 +227,9 @@ void CacheSystem::print_sizes() const
 extern "C"
 {
 
-Cache *ncache_init(const char* name)
+Cache *ncache_init(const char* name, Cache::FreeHandler free_item)
 {
-    return new Cache(name);
+    return new Cache(name, free_item);
 }
 void ncache_delete(Cache *cache)
 {
@@ -246,10 +239,6 @@ void ncache_delete(Cache *cache)
 void ncache_set_time_limit(Cache *cache, Uint32 time_limit)
 {
     cache->set_time_limit(time_limit);
-}
-void ncache_set_free(Cache *cache, void (*free_item)())
-{
-    cache->set_free(reinterpret_cast<Cache::FreeHandler>(free_item));
 }
 void ncache_set_compact(Cache *cache, Uint32 (*compact_item)())
 {

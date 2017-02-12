@@ -68,6 +68,12 @@ Uint32 compact_texture(texture_cache_t* texture)
 	return 0;
 }
 
+static void free_texture(texture_cache_t *texture)
+{
+	if (texture->id != 0)
+		glDeleteTextures(1, &texture->id);
+}
+
 void bind_texture_id(const GLuint id)
 {
 	if (last_texture != id)
@@ -2188,7 +2194,7 @@ void init_texture_cache()
 	Uint32 i;
 #endif	/* ELC */
 
-	texture_cache = ncache_init("texture cache");
+	texture_cache = ncache_init("texture cache", free_texture);
 	ncache_set_compact(texture_cache, compact_texture);
 	ncache_set_time_limit(texture_cache, 5 * 60 * 1000);
 
@@ -2243,18 +2249,10 @@ void free_texture_cache()
 	free(actor_texture_handles);
 #endif	/* ELC */
 
-	for (i = 0; i < texture_handles_used; i++)
-	{
-		if (texture_handles[i].id != 0)
-		{
-			glDeleteTextures(1, &texture_handles[i].id);
-		}
-	}
-
-	free(texture_handles);
-
 	ncache_delete(texture_cache);
 	texture_cache = NULL;
+
+    free(texture_handles);
 }
 
 void unload_texture_cache()
