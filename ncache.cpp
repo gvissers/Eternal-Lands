@@ -25,23 +25,25 @@ Cache::Cache():
     _cache(),
     _LRU_time(cur_time),
     _time_limit(1*60*1000), // // once per minute check for processing
-    _free_item(nullptr),
+    _free_item([](void *cache) { delete reinterpret_cast<Cache*>(cache); }),
     _compact_item(nullptr) {}
 
 Cache::~Cache()
 {
     clear();
-    // Don't remove cache system from itself, check if name is not empty
-    if (*_name)
-        cache_system->remove(_name);
+    // Don't remove cache system from itself, check if name is not empty.
+    // Also, don't free this cache upon removal from the system, as we're
+    // already in the process of doing so.
+    if (*_name && cache_system)
+        cache_system->remove(_name, false);
 }
 
-void Cache::remove(const std::string& name)
+void Cache::remove(const std::string& name, bool do_free)
 {
     auto iter = _cache.find(name);
     if (iter != _cache.end())
     {
-        if (_free_item)
+        if (_free_item && do_free)
             _free_item(iter->second.data);
         _cache.erase(iter);
     }
@@ -170,6 +172,14 @@ Uint32 Cache::memory_size() const
                            });
 
     return res;
+}
+
+CacheSystem::~CacheSystem()
+{
+    // Clear pointer to cache system, to prevent caches from being removed
+    // from the cache system twice: once because we're clearing this cache,
+    // and once because their destructor tries to remove them again.
+    cache_system = nullptr;
 }
 
 Uint32 CacheSystem::maintenance()

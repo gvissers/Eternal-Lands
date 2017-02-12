@@ -93,10 +93,14 @@ public:
     /*!
      * \brief Remove an item from the cache
      *
-     * Remove the item with name \a name from the cache
-     * \param name The name of the item to remove
+     * Remove the item with name \a name from the cache. If the optional
+     * parameter \c do_free is \c true (the default), the data associated
+     * with the cache item is freed using the free handler function for this
+     * cache.
+     * \param name    The name of the item to remove
+     * \param do_free If \c true, free item data upon removal
      */
-    void remove(const std::string& name);
+    void remove(const std::string& name, bool do_free=true);
 
     /*!
      * \brief Clear the cache
@@ -249,6 +253,8 @@ public:
      * Create a new cache system
      */
     CacheSystem(): Cache() {}
+    //! Destructor
+    ~CacheSystem();
 
     /*!
      * Periodic maintenance
