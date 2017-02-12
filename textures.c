@@ -2257,20 +2257,7 @@ void free_texture_cache()
 
 void unload_texture_cache()
 {
-	Uint32 i;
-
-	for (i = 0; i < texture_handles_used; i++)
-	{
-		if (texture_handles[i].id != 0)
-		{
-			glDeleteTextures(1, &texture_handles[i].id);
-
-			texture_handles[i].id = 0;
-
-            ncache_set_size(texture_cache, texture_handles[i].file_name, 0);
-		}
-	}
-
+	ncache_compact_all(texture_cache);
 #ifdef	ELC
 	unload_actor_texture_cache();
 #endif	/* ELC */
