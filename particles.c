@@ -68,19 +68,7 @@ particle_sys *particles_list[MAX_PARTICLE_SYSTEMS];
  *           PARTICLE SYSTEM DEFINITIONS              *
  ******************************************************/
 #define MAX_PARTICLE_DEFS 500
-particle_sys_def *defs_list[MAX_PARTICLE_DEFS];
-
-void destroy_all_particle_defs();
-
-int part_strcmp(char * s1, char *s2)
-{
-	while(*s1 && *s2)
-		{
-			if(*s1!=*s2 && (*s1!='/' && *s1!='\\' && *s2!='/' && *s2!='\\' )) return 1;
-			s1++;s2++;
-		}
-	return *s1!=*s2;
-}
+static Cache *particle_defs_cache;
 
 // Grum: perhaps the addition of a sound definition to the files would warrant
 // a version number update (from 2 to 3), but it'll still work with v. 2 system
@@ -89,7 +77,7 @@ int part_strcmp(char * s1, char *s2)
 
 particle_sys_def *load_particle_def(const char *filename)
 {
-	int version=0,i;
+	int version=0;
 	char cleanpath[128];
 	int fscanf_error = 0;
 	FILE *f=NULL;
@@ -98,39 +86,35 @@ particle_sys_def *load_particle_def(const char *filename)
 	clean_file_name(cleanpath, filename, sizeof(cleanpath));
 
 	//Check if it's already loaded
-	for(i=0;i<MAX_PARTICLE_DEFS;i++)
-		if(defs_list[i] && !part_strcmp(cleanpath,defs_list[i]->file_name))
-			return defs_list[i];
+	def = ncache_find_item(particle_defs_cache, cleanpath);
+	if (def)
+		return def;
 
-	//Check if we have a free slot for it
-	for(i=0;i<MAX_PARTICLE_DEFS;i++)
-		if(!defs_list[i])
-			{
-				defs_list[i]=(particle_sys_def *)calloc(1,sizeof(particle_sys_def));
-				def=defs_list[i];
-				break;
-			}
-	if(!def)return NULL;
+	def = calloc(1, sizeof(particle_sys_def));
+	if (!def)
+		// Failed to allocate memory
+		return NULL;
 
 	f=open_file_data(cleanpath,"r");
-	if(f == NULL){
+	if (!f)
+	{
 		LOG_ERROR("%s: %s \"%s\": %s\n", reg_error_str, cant_open_file, cleanpath, strerror(errno));
 		free(def);
-		defs_list[i]=NULL;
 		return NULL;
 	}
 
 	// initialize defaults
 	def->sound_nr = -1;
-	
+
 	if (fscanf(f,"%i\n",&version) != 1) fscanf_error = 1;
 
 	if(version!=PARTICLE_DEF_VERSION)
-		{
-			LOG_ERROR(particles_filever_wrong,filename,version,PARTICLE_DEF_VERSION);
-			fclose(f);
-			return NULL;
-		}
+	{
+		LOG_ERROR(particles_filever_wrong,filename,version,PARTICLE_DEF_VERSION);
+		fclose(f);
+		free(def);
+		return NULL;
+	}
 #ifndef WINDOWS
 	setlocale(LC_NUMERIC,"en_US");
 #endif
@@ -224,9 +208,10 @@ particle_sys_def *load_particle_def(const char *filename)
 				}
 
 		}
-	
+
 	fclose(f);
 
+	ncache_add_item(particle_defs_cache, cleanpath, def, sizeof(*def));
 	return def;
 }
 
@@ -245,7 +230,7 @@ static __inline__ void calc_particle_random_min_max(float f1, float f2, float* v
 }
 
 static __inline__ void calc_particle_random2_min_max(float f1, float f2, float* v_min, float* v_max)
-{	
+{
 	*v_min = (f1+f2)*0.5f-abs(f2-f1);
 	*v_max = (f1+f2)*0.5f+abs(f2-f1);
 }
@@ -255,9 +240,9 @@ void calc_bounding_box_for_particle_sys(AABBOX* bbox, particle_sys *system_id)
 	unsigned int count;
 	float p_max, p_min, p_step, sq;
 	VECTOR3 pv_min, pv_max, pv_v_min, pv_v_max, pv_acc_min, pv_acc_max;
-	
+
 	sq = sqrt(system_id->def->constrain_rad_sq);
-	if (system_id->def->random_func == 0) 
+	if (system_id->def->random_func == 0)
 	{
 		calc_particle_random_min_max(system_id->def->vel_minx, system_id->def->vel_maxx, &p_min, &p_max);
 		pv_v_min[X] = p_min;
@@ -289,7 +274,7 @@ void calc_bounding_box_for_particle_sys(AABBOX* bbox, particle_sys *system_id)
 		pv_min[Z] = p_min;
 		pv_max[Z] = p_max;
 	}
-	else 
+	else
 	{
 		calc_particle_random2_min_max(system_id->def->vel_minx, system_id->def->vel_maxx, &p_min, &p_max);
 		pv_v_min[X] = p_min;
@@ -300,7 +285,7 @@ void calc_bounding_box_for_particle_sys(AABBOX* bbox, particle_sys *system_id)
 		calc_particle_random2_min_max(system_id->def->vel_minz, system_id->def->vel_maxz, &p_min, &p_max);
 		pv_v_min[Z] = p_min;
 		pv_v_max[Z] = p_max;
-		
+
 		if (system_id->def->constrain_rad_sq > 0.0f)
 		{
 			pv_min[X] = -sq;
@@ -321,7 +306,7 @@ void calc_bounding_box_for_particle_sys(AABBOX* bbox, particle_sys *system_id)
 		pv_min[Z] = p_min;
 		pv_max[Z] = p_max;
 	}
-	
+
 	switch (system_id->def->part_sys_type)
 	{
 		case(TELEPORTER_PARTICLE_SYS):
@@ -384,7 +369,7 @@ void calc_bounding_box_for_particle_sys(AABBOX* bbox, particle_sys *system_id)
 			pv_acc_min[Z] = p_min;
 			pv_acc_max[Z] = p_max;
 
-			if (system_id->def->random_func == 0) 
+			if (system_id->def->random_func == 0)
 				calc_particle_random_min_max(system_id->def->mina, system_id->def->maxa, &p_min, &p_max);
 			else calc_particle_random2_min_max(system_id->def->mina, system_id->def->maxa, &p_min, &p_max);
 			p_step = p_min;
@@ -519,41 +504,25 @@ void init_particles ()
 #endif	/* NEW_TEXTURES */
         }
 
+	particle_defs_cache = ncache_init("particle sys def cache", free);
 	particles_list_mutex = SDL_CreateMutex();
 	LOCK_PARTICLES_LIST ();   // lock it to avoid timing issues
 	for (i = 0; i < MAX_PARTICLE_SYSTEMS; i++)
 		particles_list[i] = NULL;
-	for (i = 0; i < MAX_PARTICLE_DEFS; i++)
-		defs_list[i] = NULL;
 	UNLOCK_PARTICLES_LIST (); // release now that we are done
 }
 
 void end_particles ()
 {
-	LOCK_PARTICLES_LIST();
 	destroy_all_particles();
-	destroy_all_particle_defs();
-	UNLOCK_PARTICLES_LIST();
 	SDL_DestroyMutex(particles_list_mutex);
 	particles_list_mutex=NULL;
-}
-
-void destroy_all_particle_defs()
-{
-	int i;
-	for(i=0;i<MAX_PARTICLE_DEFS;i++)
-		{
-			if(defs_list[i] != NULL) {
-				free(defs_list[i]);
-				defs_list[i] = NULL;
-			}
-		}
 }
 
 void destroy_all_particles()
 {
 	int i;
-	
+
 	LOCK_PARTICLES_LIST();
 	for(i=0;i<MAX_PARTICLE_SYSTEMS;i++)
 		{
@@ -610,7 +579,7 @@ void remove_fire_at_tile (Uint16 x_tile, Uint16 y_tile)
 {
 	float x = 0.5f * x_tile + 0.25f;
 	float y = 0.5f * y_tile + 0.25f;
-	
+
 	ec_delete_effect_loc_type(x, y, EC_CAMPFIRE);
 #ifdef NEW_SOUND
 	stop_sound_at_location(x_tile, y_tile);
@@ -642,11 +611,11 @@ void rotate_vector3f(float *vector, float x, float y, float z)
 	MAT3_VECT3_MULT(vector, rot_z, result_y);
 }
 
-void add_ec_effect_to_e3d(object3d* e3d) 
+void add_ec_effect_to_e3d(object3d* e3d)
 {
 	ec_bounds *bounds = ec_create_bounds_list();
 	float shift[3] = { 0.0f, 0.0f, 0.0f };
-	// useful for debugging: 
+	// useful for debugging:
 	// ec_create_fountain(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 0.0, 1.0, (e3d->z_pos >= 0.8 ? e3d->z_pos - 0.8 : 0.0), 0, 1.0, (poor_man ? 6 : 10));
 	// printf("%f %f %s %i\n", e3d->x_pos*2, e3d->y_pos*2, e3d->file_name, e3d->self_lit);
 	if (strstr(e3d->file_name, "/lantern1.e3d"))
@@ -655,35 +624,35 @@ void add_ec_effect_to_e3d(object3d* e3d)
 		shift[2] += 0.25f; // add height
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.00625, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/lantern2.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.25);
 		shift[2] += 0.25f; // add height
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.005, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/lantern3.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.25);
 		shift[2] += 0.25f; // add height
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.005, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/light1.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.33);
 		shift[2] += 2.85f; // add height
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.01, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/light2.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.4);
 		shift[2] += 2.95f; // add height
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.0125, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/light3.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.33);
@@ -691,14 +660,14 @@ void add_ec_effect_to_e3d(object3d* e3d)
 		shift[0] -= 0.33f; // the light is not centered
 		rotate_vector3f(shift, e3d->x_rot, e3d->y_rot, e3d->z_rot);
 		ec_create_fireflies(e3d->x_pos + shift[0], e3d->y_pos + shift[1], e3d->z_pos + shift[2], 1.0, 1.0, 0.015, 1.0, bounds);
-	}	
+	}
 	else if (strstr(e3d->file_name, "/light4.e3d"))
 	{
 		ec_add_smooth_polygon_bound(bounds, 2.0, 0.4);
 		shift[2] += 1.75f; // add height
 		ec_create_fireflies(e3d->x_pos, e3d->y_pos, e3d->z_pos + 1.75f, 1.0, 1.0, 0.0075, 1.0, bounds);
 	}
-	ec_free_bounds_list(bounds);	
+	ec_free_bounds_list(bounds);
 }
 
 #ifdef NEW_SOUND
@@ -743,7 +712,7 @@ int add_particle_sys (const char *file_name, float x_pos, float y_pos, float z_p
 #endif
 {
 #ifndef MAP_EDITOR
-	
+
 	if (use_eye_candy)
 	{
 		if (!strncmp("fou", file_name + 12, 3))
@@ -829,7 +798,7 @@ int add_particle_sys (const char *file_name, float x_pos, float y_pos, float z_p
 
 	// If we got here, the eye candy system handled this particle
 	// system. Return an invalid particle ID to signal that nothing
-	// was added to particles_list, but not -1 since this is not an 
+	// was added to particles_list, but not -1 since this is not an
 	// error.
 	return -2;
 }
@@ -841,7 +810,7 @@ int add_particle_sys_at_tile (const char *file_name, int x_tile, int y_tile)
 #endif
 {
 	float z;
-	
+
 	z = get_tile_height(x_tile, y_tile);
 #ifndef	MAP_EDITOR
 	return add_particle_sys (file_name, (float) x_tile / 2.0 + 0.25f, (float) y_tile / 2.0 + 0.25f, z, dynamic);
@@ -904,9 +873,9 @@ int create_particle_sys (particle_sys_def *def, float x, float y, float z)
 	AABBOX bbox;
 	memset(&bbox, '\0', sizeof(bbox));
 #endif
-	
+
 	if(!def)return -1;
-	
+
 	//allocate memory for this particle system
 	system_id=(particle_sys *)calloc(1,sizeof(particle_sys));
 
@@ -943,7 +912,7 @@ int create_particle_sys (particle_sys_def *def, float x, float y, float z)
 	}
 
 	for(i=0,p=&system_id->particles[0];i<def->total_particle_no;i++,p++)create_particle(system_id,p);
-	
+
 #ifdef CLUSTER_INSIDES
 	system_id->cluster = get_cluster ((int)(x/0.5f), (int)(y/0.5f));
 	current_cluster = system_id->cluster;
@@ -951,7 +920,7 @@ int create_particle_sys (particle_sys_def *def, float x, float y, float z)
 
 #ifndef	MAP_EDITOR
 	calc_bounding_box_for_particle_sys(&bbox, system_id);
-	
+
 	if ((main_bbox_tree_items != NULL) && (dynamic == 0)) add_particle_sys_to_list(main_bbox_tree_items, psys, bbox, def->sblend, def->dblend);
 	else add_particle_to_abt(main_bbox_tree, psys, bbox, def->sblend, def->dblend, dynamic);
 #endif
@@ -1018,8 +987,8 @@ void draw_point_particle_sys(particle_sys *system_id)
 
 	/* Particle size is scaled according to the zoom level but based on
 	 * a previous maximum of 4.0.  When the maximum zoom was increased,
-	 * the scaling code broke.  This compromise keeps the particles  
-	 * visible at the maximum zoom without changing the previous size 
+	 * the scaling code broke.  This compromise keeps the particles
+	 * visible at the maximum zoom without changing the previous size
 	 * at closer zooms. */
 	GLfloat local_zoom_level = zoom_level;
 	if (local_zoom_level > 4.0)
@@ -1037,7 +1006,7 @@ void draw_point_particle_sys(particle_sys *system_id)
 #if 0
 	//#ifdef USE_VERTEX_ARRAYS
 	// This might be useful if we allow more particles per system.
-	// It does, however, render free particles... 
+	// It does, however, render free particles...
 	if(use_vertex_array)
 		{
 			glEnableClientState(GL_VERTEX_ARRAY);
@@ -1274,7 +1243,7 @@ void update_burst_sys(particle_sys *system_id)
 				p->vx=distx*len;
 				p->vy=disty*len;
 				p->vz=distz*len;
-			}			
+			}
 			p->x+=p->vx;
 			p->y+=p->vy;
 			p->z+=p->vz;
@@ -1295,7 +1264,7 @@ void update_fire_sys(particle_sys *system_id)
 	int total_particle_no=system_id->def->total_particle_no;
 	particle *p;
 	int j;
-	
+
 	//see if we need to add new particles
 	LOCK_PARTICLES_LIST();
 
@@ -1329,7 +1298,7 @@ void update_fire_sys(particle_sys *system_id)
 						if(system_id->particle_count)system_id->particle_count--;
 						continue;
 					}
-				
+
 				// Fires don't use acceleration as usual...
 				p->x+=p->vx+PARTICLE_RANDOM(system_id->def->acc_minx,system_id->def->acc_maxx);
 				p->y+=p->vy+PARTICLE_RANDOM(system_id->def->acc_miny,system_id->def->acc_maxy);
@@ -1385,7 +1354,7 @@ void update_teleporter_sys(particle_sys *system_id)
 						if(system_id->particle_count)system_id->particle_count--;
 						continue;
 					}
-				
+
 				// Teleporters don't use acceleration as usual...
 				p->x+=p->vx+PARTICLE_RANDOM2(system_id->def->acc_minx,system_id->def->acc_maxx);
 				p->y+=p->vy+PARTICLE_RANDOM2(system_id->def->acc_miny,system_id->def->acc_maxy);
@@ -1517,7 +1486,7 @@ void update_particles() {
 	int x = -camera_x, y = -camera_y;
 #endif
 #endif
-	
+
 	if(!particles_percentage){
 		return;
 	}
@@ -1554,7 +1523,7 @@ void update_particles() {
 			if (particles_list[i]->ttl > 0) particles_list[i]->ttl--;
 			//if there are no more particles to add, and the TTL expired, then kill this evil system
 			if (!particles_list[i]->ttl && !particles_list[i]->particle_count)
-				destroy_partice_sys_without_lock(i);		
+				destroy_partice_sys_without_lock(i);
 		}
 	}
 	get_intersect_start_stop(main_bbox_tree, TYPE_PARTICLE_SYSTEM, &start, &stop);
@@ -1569,7 +1538,7 @@ void update_particles() {
 			continue;
 		}
 		if (particles_list[l]->ttl > 0) continue;
-		
+
 		switch (particles_list[l]->def->part_sys_type)
 		{
 			case TELEPORTER_PARTICLE_SYS:
@@ -1639,7 +1608,7 @@ void update_particles() {
 					free(particles_list[i]);
 					particles_list[i]=0;
 				}
-				
+
 			}
 		}
 #endif
@@ -1664,7 +1633,7 @@ void add_teleporters_from_list (const Uint8 *teleport_list)
 			my_offset=i*5+2;
 			teleport_x=SDL_SwapLE16(*((Uint16 *)(teleport_list+my_offset)));
 			teleport_y=SDL_SwapLE16(*((Uint16 *)(teleport_list+my_offset+2)));
-						
+
 			//later on, maybe we want to have different visual types
 			//now, get the Z position
 			if (!get_tile_valid(teleport_x, teleport_y))
@@ -1695,7 +1664,7 @@ void add_teleporters_from_list (const Uint8 *teleport_list)
 			sector_add_3do(add_e3d("./3dobjects/portal1.e3d",x,y,z,0,0,0,1,0,1.0f,1.0f,1.0f));
 #endif
 #endif
-			
+
 			//mark the teleporter as an unwalkable so that the pathfinder
 			//won't try to plot a path through it
 #ifdef MAP_EDITOR
