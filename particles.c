@@ -75,7 +75,7 @@ static Cache *particle_defs_cache;
 // (without sound, of course), so I'll leave it
 #define PARTICLE_DEF_VERSION 2
 
-particle_sys_def *load_particle_def(const char *filename)
+static particle_sys_def *load_particle_def(const char *filename)
 {
 	int version=0;
 	char cleanpath[128];

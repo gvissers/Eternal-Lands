@@ -48,7 +48,7 @@ typedef struct
 	float y;
 	float z;
     /*! \} */
-    
+
     /*!
      * \name particle colour
      */
@@ -82,7 +82,7 @@ typedef struct
 	int part_texture;
 	float part_size;
 	int random_func;
-    
+
     /*!
 	 * \name Starting values
      */
@@ -95,7 +95,7 @@ typedef struct
 	float minr,ming,minb,mina;
 	float maxr,maxg,maxb,maxa;
     /*! \} */
-    
+
     /*!
 	 * \name Update values
      */
@@ -165,17 +165,6 @@ extern int particles_percentage;
 //INITIALIZATION AND CLEANUP FUNCTIONS
 
 /*!
- * \ingroup loadsave
- * \brief	Checks the particle def list for filename, if not found it will be loaded
- * 
- * 	Checks the particle def list for filename, if not found it will be loaded
- *
- * \param	filename The file name
- * \retval 	A pointer to the loaded particle def
- */
-particle_sys_def *load_particle_def(const char *filename);
-
-/*!
  * \ingroup other
  * \brief Destroys all particles of all particles systems and frees up memory used.
  *
@@ -230,7 +219,7 @@ void init_particles ();
 void end_particles ();
 
 
-//CREATION OF NEW PARTICLES AND SYSTEMS 
+//CREATION OF NEW PARTICLES AND SYSTEMS
 
 /*!
  * \ingroup particles
@@ -253,7 +242,7 @@ void calc_bounding_box_for_particle_sys (AABBOX* bbox, particle_sys *system_id);
  * \param x_pos	x coordinate where the particle system should appear
  * \param y_pos	y coordinate where the particle system should appear
  * \param z_pos	z coordinate where the particle system should appear
- * \retval int -1 on error, -2 if the eye candy system handled, or the 
+ * \retval int -1 on error, -2 if the eye candy system handled, or the
  *             index in particles_list otherwise
  * \callgraph
  */
@@ -278,7 +267,7 @@ void add_ec_effect_to_e3d(object3d* e3d);
  * \param file_name	filename of the file that contains the particly systems definition.
  * \param x_tile	x coordinate of the tile where the particle system should be added
  * \param y_tile	y coordinate of the tile where the particle system should be added
- * \retval int -1 on error, -2 if the eye candy system handled, or the 
+ * \retval int -1 on error, -2 if the eye candy system handled, or the
  *             index in particles_list otherwise
  * \callgraph
  */
@@ -348,8 +337,8 @@ void add_teleporters_from_list (const Uint8 *teleport_list);
  * \brief Set the particle texture as the current texture
  *
  *	Set the particle texture \a i as the next texture to be drawn.
- * 
- * \param i The number of the texture file, \c part_texture field of the 
+ *
+ * \param i The number of the texture file, \c part_texture field of the
  *          particle system definition.
  */
 void get_and_set_particle_texture_id (int i);
