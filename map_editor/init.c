@@ -84,7 +84,7 @@ void init_stuff()
 	int seed;
 
 	chdir(DATA_DIR);
-	
+
 #ifndef WINDOWS
 	setlocale(LC_NUMERIC,"en_US");
 #endif
@@ -94,11 +94,11 @@ void init_stuff()
 	init_globals();
 	init_crc_tables();
 	init_zip_archives();
-	cache_system_init(MAX_CACHE_SYSTEM);
+	ncache_system_init();
 	init_texture_cache();
 
 	init_vars();
-	
+
 	read_config();
 
 	file_check_datadir();
@@ -192,7 +192,7 @@ void init_stuff()
 	init_browser();
 
     if(SDL_InitSubSystem(SDL_INIT_TIMER)<0)
-    { 
+    {
         char str[120];
         snprintf(str, sizeof(str), "Couldn't initialize the timer: %s\n", SDL_GetError());
         log_error(__FILE__, __LINE__, str);

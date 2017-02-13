@@ -43,7 +43,7 @@ CLUSTER_INSIDES_ELC_COBJS = cluster.o
 
 ELC_COBJS = asc.o colors.o elconfig.o errors.o load_gl_extensions.o md5.o \
 	dds.o ddsimage.o el_memory.o particles.o queue.o textures.o translate.o hash.o \
-	image.o image_loading.o cache.o \
+	image.o image_loading.o \
 	$(foreach FEATURE, $(FEATURES), $($(FEATURE)_ELC_COBJS))
 
 ELC_IO_COBJS = fileutil.o e3d_io.o elc_io.o elpathwrapper.o half.o normal.o	\
@@ -57,7 +57,7 @@ CXXOBJS = $(foreach FEATURE, $(FEATURES), $($(FEATURE)_CXXOBJS))
 
 EYE_CANDY_ELC_CXXOBJS = eye_candy_wrapper.o
 
-ELC_CXXOBJS = elloggingwrapper.o cal3d_wrapper.o \
+ELC_CXXOBJS = elloggingwrapper.o cal3d_wrapper.o ncache.o \
 	$(foreach FEATURE, $(FEATURES), $($(FEATURE)_ELC_CXXOBJS))
 
 ELC_ENGINE_CXXOBJS = hardwarebuffer.o logging.o

@@ -457,8 +457,7 @@ Uint32 load_texture_cached(const char* file_name, const texture_type type)
 		texture_handles[handle].hash = hash;
 		texture_handles[handle].type = type;
 		texture_handles[handle].id = 0;
-		texture_handles[handle].cache_ptr = cache_add_item(texture_cache,
-			texture_handles[handle].file_name,
+		ncache_add_item(texture_cache, texture_handles[handle].file_name,
 			&texture_handles[handle], 0);
 
 		texture_handles_used++;
@@ -2220,8 +2219,8 @@ void init_texture_cache()
 
 void free_texture_cache()
 {
-	Uint32 i;
 #ifdef	ELC
+	Uint32 i;
 	int result;
 
 	actor_texture_threads_done = 1;

@@ -1,5 +1,5 @@
-#ifndef __GLOBAL_H__
-#define __GLOBAL_H__
+#ifndef MAPEDITOR_GLOBAL_H
+#define MAPEDITOR_GLOBAL_H
 
 #define true 1
 #define false 0
@@ -38,7 +38,7 @@
 #include	<zlib.h>
 #endif
 
-#include "../cache.h"
+#include "../ncache.h"
 #include "../translate.h"
 #include "../elconfig.h"
 #include "../colors.h"
@@ -66,6 +66,7 @@
 #include "replace_window.h"
 #include "edit_window.h"
 #include "../particles.h"
+
 #include "particles_window.h"
 #include "gl_init.h"
 #define sector_size_x 15
@@ -135,4 +136,4 @@ extern PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB;
 
 #define CHECK_GL_ERRORS()       //NOP
 
-#endif
+#endif // MAPEDITOR_GLOBAL_H
