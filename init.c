@@ -714,13 +714,6 @@ void init_e3d_cache()
 	ncache_set_time_limit(cache_e3d, 5*60*1000);
 }
 
-#ifndef FASTER_MAP_LOAD
-void init_2d_obj_cache()
-{
-	memset(obj_2d_def_cache, 0, sizeof(obj_2d_def_cache));
-}
-#endif
-
 void init_stuff()
 {
 	int seed;
@@ -813,9 +806,7 @@ void init_stuff()
 	ncache_system_init();
 	init_texture_cache();
 	init_e3d_cache();
-#ifndef FASTER_MAP_LOAD
-	init_2d_obj_cache();
-#endif
+	init_obj_2d_def_cache();
 	//now load the font textures
 	if (load_font_textures () != 1)
 	{

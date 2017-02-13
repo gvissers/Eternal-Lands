@@ -35,15 +35,23 @@
 obj_2d *obj_2d_list[MAX_OBJ_2D];
 
 #ifdef FASTER_MAP_LOAD
-static obj_2d_def* obj_2d_def_cache[MAX_OBJ_2D_DEF];
-static int obj_2d_cache_used = 0;
+static Cache *obj_2d_def_cache;
 #else
-obj_2d_cache_struct obj_2d_def_cache[MAX_OBJ_2D_DEF];
-#endif
+static obj_2d_cache_struct obj_2d_def_cache[MAX_OBJ_2D_DEF];
+#endif /* FASTER_MAP_LOAD */
 
 int map_meters_size_x;
 int map_meters_size_y;
 float texture_scale=12.0;
+
+void init_obj_2d_def_cache()
+{
+#ifdef FASTER_MAP_LOAD
+	obj_2d_def_cache = ncache_init("2D object def cache", free);
+#else
+    memset(obj_2d_def_cache, 0, sizeof(obj_2d_def_cache));
+#endif
+}
 
 void draw_2d_object(obj_2d *object_id)
 {
@@ -113,7 +121,7 @@ void draw_2d_object(obj_2d *object_id)
 
 			glTexCoord2f(u_end,v_start);
 			glVertex3f(render_x_start+x_size,render_y_start,z_pos);
-			
+
 	    		glEnd();
 		}
 	else
@@ -377,7 +385,7 @@ static obj_2d_def* load_obj_2d_def(const char *file_name)
 	}
 
 	obj_file_mem = el_get_pointer(file);
-	
+
 	if(obj_file_mem == NULL){
 		LOG_ERROR("%s: %s (read)\"%s\"\n", reg_error_str, cant_open_file, file_name);
 		el_close(file);
@@ -486,48 +494,23 @@ static obj_2d_def* load_obj_2d_def(const char *file_name)
 #endif // FASTER_MAP_LOAD
 
 #ifdef FASTER_MAP_LOAD
-static int cache_cmp_string(const void* str, const void *dptr)
-{
-	const obj_2d_def *def = *((const obj_2d_def**)dptr);
-	return strcmp(str, def->file_name);
-}
-
 //Tests to see if an obj_2d object is already loaded.
 //If it is, return the handle.
 //If not, load it, and return the handle
 static obj_2d_def* load_obj_2d_def_cache(const char* file_name)
 {
-	obj_2d_def *def, **defp;
-	int i;
-
-	defp = bsearch(file_name, obj_2d_def_cache,
-		obj_2d_cache_used, sizeof(obj_2d_def*),
-		cache_cmp_string);
-	if (defp)
-		return *defp;
+	obj_2d_def *def = ncache_find_item(obj_2d_def_cache, file_name);
+	if (def)
+		return def;
 
 	//asc not found in the cache, so load it ...
 	def = load_obj_2d_def(file_name);
-
 	// no object found, so nothing to store in the cache
-	if (def == NULL)
+	if (!def)
 		return NULL;
 
 	// ... and store it
-	if (obj_2d_cache_used < MAX_OBJ_2D_DEF)
-	{
-		for (i = 0; i < obj_2d_cache_used; i++)
-		{
-			if (strcmp(file_name, obj_2d_def_cache[i]->file_name) <= 0)
-			{
-				memmove(obj_2d_def_cache+(i+1), obj_2d_def_cache+i,
-					(obj_2d_cache_used-i)*sizeof(obj_2d_def*));
-				break;
-			}
-		}
-		obj_2d_def_cache[i] = def;
-		obj_2d_cache_used++;
-	}
+	ncache_add_item(obj_2d_def_cache, file_name, def, sizeof(*def));
 
 	return def;
 }
@@ -834,7 +817,7 @@ int add_2d_obj(char * file_name, float x_pos, float y_pos, float z_pos,
 	}
 	bbox.bbmin[Z] = z_pos;
 	bbox.bbmax[Z] = z_pos;
-	
+
 	calc_rotation_and_translation_matrix(our_object->matrix, x_pos, y_pos, 0.0f, x_rot, y_rot, z_rot);
 	matrix_mul_aabb(&bbox, our_object->matrix);
 #endif // CLUSTER_INSIDES
@@ -843,7 +826,7 @@ int add_2d_obj(char * file_name, float x_pos, float y_pos, float z_pos,
 	else alpha_test = 0;
 
 	texture_id = returned_obj_2d_def->texture_id;
-	
+
 #ifdef CLUSTER_INSIDES
 	if (get_2d_bbox (i, &bbox))
 	{
@@ -856,7 +839,7 @@ int add_2d_obj(char * file_name, float x_pos, float y_pos, float z_pos,
 	if ((main_bbox_tree_items != NULL) && (dynamic == 0)) add_2dobject_to_list(main_bbox_tree_items, i, bbox, alpha_test, texture_id);
 	else add_2dobject_to_abt(main_bbox_tree, i, bbox, alpha_test, texture_id, dynamic);
 #endif // CLUSTER_INSIDES
-	
+
 	return i;
 }
 #endif // FASTER_MAP_LOAD
@@ -889,13 +872,13 @@ void get_2d_object_under_mouse()
 {
 	unsigned int i, l;
 	float least_z = 1.0f;
-	
+
 	//First draw everyone with the same alpha test
-    	
+
 	glPushMatrix();
 	glClearDepth(least_z);
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
-	
+
 	for (i = get_intersect_start(main_bbox_tree, TYPE_2D_NO_ALPHA_OBJECT); i < get_intersect_stop(main_bbox_tree, TYPE_2D_NO_ALPHA_OBJECT); i++)
 	{
 		l = get_intersect_item_ID(main_bbox_tree, i);
@@ -911,7 +894,7 @@ void get_2d_object_under_mouse()
 			selected_2d_object = l;
 		}
 	}
-	
+
 	//Then draw all that needs a change
 	for (i = get_intersect_start(main_bbox_tree, TYPE_2D_ALPHA_OBJECT); i < get_intersect_stop(main_bbox_tree, TYPE_2D_ALPHA_OBJECT); i++)
 	{
@@ -928,7 +911,7 @@ void get_2d_object_under_mouse()
 			selected_2d_object = l;
 		}
 	}
-	
+
 	glPopMatrix();
 #ifdef OPENGL_TRACE
 CHECK_GL_ERRORS();
@@ -996,7 +979,7 @@ void display_2d_objects()
 #endif  //SIMPLE_LOD
 		draw_2d_object(obj_2d_list[l]);
 	}
-	
+
 	//Then draw all that needs a change
 	get_intersect_start_stop(main_bbox_tree, TYPE_2D_ALPHA_OBJECT, &start, &stop);
 	for (i = start; i < stop; i++)
@@ -1050,34 +1033,27 @@ void destroy_all_2d_objects()
 	}
 }
 
+#ifndef FASTER_MAP_LOAD
 void destroy_all_2d_object_defs()
 {
 	int i;
-#ifdef FASTER_MAP_LOAD
-	for (i = 0; i < obj_2d_cache_used; i++)
-	{
-		free(obj_2d_def_cache[i]);
-		obj_2d_def_cache[i] = NULL;
-	}
-	obj_2d_cache_used=0;
-#else
 	for (i = 0; i < MAX_OBJ_2D_DEF; i++)
 	{
 		free(obj_2d_def_cache[i]);
 		obj_2d_def_cache[i] = NULL;
 	}
-#endif
 }
+#endif /* FASTER_MAP_LOAD */
 
 // for support of the 1.0.3 server, change if an object is to be displayed or not
 void set_2d_object (Uint8 display, const void *ptr, int len)
 {
 	const Uint32 *id_ptr = ptr;
-	
+
 	// first look for the override to process ALL objects
 	if (len < sizeof(*id_ptr) ){
 		int	i;
-		
+
 		for (i = 0; i < MAX_OBJ_2D; i++)
 		{
 			if (obj_2d_list[i]){
@@ -1086,10 +1062,10 @@ void set_2d_object (Uint8 display, const void *ptr, int len)
 		}
 	} else {
 		int idx = 0;
-		
+
 		while(len >= sizeof(*id_ptr)){
 			Uint32 obj_id = SDL_SwapLE32(id_ptr[idx]);
-			
+
 			if(obj_id < MAX_OBJ_2D && obj_2d_list[obj_id]){
 				obj_2d_list[obj_id]->display= display;
 				idx++;
@@ -1103,11 +1079,11 @@ void set_2d_object (Uint8 display, const void *ptr, int len)
 void state_2d_object (Uint8 state, const void *ptr, int len)
 {
 	const Uint32 *id_ptr = ptr;
-	
+
 	// first look for the override to process ALL objects
 	if (len < sizeof(*id_ptr) ){
 		int	i;
-		
+
 		for (i = 0; i < MAX_OBJ_2D; i++)
 		{
 			if (obj_2d_list[i]){
@@ -1116,10 +1092,10 @@ void state_2d_object (Uint8 state, const void *ptr, int len)
 		}
 	} else {
 		int idx = 0;
-		
+
 		while(len >= sizeof(*id_ptr)){
 			Uint32 obj_id = SDL_SwapLE32(id_ptr[idx]);
-			
+
 			if(obj_id < MAX_OBJ_2D && obj_2d_list[obj_id]){
 				obj_2d_list[obj_id]->state= state;
 				idx++;

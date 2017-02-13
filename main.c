@@ -107,7 +107,9 @@ void cleanup_mem(void)
 	cleanup_lights();
 	/* 2d objects */
 	destroy_all_2d_objects();
+#ifndef FASTER_MAP_LOAD
 	destroy_all_2d_object_defs();
+#endif
 	/* 3d objects */
 	destroy_all_3d_objects();
 	/* caches */
@@ -116,7 +118,6 @@ void cleanup_mem(void)
 #endif
 	// This should be fixed now  Sir_Odie
 	ncache_delete(cache_system);
-	cache_system = NULL;
 	/* map location information */
 	for (i = 0; continent_maps[i].name; i++)
 	{

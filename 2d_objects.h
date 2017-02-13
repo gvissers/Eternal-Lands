@@ -83,6 +83,11 @@ typedef struct
 #endif
 } obj_2d;
 
+/**
+ * Initialize the cache used for 2D object definitions.
+ */
+void init_obj_2d_def_cache();
+
 #ifndef FASTER_MAP_LOAD
 /*!
  * This is used for searching the 2d object cache for an already existing instance of the object definition
@@ -92,8 +97,6 @@ typedef struct
 	char file_name[128];   /*!< the filename of the object */
 	obj_2d_def *obj_2d_def_id; /*!< a pointer to the header structure of this object */
 }obj_2d_cache_struct;
-
-extern obj_2d_cache_struct obj_2d_def_cache[MAX_OBJ_2D_DEF]; /*!< The 2d object cache array - holds all loaded 2d object definitions*/
 #endif // FASTER_MAP_LOAD
 extern obj_2d *obj_2d_list[MAX_OBJ_2D]; /*!< The 2d object array - holds all 2d objects on that map*/
 
@@ -161,11 +164,11 @@ int add_2d_obj(int id_hint, const char* file_name,
 #else  // FASTER_MAP_LOAD
 /*!
  * \ingroup	load_2d
- * \brief	Adds a 2d object at the given location. 
- * 
+ * \brief	Adds a 2d object at the given location.
+ *
  * 		Adds a 2d object at the given location.
  * 		It's usually called in the map loading process. Requires a location and rotation for the 2d object, that's loaded from the file given by the first parameter
- * 		
+ *
  * \param	file_name The filename of the object we wish to add
  * \param	x_pos The x position
  * \param	y_pos The y position
@@ -183,7 +186,7 @@ int add_2d_obj(char * file_name, float x_pos, float y_pos, float z_pos,
 /*!
  * \ingroup	load_2d
  * \brief	Show or hide one or more 2D map objects
- * 
+ *
  * 		Show or hide 2D map objects.
  *		This routine is usually under server control to allow dynamically enabling or disabling seeing objects
  *
@@ -230,6 +233,7 @@ void destroy_2d_object(int i);
  */
 void destroy_all_2d_objects(void);
 
+#ifndef FASTER_MAP_LOAD
 /*!
  * \ingroup	display_2d
  * \brief	Destroys all current 2d object defs
@@ -239,6 +243,7 @@ void destroy_all_2d_objects(void);
  * \callgraph
  */
 void destroy_all_2d_object_defs(void);
+#endif /* FASTER_MAP_LOAD */
 
 #ifdef NEW_SOUND
 /*!
