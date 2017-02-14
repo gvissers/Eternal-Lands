@@ -103,8 +103,11 @@ void draw_3d_object_detail(object3d * object_id, Uint32 material_index, Uint32 u
 	// check for having to load the arrays
 	size_diff = load_e3d_detail_if_needed(object_id->e3d_data);
 	if (size_diff < 0)
-		// Error loading data
+	{
+		// Error loading data, don't display this object anymore
+		object_id->display = 0;
 		return;
+	}
 	if (size_diff > 0)
 		ncache_adj_size(cache_e3d, object_id->e3d_data->file_name, size_diff);
 
