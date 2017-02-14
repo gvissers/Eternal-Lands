@@ -334,27 +334,15 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 
 	if (cur_object == 0) return 0;
 
-	memset(cur_dir, 0, sizeof(cur_dir));
 	//get the current directory
 	l = strlen(cur_object->file_name);
 	//parse the string backwards, until we find a /
-	while (l > 0)
+	while (l >= 0)
 	{
-		if ((cur_object->file_name[l] == '/') || (cur_object->file_name[l] == '\\')) break;
+		if (cur_object->file_name[l] == '/' || cur_object->file_name[l] == '\\') break;
 		l--;
 	}
-
-	i = 0;
-	if (l)//prevent invalid dir names
-	{
-		while (l >= 0)
-		{
-			cur_dir[i] = cur_object->file_name[i];
-			i++;
-			l--;
-		}
-		cur_dir[i+1] = 0;
-	}
+	safe_strncpy(cur_dir, cur_object->file_name, l+2);
 
 	LOG_DEBUG("Loading e3d file '%s'.", cur_object->file_name);
 
