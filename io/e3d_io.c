@@ -301,12 +301,11 @@ static void free_e3d_pointer(e3d_object* cur_object)
 	}
 }
 
-static int check_pointer(void* ptr, e3d_object* cur_object, const char* str, el_file_ptr file)
+static int check_pointer(void* ptr, const char* str, el_file_ptr file)
 {
-	if (ptr == 0)
+	if (!ptr)
 	{
 		LOG_ERROR("Can't allocate memory for %s!", str);
-		free_e3d_pointer(cur_object);
 		el_close(file);
 		return 0;
 	}
@@ -316,14 +315,15 @@ static int check_pointer(void* ptr, e3d_object* cur_object, const char* str, el_
 	}
 }
 
-#define CHECK_POINTER(ptr, str) check_pointer((ptr), cur_object, (str), file)
+#define CHECK_POINTER(ptr, str) check_pointer((ptr), (str), file)
 
-static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
+static Sint32 do_load_e3d_detail(e3d_object* cur_object)
 {
 	e3d_header header;
 	e3d_material material;
 	char cur_dir[1024];
-	int i, idx, l, mem_size, vertex_size, material_size;
+	int i, idx, l, vertex_size, material_size;
+	Sint32 total_size = 0, vertex_data_size, index_data_size, materials_data_size;
 	int file_pos, indices_size, index_size;
 	char text_file_name[1024];
 	Uint32 tmp;
@@ -332,7 +332,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	el_file_ptr file;
 	version_number version;
 
-	if (cur_object == 0) return 0;
+	if (!cur_object)
+		return -1;
 
 	//get the current directory
 	l = strlen(cur_object->file_name);
@@ -347,23 +348,17 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	LOG_DEBUG("Loading e3d file '%s'.", cur_object->file_name);
 
 	file = el_open(cur_object->file_name);
-	if (file == 0)
+	if (!file)
 	{
 		LOG_ERROR("Can't open file '%s'!", cur_object->file_name);
-
-		free_e3d_pointer(cur_object);
-
-		return 0;
+		return -1;
 	}
 
 	if (read_and_check_elc_header(file, EL3D_FILE_MAGIC_NUMBER, &version, cur_object->file_name) != 0)
 	{
 		LOG_ERROR("File '%s' has wrong header!", cur_object->file_name);
-
-		free_e3d_pointer(cur_object);
 		el_close(file);
-
-		return 0;
+		return -1;
 	}
 
 	el_read(file, sizeof(e3d_header), &header);
@@ -417,11 +412,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		{
 			LOG_ERROR("File '%s' has wrong version number!",
 				cur_object->file_name);
-
-			free_e3d_pointer(cur_object);
 			el_close(file);
-
-			return 0;
+			return -1;
 		}
 	}
 
@@ -444,20 +436,16 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	if (check_vertex_size(vertex_size, header.vertex_options, header.vertex_format) == 0)
 	{
 		LOG_ERROR("File '%s' has wrong vertex size!", cur_object->file_name);
-
-		free_e3d_pointer(cur_object);
 		el_close(file);
-
-		return 0;
+		return -1;
 	}
 
 	if (material_size != get_material_size(header.vertex_options))
 	{
 		LOG_ERROR("File '%s' has wrong material size! Expected size %d, found size %d.",
 			cur_object->file_name, get_material_size(header.vertex_options), material_size);
-		free_e3d_pointer(cur_object);
 		el_close(file);
-		return 0;
+		return -1;
 	}
 
 	if (short_index(header.vertex_format))
@@ -466,9 +454,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		{
 			LOG_ERROR("File '%s' has wrong index size! Expected size %d, found size %d.",
 				cur_object->file_name, sizeof(Uint16), index_size);
-			free_e3d_pointer(cur_object);
 			el_close(file);
-			return 0;
+			return -1;
 		}
 	}
 	else
@@ -477,9 +464,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		{
 			LOG_ERROR("File '%s' has wrong index size! Expected size %d, found size %d.",
 				cur_object->file_name, sizeof(Uint32), index_size);
-			free_e3d_pointer(cur_object);
 			el_close(file);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -488,9 +474,11 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	// Now reading the vertices
 	el_seek(file, SDL_SwapLE32(header.vertex_offset), SEEK_SET);
 
-	cur_object->vertex_data = malloc(cur_object->vertex_no * cur_object->vertex_layout->size);
-	mem_size = cur_object->vertex_no * cur_object->vertex_layout->size;
-	if (!CHECK_POINTER(cur_object->vertex_data, "vertex data")) return 0;
+	vertex_data_size = cur_object->vertex_no * cur_object->vertex_layout->size;
+	cur_object->vertex_data = malloc(vertex_data_size);
+	if (!CHECK_POINTER(cur_object->vertex_data, "vertex data"))
+		return -1;
+	total_size = vertex_data_size;
 
 	read_vertex_buffer(file, (float*)(cur_object->vertex_data), cur_object->vertex_no,
 		vertex_size, header.vertex_options, header.vertex_format);
@@ -511,10 +499,13 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		cur_object->index_type = GL_UNSIGNED_INT;
 	}
 
-	cur_object->indices = malloc(cur_object->index_no * indices_size);
+	index_data_size = cur_object->index_no * indices_size;
+	cur_object->indices = malloc(index_data_size);
+	if (!CHECK_POINTER(cur_object->indices, "indices"))
+		return -1;
+	total_size += index_data_size;
 
-	if (use_vertex_buffers) index_pointer = 0;
-	else index_pointer = cur_object->indices;
+	index_pointer = use_vertex_buffers ? NULL : cur_object->indices;
 
 	for (i = 0; i < cur_object->index_no; i++)
 	{
@@ -540,13 +531,15 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 	}
 
 	// only allocate the materials structure if it doesn't exist (on initial load)
-	if (cur_object->materials == 0)
+	if (!cur_object->materials)
 	{
-		cur_object->materials = (e3d_draw_list*)malloc(cur_object->material_no*sizeof(e3d_draw_list));
-		if (!CHECK_POINTER(cur_object->materials, "materials")) return 0;
-		memset(cur_object->materials, 0, cur_object->material_no * sizeof(e3d_draw_list));
+		materials_data_size = cur_object->material_no * sizeof(e3d_draw_list);
+		cur_object->materials = malloc(materials_data_size);
+		if (!CHECK_POINTER(cur_object->materials, "materials"))
+			return -1;
+		total_size += materials_data_size;
+		memset(cur_object->materials, 0, materials_data_size);
 	}
-	mem_size += cur_object->material_no * sizeof(e3d_draw_list);
 
 	LOG_DEBUG("Reading materials at %d from e3d file '%s'.",
 		SDL_SwapLE32(header.material_offset), cur_object->file_name);
@@ -639,7 +632,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 			cur_object->vertex_data, GL_STATIC_DRAW_ARB);
 #ifndef	MAP_EDITOR
 		free(cur_object->vertex_data);
-		cur_object->vertex_data = 0;
+		cur_object->vertex_data = NULL;
+		total_size -= vertex_data_size;
 #endif	//MAP_EDITOR
 
 		ELglGenBuffersARB(1, &cur_object->indices_vbo);
@@ -650,7 +644,8 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 			cur_object->indices, GL_STATIC_DRAW_ARB);
 #ifndef	MAP_EDITOR
 		free(cur_object->indices);
-		cur_object->indices = 0;
+		cur_object->indices = NULL;
+		total_size -= index_data_size;
 #endif	//MAP_EDITOR
 
 		ELglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
@@ -662,26 +657,27 @@ static e3d_object* do_load_e3d_detail(e3d_object* cur_object)
 		cur_object->indices_vbo = 0;
 	}
 
-#ifndef	MAP_EDITOR
-	LOG_DEBUG("Adding e3d file '%s' to cache.",
-		cur_object->file_name);
-
-    // XXX FIXME: done before item is added
-	ncache_adj_size(cache_e3d, cur_object->file_name, mem_size);
-#endif	//MAP_EDITOR
-	return cur_object;
+	return total_size;
 }
 
 e3d_object* load_e3d_detail(e3d_object* cur_object)
 {
-	e3d_object* result;
+	Sint32 mem_size;
 
 	ENTER_DEBUG_MARK("load e3d");
 
-	result = do_load_e3d_detail(cur_object);
+	mem_size = do_load_e3d_detail(cur_object);
+	if (mem_size < 0)
+		free_e3d_pointer(cur_object);
+
+#ifndef	MAP_EDITOR
+	LOG_DEBUG("Adding e3d file '%s' to cache.",
+		cur_object->file_name);
+	ncache_adj_size(cache_e3d, cur_object->file_name, mem_size);
+#endif	//MAP_EDITOR
 
 	LEAVE_DEBUG_MARK("load e3d");
 
-	return result;
+	return cur_object;
 }
 
