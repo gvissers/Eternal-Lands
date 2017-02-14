@@ -278,29 +278,6 @@ static void read_vertex_buffer(el_file_ptr file, float* buffer, const Uint32 ver
 	}
 }
 
-static void free_e3d_pointer(e3d_object* cur_object)
-{
-	if (cur_object != 0)
-	{
-		if (cur_object->vertex_data != 0)
-		{
-			free(cur_object->vertex_data);
-			cur_object->vertex_data = 0;
-		}
-		if (cur_object->indices != 0)
-		{
-			free(cur_object->indices);
-			cur_object->indices = 0;
-		}
-		if (cur_object->materials != 0)
-		{
-			free(cur_object->materials);
-			cur_object->materials = 0;
-		}
-		free(cur_object);
-	}
-}
-
 static int check_pointer(void* ptr, const char* str, el_file_ptr file)
 {
 	if (!ptr)
@@ -660,27 +637,16 @@ static Sint32 do_load_e3d_detail(e3d_object* cur_object)
 	return total_size;
 }
 
-e3d_object* load_e3d_detail(e3d_object* cur_object)
+Sint32 load_e3d_detail(e3d_object* cur_object)
 {
 	Sint32 mem_size;
 
 	ENTER_DEBUG_MARK("load e3d");
 
 	mem_size = do_load_e3d_detail(cur_object);
-	if (mem_size < 0)
-    {
-		free_e3d_pointer(cur_object);
-        return NULL;
-    }
-
-#ifndef	MAP_EDITOR
-	LOG_DEBUG("Adding e3d file '%s' to cache.",
-		cur_object->file_name);
-	ncache_adj_size(cache_e3d, cur_object->file_name, mem_size);
-#endif	//MAP_EDITOR
 
 	LEAVE_DEBUG_MARK("load e3d");
 
-	return cur_object;
+	return mem_size;
 }
 

@@ -43,7 +43,7 @@ typedef struct
 	int material_no;	/*!< the number of materials in the file */
  	int material_size;	/*!< the size of this material in the file */
 	int material_offset;	/*!< the offset of the materials in the file */
-	
+
 	char vertex_options;	/*!< flag determining whether this is a ground object, has tangents or extra uv's */
 	char vertex_format;	/*!< flag determining whether haf floats are used for position, uv and/or extra uv's and if normals and tangents are compressed */
 	char reserved_2;
@@ -70,7 +70,7 @@ typedef struct
 	float max_y;
 	float max_z;
     /*! @} */
-	
+
 	int triangles_min_index;
 	int triangles_max_index;
 	int index;		/*!< index of the index list */
@@ -85,24 +85,16 @@ typedef struct
 	char material_name[128];	/*!< name of the material */
 } e3d_extra_texture;
 
-e3d_object* load_e3d_detail(e3d_object* cur_object);
+Sint32 load_e3d_detail(e3d_object* cur_object);
 
-static __inline void load_e3d_detail_if_needed(e3d_object* e3d_data)
+static __inline Sint32 load_e3d_detail_if_needed(e3d_object* e3d_data)
 {
-	if (use_vertex_buffers)
+	if ((use_vertex_buffers && e3d_data->vertex_vbo == 0)
+	    || (!use_vertex_buffers && !e3d_data->vertex_data))
 	{
-		if (e3d_data->vertex_vbo == 0)
-		{
-			load_e3d_detail(e3d_data);
-		}
+		return load_e3d_detail(e3d_data);
 	}
-	else
-	{
-		if (e3d_data->vertex_data == NULL)
-		{
-			load_e3d_detail(e3d_data);
-		}
-	}
+	return 0;
 }
 
 #ifdef __cplusplus

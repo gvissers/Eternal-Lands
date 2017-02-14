@@ -96,11 +96,17 @@ void disable_buffer_arrays(void)
 void draw_3d_object_detail(object3d * object_id, Uint32 material_index, Uint32 use_lightning,
 	Uint32 use_textures, Uint32 use_extra_textures)
 {
+	Sint32 size_diff;
 	e3d_vertex_data* vertex_layout;
 	Uint8 * data_ptr;
 
 	// check for having to load the arrays
-	load_e3d_detail_if_needed(object_id->e3d_data);
+	size_diff = load_e3d_detail_if_needed(object_id->e3d_data);
+	if (size_diff < 0)
+		// Error loading data
+		return;
+	if (size_diff > 0)
+		ncache_adj_size(cache_e3d, object_id->e3d_data->file_name, size_diff);
 
 	CHECK_GL_ERRORS();
 	//also, update the last time this object was used
@@ -425,6 +431,7 @@ void draw_3d_objects(unsigned int object_type)
 static e3d_object *load_e3d_cache(const char* file_name)
 {
 	e3d_object *e3d_id;
+	Sint32 details_size;
 
 	//do we have it already?
 	e3d_id = ncache_find_item(cache_e3d, file_name);
@@ -441,14 +448,17 @@ static e3d_object *load_e3d_cache(const char* file_name)
 	// and fill in the data
 	my_strncp(e3d_id->file_name, file_name, sizeof(e3d_id->file_name));
 
-	ncache_add_item(cache_e3d, e3d_id->file_name, e3d_id, sizeof(*e3d_id));
-
-	e3d_id = load_e3d_detail(e3d_id);
-	if (!e3d_id)
+	details_size = load_e3d_detail(e3d_id);
+	if (details_size < 0)
 	{
+		destroy_e3d(e3d_id);
 		LOG_ERROR("Can't load file \"%s\"!", file_name);
 		return NULL;
 	}
+
+	LOG_DEBUG("Adding e3d file '%s' to cache.", file_name);
+	ncache_add_item(cache_e3d, e3d_id->file_name, e3d_id,
+		sizeof(*e3d_id) + details_size);
 
 	return e3d_id;
 }
@@ -652,7 +662,7 @@ int add_e3d(const char* file_name, float x_pos, float y_pos, float z_pos,
 }
 
 #ifdef NEW_SOUND
-char * get_3dobject_at_location(float x_pos, float y_pos)
+const char* get_3dobject_at_location(float x_pos, float y_pos)
 {
 	int i;
 	float offset = 0.5f;
