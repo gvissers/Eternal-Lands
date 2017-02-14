@@ -668,7 +668,10 @@ e3d_object* load_e3d_detail(e3d_object* cur_object)
 
 	mem_size = do_load_e3d_detail(cur_object);
 	if (mem_size < 0)
+    {
 		free_e3d_pointer(cur_object);
+        return NULL;
+    }
 
 #ifndef	MAP_EDITOR
 	LOG_DEBUG("Adding e3d file '%s' to cache.",
