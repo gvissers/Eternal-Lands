@@ -12,6 +12,7 @@
 #include <SDL.h>
 #endif
 #include <SDL_mutex.h>
+#include "actor_def_types.h"
 #include "bbox_tree.h"
 #include "cal_types.h"
 #include "client_serv.h"
@@ -19,14 +20,11 @@
 #include "tiles.h"
 #include "buffs.h"
 #include "eye_candy_types.h"
-#include "hash.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define	MAX_FILE_PATH	128	// the max chars allowed int a path/filename for actor textures/masks
-#define MAX_ACTOR_DEFS  256
 #define MAX_ACTORS      1000    /*!< The maximum number of actors the client can hold */
 
 extern int yourself; 	/*!< This variable holds the actor_id (as the server sees it, not the position in the actors_list) of your character.*/
@@ -49,9 +47,6 @@ extern int use_alpha_banner;	/*!< Use_alpha_banner defines if an alpha backgroun
 
 /*! Max text len to display into bubbles overhead*/
 #define MAX_CURRENT_DISPLAYED_TEXT_LEN	60
-
-// default duration in ms of a step when an actor is walking
-#define DEFAULT_STEP_DURATION 250
 
 /*!
  * \name	Glow colours
@@ -163,142 +158,6 @@ typedef struct
 
 }enhanced_actor;
 
-/*! Sets the main model type*/
-typedef struct
-{
-	char model_name[MAX_FILE_PATH];
-	char skin_name[MAX_FILE_PATH];
-	char skin_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-}body_part;
-
-/*! Sets the shield type*/
-typedef struct
-{
-	char model_name[MAX_FILE_PATH];
-	char skin_name[MAX_FILE_PATH];
-	char skin_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-
-	int missile_type; /*!< The type of equipped missiles (>=0 if a quiver is equipped, -1 if a regular shield is equipped) */
-
-}shield_part;
-
-/*! Sets the weapon type (including animation frame names)*/
-typedef struct
-{
-	char model_name[MAX_FILE_PATH];
-	char skin_name[MAX_FILE_PATH];
-	char skin_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-	int turn_horse;
-	int unarmed;
-
-	struct cal_anim cal_frames[NUM_WEAPON_FRAMES];
-
-}weapon_part;
-
-/*! Defines the main models looks*/
-typedef struct
-{
-	char model_name[MAX_FILE_PATH];
-	char arms_name[MAX_FILE_PATH];
-	char torso_name[MAX_FILE_PATH];
-	char arms_mask[MAX_FILE_PATH];
-	char torso_mask[MAX_FILE_PATH];
-	int mesh_index;
-
-}shirt_part;
-
-/*! Sets the models hands and head*/
-typedef struct
-{
-	char hands_name[MAX_FILE_PATH];
-	char head_name[MAX_FILE_PATH];
-	char arms_name[MAX_FILE_PATH];
-	char body_name[MAX_FILE_PATH];
-	char legs_name[MAX_FILE_PATH];
-	char feet_name[MAX_FILE_PATH];
-	int mesh_index;
-
-}skin_part;
-
-/*! Sets the models hair name*/
-typedef struct
-{
-	char hair_name[MAX_FILE_PATH];
-	int mesh_index;
-
-}hair_part;
-
-/*! Sets the models eyes name*/
-typedef struct
-{
-	char eyes_name[MAX_FILE_PATH];
-	int mesh_index;
-
-}eyes_part;
-
-/*! Holds info about the boots */
-typedef struct
-{
-	char boots_name[MAX_FILE_PATH];
-	char model_name[MAX_FILE_PATH];
-	char boots_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-
-}boots_part;
-
-/*! Holds info about the legs type*/
-typedef struct
-{
-	char legs_name[MAX_FILE_PATH];
-	char model_name[MAX_FILE_PATH];
-	char legs_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-
-}legs_part;
-
-/*! A structure used when loading the actor definitions
- * \sa init_actor_defs*/
-
-typedef struct cal_anim_group
-{
-	char name[32];
-	int count;
-	struct cal_anim anim[16];
-} cal_animations;
-
-#ifdef NEW_SOUND
-typedef struct
-{
-	int sound;
-	float scale;
-} act_extra_sound;
-#endif // NEW_SOUND
-
-typedef struct
-{
-	int is_holder;      /*!< Specifies if this type of actor hold the actor to which it is attached or if he is held */
-	int parent_bone_id; /*!< The bone to use on the actor to which it is attached */
-	int local_bone_id;  /*!< The bone to use on the actor that is attached */
-	float shift[3];     /*!< The shift to apply to the actor that is held */
-	struct cal_anim cal_frames[NUM_ATTACHED_ACTOR_FRAMES];
-} attachment_props;
-
-/*!
- * Structure containing how an actor type is attached to all other actors types
- */
-typedef struct
-{
-	attachment_props actor_type[MAX_ACTOR_DEFS]; /*!< Attachment properties for each kind of actor */
-} attached_actors_types;
-
 typedef enum {
 	ACTOR_HEAD_SIZE = 0,
 	ACTOR_SHIELD_SIZE,
@@ -314,72 +173,6 @@ typedef enum {
 	ACTOR_EYES_SIZE,
 	ACTOR_NUM_PARTS
 } actor_parts_enum;
-
-typedef struct
-{
-	/*! \name Model data*/
-	/*! \{ */
-	int actor_type;
-	char actor_name[66];
-	char skin_name[MAX_FILE_PATH];
-	char file_name[256];
-	/*! \} */
-
-	float actor_scale;
-	float scale;
-	float mesh_scale;
-	float skel_scale;
-
-	struct CalCoreModel *coremodel;
-	struct CalHardwareModel* hardware_model;
-	GLuint vertex_buffer;
-	GLuint index_buffer;
-	GLenum index_type;
-	Uint32 index_size;
-	//Animation indexes
-	struct cal_anim_group idle_group[16];//16 animation groups
-	int group_count;
-
-	struct cal_anim cal_frames[NUM_ACTOR_FRAMES];
-	hash_table *emote_frames;
-
-	int skeleton_type;
-
-#ifdef NEW_SOUND
-	// Extra sounds
-	act_extra_sound battlecry;
-#endif // NEW_SOUND
-
-	/*! \name The different body parts (different head shapes, different armour/weapon shapes etc.)*/
-	/*! \{ */
-	body_part *head;
-	shield_part *shield;
-	body_part *cape;
-	body_part *helmet;
-	body_part *neck;
-	weapon_part *weapon;
-	/*! \} */
-
-	/*! \name Clothing*/
-	/*! \{ */
-	shirt_part *shirt;
-	skin_part  *skin;
-	hair_part  *hair;
-	eyes_part  *eyes;
-	boots_part *boots;
-	legs_part *legs;
-	/*! \} */
-
-	/*! \name The current actors walk/run speeds*/
-	/*! \{ */
-	double walk_speed; // unused
-	double run_speed; // unused
-	char ghost;
-	/*! \} */
-
-	int step_duration;
-
-} actor_types;
 
 typedef struct
 {
@@ -685,7 +478,7 @@ extern attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS]; /*!< The defi
 static __inline__ int is_actor_barehanded(actor *act, int hand){
 	if(hand==EMOTE_BARE_L)
 		return (act->cur_shield==SHIELD_NONE||act->cur_shield==QUIVER_ARROWS||act->cur_shield==QUIVER_BOLTS);
-	else 
+	else
 		return (act->cur_weapon==WEAPON_NONE||act->cur_weapon==GLOVE_FUR||act->cur_weapon==GLOVE_LEATHER);
 }
 
