@@ -30,6 +30,7 @@
 #include "openingwin.h"
 #include "tabs.h"
 #include "translate.h"
+#include "xml.h"
 
 #define TITLE 	0
 #define RULE	1

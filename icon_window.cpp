@@ -12,7 +12,6 @@
 #include <cassert>
 #include <algorithm>
 
-#include "asc.h"
 #include "actors.h"
 #include "chat.h"
 #include "context_menu.h"
@@ -31,8 +30,9 @@
 #include "translate.h"
 #include "sound.h"
 #include "command_queue.hpp"
+#include "xml.h"
 
-/* 
+/*
  * TODO		Add icon window position code - allowing the window to be repositioned
  * TODO		Look for xml files in user config directory
  * TODO		Give indication that command queue is busy?
@@ -458,7 +458,7 @@ namespace IconWindow
 			if (parsed)
 			{
     			std::istringstream lines(parsed);
-    			std::string line;    
+    			std::string line;
     			while (std::getline(lines, line))
 					if (!line.empty())
 						menu_lines.push_back(CommandQueue::Line(line));

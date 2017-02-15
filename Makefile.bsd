@@ -56,9 +56,9 @@ COBJS=2d_objects.o 3d_objects.o \
 	xz/7zCrc.o xz/7zCrcOpt.o xz/Alloc.o xz/Bra86.o xz/Bra.o xz/BraIA64.o	\
 	xz/CpuArch.o xz/Delta.o xz/LzFind.o xz/Lzma2Dec.o xz/Lzma2Enc.o	\
 	xz/LzmaDec.o xz/LzmaEnc.o xz/Sha256.o xz/Xz.o xz/XzCrc64.o xz/XzDec.o	\
-	xz/XzEnc.o	\
+	xz/XzEnc.o xml.o \
 	$(foreach FEATURE, $(FEATURES), $($(FEATURE)_COBJ))
-	
+
 CXXOBJS=achievements.o actor_init.o cal3d_wrapper.o command_queue.o \
 	context_menu.o elloggingwrapper.o engine/logging.o exceptions/extendedexception.o \
 	hud_indicators.o hud_timer.o icon_window.o io/cal3d_io_wrapper.o item_info.o item_lists.o named_colours.o \
@@ -131,9 +131,9 @@ static:
 	@$(MAKE) -f Makefile.bsd 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)' 'LDFLAGS=$(_LDFLAGS)' 'OBJS=$(OBJS) $(STATICLIBS)'
 
 clean:
-	rm -f $(OBJS) $(EXE) 
+	rm -f $(OBJS) $(EXE)
 
-docs:	
+docs:
 	cd docs && doxygen Doxyfile
 
 .depend: $(foreach HEADER_DIR, $(HEADER_DIRS), $(wildcard $(HEADER_DIR)/*.h))

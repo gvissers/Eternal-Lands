@@ -4,10 +4,11 @@
 #include <libxml/tree.h>
 #include <string.h>
 #include <stdarg.h>
-#include "translate.h"
 #include "asc.h"
+#include "translate.h"
 #include "errors.h"
 #include "init.h"
+#include "xml.h"
 
 #define GROUP 0
 #define DIGROUP 1
@@ -131,7 +132,7 @@ dichar	sig_change,
 #ifdef ELC
 /*! \name Help messages*/
 /*! \{ */
-char 	
+char
 	/*3d_objects.c*/
 	values_str[20],
 	/*buddy.c*/
@@ -269,7 +270,7 @@ char
 	test_server_connect_str[40],
 	server_connect_test_failed_str[40],
 	alt_x_quit[50],
-	license_check[150], 
+	license_check[150],
 	/*new_character.c*/
 	skin_str[15],
 	hair_str[15],
@@ -289,8 +290,8 @@ char
 	orchan_str[15],
 	draegoni_str[15],
 	confirm_password[30],
-	error_username_length[50], 
-	error_password_length[50], 
+	error_username_length[50],
+	error_password_length[50],
 	error_pass_no_match[30],
 	error_bad_pass[30],
 	error_confirm_create_char[100],
@@ -308,7 +309,7 @@ char
 	char_done[15],
 	char_back[15],
 	about_human[30],
-	about_elves[30], 
+	about_elves[30],
 	about_dwarfs[30],
 	about_gnomes[30],
 	about_orchans[30],
@@ -409,7 +410,7 @@ char
 #ifdef ELC
 /*! \name Console*/
 /*! \{ */
-char	name_too_long[75], 
+char	name_too_long[75],
 	name_too_short[75],
 	not_added_to_ignores[75],
 	already_ignoring[50],
@@ -499,11 +500,11 @@ char	reg_error_str[15],
 	cant_load_2d_object[30],
 	cant_open_file[30],
 	/*3d_objects.c*/
-	object_error_str[30], 
+	object_error_str[30],
 	nasty_error_str[50],
 	corrupted_object[100],
 	bad_object[30],
-	multiple_material_same_texture[100], 	
+	multiple_material_same_texture[100],
 	invalid_map[40],
 #ifdef ELC
 	/*actors.c*/
@@ -577,7 +578,7 @@ char	reg_error_str[15],
 	disabled_particles_str[50],
 	invalid_video_mode[75],
 	failed_sdl_net_init[30],
-	failed_sdl_timer_init[30], 
+	failed_sdl_timer_init[30],
 	cant_read_elini[50],
 	must_use_tabs[80],
 	init_opengl_str[35],
@@ -625,7 +626,7 @@ char	reg_error_str[15],
 #endif //PNG_SCREENSHOT
 	/*multiplayer.c*/
 	failed_resolve[150],
-	failed_connect[100], 
+	failed_connect[100],
 	redefine_your_colours[250],
 	char_dont_exist[30],
 	char_name_in_use[50],
@@ -699,7 +700,7 @@ char	reg_error_str[15],
 	snd_media_hole[50],
 	snd_media_einval[50],
 	snd_media_ebadlink[50],
-	snd_media_enoseek[50],	
+	snd_media_enoseek[50],
 	snd_media_ogg_error[50],
 	snd_no_music[50],
 	snd_media_music_stopped[50],
@@ -890,7 +891,7 @@ void * add_xml_group(int type, int no, ...)
 			return grp;
 		}
 #endif
-		default: 
+		default:
 			va_end(ap);
 			return NULL;
 	}
@@ -1025,7 +1026,7 @@ void init_console()
 	group_id * misc=&(console_str[2]);
 	group_id * loading_msg=&(console_str[3]);
 	group_id * cmd_grp=&(console_str[4]);
-	
+
 	add_xml_identifier(ignore,"toolong",name_too_long,"Name too long, the max limit is 15 characters.",sizeof(name_too_long));
 	add_xml_identifier(ignore,"tooshort",name_too_short,"Name too short, only names>=3 characters can be used!",sizeof(name_too_short));
 	add_xml_identifier(ignore,"noadd",not_added_to_ignores,"Name not added to the ignore list!",sizeof(not_added_to_ignores));
@@ -1049,7 +1050,7 @@ void init_console()
 	add_xml_identifier(filter,"rem",removed_from_filter,"OK, %s was removed from your filter list!",sizeof(removed_from_filter));
 	add_xml_identifier(filter,"none",no_filters_str,"You are filtering nothing!",sizeof(no_filters_str));
 	add_xml_identifier(filter,"cur",filters_str,"You are currently filtering",sizeof(filters_str));
-	
+
 	add_xml_identifier(misc,"localsave",local_save_str,"Local files saved, asking server to save too...",sizeof(local_save_str));
 	add_xml_identifier(misc,"log",logconn_str,"Logging raw connection data",sizeof(logconn_str));
 	add_xml_identifier(misc,"card",video_card_str,"Video card",sizeof(video_card_str));
@@ -1175,7 +1176,7 @@ void init_errors()
 	add_xml_identifier(actors,"helmet",error_helmet,"helmet",sizeof(error_helmet));
 	add_xml_identifier(actors,"cape",error_cape,"cape",sizeof(error_cape));
 	add_xml_identifier(actors,"dupnpc",duplicate_npc_actor,"Duplicate actor name",sizeof(duplicate_npc_actor));
-	
+
 	//Loading errors
 	add_xml_identifier(load,"obj",cant_load_2d_object,"Can't load 2d object",sizeof(cant_load_2d_object));
 	add_xml_identifier(load,"file",cant_open_file,"Can't open file",sizeof(cant_open_file));
@@ -1247,7 +1248,7 @@ void init_errors()
 	// Mines errors
 	add_xml_identifier (misc, "mines_config_open", mines_config_open_err_str, "Error opening mines configuration file", sizeof(mines_config_open_err_str));
 	add_xml_identifier (misc, "mines_config", mines_config_error, "Error loading mines configuration", sizeof(mines_config_error));
-	
+
 	// Misc
 #ifdef PNG_SCREENSHOT
 	add_xml_identifier (misc, "max_screenshots_warning", max_screenshots_warning_str, "You have reached the maximum capacity for screenshots. Please move them all to another folder, otherwise this image will be overwritten next time.", sizeof(max_screenshots_warning_str));
@@ -1548,7 +1549,7 @@ void init_help()
 	add_xml_identifier(new,"a_draegoni",about_draegoni,"About Draegoni",sizeof(about_draegoni));
 	add_xml_identifier(new,"zoom_in_out",zoom_in_out,"To zoom in/out: Middle mouse wheel or Page Up/Down",sizeof(zoom_in_out));
 	add_xml_identifier(new,"rotate_camera",rotate_camera,"To rotate the camera: Middle mouse button or arrow keys",sizeof(rotate_camera));
-	
+
 	//Icons
 	add_xml_identifier(tooltips,"walk",tt_walk,"Walk",sizeof(tt_walk));
 	add_xml_identifier(tooltips,"sit",tt_sit,"Sit down",sizeof(tt_sit));
@@ -1606,7 +1607,7 @@ void init_help()
 	add_xml_identifier(misc, "restart_countdown", client_restart_countdown_str, "Client will restart in %d seconds", sizeof(client_restart_countdown_str));
 	add_xml_identifier(misc, "restarting", client_restarting_str, "Restarting...", sizeof(client_restarting_str));
 	add_xml_identifier(misc, "restart", restart_now_label, "Restart now", sizeof(restart_now_label));
-	
+
 	/* strings for context menus */
 	add_xml_identifier(misc, "cm_quickspell_menu", cm_quickspell_menu_str, "Move Up\nMove Down\nRemove\n", sizeof(cm_quickspell_menu_str));
 	add_xml_identifier(misc, "cm_textedit_menu", cm_textedit_menu_str, "Cut\nCopy\nPaste\n--\nDate\nTime\nCoords", sizeof(cm_textedit_menu_str));
@@ -1621,7 +1622,7 @@ void init_help()
 	add_xml_identifier(misc, "cm_ranging_menu", cm_ranging_menu_str, "--\nPrint To Console", sizeof(cm_ranging_menu_str));
 	add_xml_identifier(misc, "cm_dialog_options", cm_dialog_options_str, "Auto close storage dialogue\nAuto select storage option in dialogue", sizeof(cm_dialog_options_str));
 	add_xml_identifier(misc, "cm_dialog_menu", cm_dialog_menu_str, "--\nEnable Keypresses\nKeypresses Anywhere", sizeof(cm_dialog_menu_str));
-	add_xml_identifier(misc, "cm_url_menu", cm_url_menu_str, "Open\nFind In Console\nMark Visited\nMark Unvisited\n--\nDelete\n--\nDelete All", sizeof(cm_url_menu_str));	
+	add_xml_identifier(misc, "cm_url_menu", cm_url_menu_str, "Open\nFind In Console\nMark Visited\nMark Unvisited\n--\nDelete\n--\nDelete All", sizeof(cm_url_menu_str));
 	add_xml_identifier(misc, "cm_counters_menu", cm_counters_menu_str, "Delete Entry\n--\nReset Session Total\n--\nEnable Floating Messages For Category\n--\nPrint Category\nPrint All Categories\nPrint Just Session Information", sizeof(cm_counters_menu_str));
 	add_xml_identifier(misc, "cm_help_options", cm_help_options_str, "Right-click for options.", sizeof(cm_help_options_str));
 	add_xml_identifier(misc, "cm_npcname_menu", cm_npcname_menu_str, "Copy NPC Name\nSet Map Mark", sizeof(cm_npcname_menu_str));
@@ -1634,7 +1635,7 @@ void init_help()
 	add_xml_identifier(misc, "cm_recipe_menu", cm_recipe_menu_str, "Add additional recipe row\nClear selected recipe\nDelete selected recipe\nSort recipes by name", sizeof(cm_recipe_menu_str));
 	add_xml_identifier(misc, "cm_manuwin_menu", cm_manuwin_menu_str, "\n--\nDisable key presses for window", sizeof(cm_manuwin_menu_str));
 	add_xml_identifier(misc, "cm_encycl_base", cm_encycl_base_str, "Encyclopedia Index\nSearch Encyclopedia Titles\nRepeat Last Search\nBookmark This Page\nUnbookmark This Page\nClear Bookmarks", sizeof(cm_encycl_base_str));
-	
+
 	/* user_menus.cpp */
 	add_xml_identifier(misc, "um_invalid_command", um_invalid_command_str, "Invalid command text", sizeof(um_invalid_command_str));
 	add_xml_identifier(misc, "um_invalid_line", um_invalid_line_str, "<Error: invalid line>", sizeof(um_invalid_line_str));
@@ -1654,22 +1655,22 @@ void init_help()
 		"Quest completed\nAdd selected entries to quest\n--\n"
 		"Hide completed quests\nDo not always open window\nStart window left of entires\n", sizeof(cm_questlist_menu_str));
 	add_xml_identifier(misc, "questlog_find_prompt", questlog_find_prompt_str, "Text to Find", sizeof(questlog_find_prompt_str));
-	add_xml_identifier(misc, "questlog_add_npc_prompt", questlog_add_npc_prompt_str, "NPC name", sizeof(questlog_add_npc_prompt_str));	
-	add_xml_identifier(misc, "questlog_add_text_prompt", questlog_add_text_prompt_str, "Entry text", sizeof(questlog_add_text_prompt_str));	
-	add_xml_identifier(misc, "questlog_npc_filter_title", questlog_npc_filter_title_str, "NPC list", sizeof(questlog_npc_filter_title_str));	
+	add_xml_identifier(misc, "questlog_add_npc_prompt", questlog_add_npc_prompt_str, "NPC name", sizeof(questlog_add_npc_prompt_str));
+	add_xml_identifier(misc, "questlog_add_text_prompt", questlog_add_text_prompt_str, "Entry text", sizeof(questlog_add_text_prompt_str));
+	add_xml_identifier(misc, "questlog_npc_filter_title", questlog_npc_filter_title_str, "NPC list", sizeof(questlog_npc_filter_title_str));
 	add_xml_identifier(misc, "questlist_filter_title", questlist_filter_title_str, "Quest List", sizeof(questlist_filter_title_str));
 	add_xml_identifier(misc, "questlist_showall", questlist_showall_str, "Show all quests", sizeof(questlist_showall_str));
 	add_xml_identifier(misc, "questlog_cm_help", questlog_cm_help_str, "Right-click for command menu", sizeof(questlog_cm_help_str));
 	add_xml_identifier(misc, "questlog_deldupe_start", questlog_deldupe_start_str, "Deleting duplicate quest log entries...", sizeof(questlog_deldupe_start_str));
 	add_xml_identifier(misc, "questlog_deldupe_end", questlog_deldupe_end_str, "...unique entries: %d, deleted duplicates: %d.", sizeof(questlog_deldupe_end_str));
-	add_xml_identifier(misc, "questlog_deleted", questlog_deleted_str, "(Deleted)", sizeof(questlog_deleted_str));	
-	add_xml_identifier(misc, "item_list_use_help", item_list_use_help_str, "Use quantity - right-click", sizeof(item_list_use_help_str));	
-	add_xml_identifier(misc, "item_list_pickup_help", item_list_pickup_help_str, "Pick up - left-click", sizeof(item_list_pickup_help_str));	
-	add_xml_identifier(misc, "item_list_edit_help", item_list_edit_help_str, "Edit menu - ctrl+right-click", sizeof(item_list_edit_help_str));	
-	add_xml_identifier(misc, "item_list_add_help", item_list_add_help_str, "Add to list - ctrl+left-click", sizeof(item_list_add_help_str));	
+	add_xml_identifier(misc, "questlog_deleted", questlog_deleted_str, "(Deleted)", sizeof(questlog_deleted_str));
+	add_xml_identifier(misc, "item_list_use_help", item_list_use_help_str, "Use quantity - right-click", sizeof(item_list_use_help_str));
+	add_xml_identifier(misc, "item_list_pickup_help", item_list_pickup_help_str, "Pick up - left-click", sizeof(item_list_pickup_help_str));
+	add_xml_identifier(misc, "item_list_edit_help", item_list_edit_help_str, "Edit menu - ctrl+right-click", sizeof(item_list_edit_help_str));
+	add_xml_identifier(misc, "item_list_add_help", item_list_add_help_str, "Add to list - ctrl+left-click", sizeof(item_list_add_help_str));
 	add_xml_identifier(misc, "item_list_drag_help", item_list_drag_help_str, "Add to list - drag from inv/sto", sizeof(item_list_drag_help_str));
 	add_xml_identifier(misc, "item_list_create_help", item_list_create_help_str, "Create new list", sizeof(item_list_create_help_str));
-	add_xml_identifier(misc, "item_list_magic", item_list_magic_str, "Magical interference caused the list window to close O.O", sizeof(item_list_magic_str));	
+	add_xml_identifier(misc, "item_list_magic", item_list_magic_str, "Magical interference caused the list window to close O.O", sizeof(item_list_magic_str));
 	add_xml_identifier(misc, "item_list_find", item_list_find_str, "Find: ", sizeof(item_list_find_str));
 	add_xml_identifier(misc, "item_list_find_help", item_list_find_help_str, "Find list - type text", sizeof(item_list_find_help_str));
 }
@@ -1835,9 +1836,9 @@ void init_titles ()
 void save_strings(xmlDoc * doc, char * name)
 {
 	char str[50];
-	
+
 	//default language is en - change this if you want to save the strings to another folder...
-	safe_snprintf (str, sizeof (str), "languages/en/strings/%s", name); 
+	safe_snprintf (str, sizeof (str), "languages/en/strings/%s", name);
 	xmlSaveFormatFileEnc (str, doc, "UTF-8", 1);//We'll save the file in UTF-8
 }
 #endif
@@ -1892,7 +1893,7 @@ void load_translatables()
 #endif
 		xmlFreeDoc(file.file);
 	}
-#endif 
+#endif
 #ifdef ELC
 	file = load_strings("stats.xml");
 	if(file.file!=NULL){
@@ -2240,7 +2241,7 @@ void parse_stats(xmlNode * in)
 	parse_groups(in, stats_extra, STATS_EXTRA, GROUP);
 	parse_groups(in, stats_str, STATS_STR, STAT_GROUP);
 }
-#endif 
+#endif
 
 #ifdef ELC
 void parse_titles(xmlNode * in)

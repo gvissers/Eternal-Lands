@@ -20,7 +20,7 @@
 #include "tabs.h"
 #include "text.h"
 #include "translate.h"
-
+#include "xml.h"
 
 /******************************************
  *             Popup Section              *
@@ -523,7 +523,7 @@ int notepad_save_file()
 
 		// libxml2 expects all data in UTF-8 encoding.
 		xmlChar* name = toUTF8 (note_list[i].name, strlen (note_list[i].name));
-		substitute_char_with_string (note_list[i].text.data, &subst_string, '&', "&amp;");		
+		substitute_char_with_string (note_list[i].text.data, &subst_string, '&', "&amp;");
 		data = toUTF8 (subst_string, strlen(subst_string));
 
 		node = xmlNewChild (root_node, NULL, BAD_CAST "NOTE", data);

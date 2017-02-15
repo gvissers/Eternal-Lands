@@ -13,6 +13,7 @@
 #endif // NEW_SOUND
 #include "tiles.h"
 #include "eye_candy_wrapper.h"
+#include "xml.h"
 
 #define MAX_MINE_DEFS 30
 
@@ -43,7 +44,7 @@ void put_mine_on_ground(int mine_x, int mine_y, int mine_type, int mine_id)
 {
 	float x, y, z;
 	int obj_3d_id;
-	
+
 	// Now, get the Z position
 	if (!get_tile_valid(mine_x, mine_y))
 	{
@@ -51,7 +52,7 @@ void put_mine_on_ground(int mine_x, int mine_y, int mine_type, int mine_id)
 		LOG_ERROR("A mine was placed OUTSIDE the map!\n");
 		return;
 	}
-	
+
 	z = get_tile_height(mine_x, mine_y);
 	// Convert from height values to meters
 	x = (float)mine_x / 2;
@@ -70,7 +71,7 @@ void put_mine_on_ground(int mine_x, int mine_y, int mine_type, int mine_id)
 		LOG_ERROR(buf);
 		return;
 	}
-	
+
 	obj_3d_id = add_e3d(get_mine_e3d(mine_type), x, y, z, 0, 0, 0, 1, 0, 1.0f, 1.0f, 1.0f, 1);
 	mine_list[mine_id].x = mine_x;
 	mine_list[mine_id].y = mine_y;
@@ -92,7 +93,7 @@ void add_mines_from_list (const Uint8 *data)
 	{
 		return;		// Something nasty happened
 	}
-	
+
 	for (i = 0; i < mines_no; i++)
 	{
 		my_offset = i * 6 + 1;
@@ -111,7 +112,7 @@ void add_mines_from_list (const Uint8 *data)
 			LOG_ERROR("A mine was located OUTSIDE the map!\n");
 			continue;
 		}
-		
+
 		z = get_tile_height(mine_x, mine_y);
 		// Convert from height values to meters
 		x = (float)mine_x / 2;
@@ -119,7 +120,7 @@ void add_mines_from_list (const Uint8 *data)
 		// Center the object
 		x = x + 0.25f;
 		y = y + 0.25f;
-	
+
 		// Now, find the place into the mines list, so we can destroy the mine properly
 		if (mine_list[mine_id].obj_3d_id != -1)
 		{
@@ -182,7 +183,7 @@ int parse_mine_defs(xmlNode *node)
 				}
 				mine_def = &mine_defs[num_mine_defs++];
 				mine_def->id = get_int_property(def, "id");
-				get_string_value(content, sizeof(content), def);				
+				get_string_value(content, sizeof(content), def);
 				safe_strncpy(mine_def->file, content, sizeof(mine_def->file));
 			}
 			else

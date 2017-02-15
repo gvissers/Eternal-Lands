@@ -39,6 +39,7 @@
 #ifdef	NEW_TEXTURES
 #include "textures.h"
 #endif	/* NEW_TEXTURES */
+#include "xml.h"
 
 #ifndef EXT_ACTOR_DICT
 const dict_elem skin_color_dict[] =
@@ -99,7 +100,6 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 #ifdef MORE_ATTACHED_ACTORS_DEBUG
 static int thecount=0;
 #endif
-
 
 void unfreeze_horse(int i){
 
@@ -391,7 +391,7 @@ void animate_actors()
 					actors_list[i]->rotating= 0;//don't rotate next time, ok?
 					tmp_time_diff = time_diff + actors_list[i]->rotate_time_left;
 /*
-#ifdef MORE_ATTACHED_ACTORS					
+#ifdef MORE_ATTACHED_ACTORS
 					if(actors_list[i]->actor_id==yourself) printf("%i, rot: %i\n",thecount,actors_list[i]->rotating);
 					if(actors_list[i]->actor_id<0) printf("%i, (horse) rot: %i\n",thecount,actors_list[i]->rotating);
 #endif
@@ -424,7 +424,7 @@ void animate_actors()
 							MY_HORSE(i)->anim_time=MY_HORSE(i)->cur_anim.duration;
 							printf("%i, ANIMATION FORCED\n",thecount);
 						}
-				} 
+				}
 			}*/
 #ifndef	DYNAMIC_ANIMATIONS
 			if (actors_list[i]->calmodel!=NULL){
@@ -565,7 +565,7 @@ void move_to_next_frame()
 		if(actors_list[i]!=NULL) {
 			if (actors_list[i]->calmodel!=NULL) {
 			if ((ACTOR(i)->stop_animation==1)&&(ACTOR(i)->anim_time>=ACTOR(i)->cur_anim.duration)){
-					
+
 
 
 					//if(actors_list[i]->actor_id==yourself) printf("%i, unbusy: anim %i, anim_time %f, duration %f\n",thecount,actors_list[i]->cur_anim.anim_index,actors_list[i]->anim_time,actors_list[i]->cur_anim.duration);
@@ -592,8 +592,8 @@ void move_to_next_frame()
 							continue;
 						}
 					}
-					
-					
+
+
 
 					actors_list[i]->busy=0;
 					if (actors_list[i]->in_aim_mode == 2) {
@@ -656,7 +656,7 @@ void move_to_next_frame()
 
 			//9 frames, not moving, and another command is queued farther on (based on how long we've done this action)
 			if(!actors_list[i]->moving && !actors_list[i]->rotating){
-				
+
 				/*	actors_list[i]->stop_animation=1;	//force stopping, not looping
 					actors_list[i]->busy=0;	//ok, take the next command
 					LOG_TO_CONSOLE(c_green2,"FREE");
@@ -727,7 +727,7 @@ struct cal_anim *get_pose_frame(int actor_type, actor *a, int pose_type, int hel
 					return &att_props->cal_frames[cal_attached_idle_frame];
 			    } else
 	                	// 75% chance to do idle1
-	                    if (actors_defs[a->actor_type].cal_frames[cal_actor_idle2_frame].anim_index != -1 
+	                    if (actors_defs[a->actor_type].cal_frames[cal_actor_idle2_frame].anim_index != -1
 				&& RAND(0, 3) == 0){
 				return &actors_defs[a->actor_type].cal_frames[cal_actor_idle2_frame]; //idle2
 	                    } else {
@@ -761,7 +761,7 @@ void set_on_idle(int actor_idx)
     if(!a->dead) {
         a->stop_animation=0;
 	//we have an emote idle, ignore the rest
-	if(a->cur_emote.idle.anim_index>=0) 
+	if(a->cur_emote.idle.anim_index>=0)
 		return;
 
         if(a->fighting){
@@ -792,7 +792,7 @@ void set_on_idle(int actor_idx)
             if(!a->stand_idle||a->cur_anim.anim_index<0){
                 if (actors_defs[a->actor_type].group_count == 0){
                 //if(a->actor_id<0) printf("%i, horse on standing idle from %i\n",thecount, a->cur_anim.anim_index);
-				   
+
 			attachment_props *att_props = get_attachment_props_if_held(a);
 			if (att_props) {
 				struct cal_anim *ca=get_pose_frame(a->actor_type,a,EMOTE_STANDING,1);
@@ -895,7 +895,7 @@ int handle_emote_command(int act_id, emote_command *command)
 			//we have a pose
 			hash_entry *he;
 			he=hash_get(actors_defs[actor_type].emote_frames, (NULL+command->emote->anims[act->actor_type][0][held]->ids[0]));
-			
+
 			start_transition(act,((struct cal_anim*) he->item)->anim_index,300);
 			act->poses[command->emote->pose]=command->emote;
 			unqueue_emote(act);
@@ -926,7 +926,7 @@ int handle_emote_command(int act_id, emote_command *command)
 		}
 		actor_type=emote_actor_type(act->actor_type);
 		frames=command->emote->anims[actor_type][idle][held];
-		
+
 		//we have a emote and not already playing one
 		//printf("we have anim...actor: %i, held: %i, frames: %p, idle: %i\n",act->actor_id, held,frames,idle);
 		if (!frames) {
@@ -1010,7 +1010,7 @@ void next_command()
 			&&!(actors_list[i]->que[0]>=move_n&&actors_list[i]->que[0]<=move_nw&&actors_list[i]->last_command>=move_n&&actors_list[i]->last_command<=move_nw)
 			&&!HAS_HORSE(i)
 			) { continue;}
-			
+
 			// If the que is empty, check for an emote to display
 			while (actors_list[i]->emote_que[0].origin != NO_EMOTE)
 				if(!handle_emote_command(i, &actors_list[i]->emote_que[0])) break;
@@ -1168,7 +1168,7 @@ void next_command()
 							//rotate counterclowwise horse and actor
 							add_rotation_to_actor(i,HORSE_FIGHT_ROTATION,HORSE_FIGHT_TIME);
 							rotate_actor(MY_HORSE_ID(i),HORSE_FIGHT_ROTATION,HORSE_FIGHT_TIME);
-							
+
 							cal_actor_set_anim(MY_HORSE_ID(i),actors_defs[MY_HORSE(i)->actor_type].cal_frames[cal_actor_out_combat_frame]);
 							MY_HORSE(i)->stop_animation=1;
 							MY_HORSE(i)->fighting=0;
@@ -1281,13 +1281,13 @@ void next_command()
 							rotate_actor_and_horse(i,-1);
 						} else if (HAS_HORSE(i)&&ACTOR(i)->horse_rotated&&!ACTOR_WEAPON(i)->turn_horse) {
 							//horse, rotated, not to be rotated -> undo rotation
-							ACTOR(i)->horse_rotated=0;							
+							ACTOR(i)->horse_rotated=0;
 							rotate_actor_and_horse(i,1);
 
-						}							
+						}
 						break;
 					case turn_left:
-					case turn_right: 
+					case turn_right:
 					{
 						int mul= (actors_list[i]->que[0]==turn_left) ? (1):(-1);
 						int turnframe=(actors_list[i]->que[0]==turn_left) ? (cal_actor_turn_left_frame):(cal_actor_turn_right_frame);
@@ -1331,7 +1331,7 @@ void next_command()
 							cal_actor_set_anim(i,actors_defs[actor_type].weapon[actors_list[i]->cur_weapon].cal_frames[cal_weapon_range_in_held_frame]);
 						} else
 							cal_actor_set_anim(i,actors_defs[actor_type].weapon[actors_list[i]->cur_weapon].cal_frames[cal_weapon_range_in_frame]);
-						
+
 						actors_list[i]->cal_h_rot_start = 0.0;
 						actors_list[i]->cal_v_rot_start = 0.0;
 						if (actors_list[i]->range_actions_count != 1) {
@@ -1347,7 +1347,7 @@ void next_command()
 						if(HAS_HORSE(i)) {
 						cal_actor_set_anim(i,actors_defs[actor_type].weapon[actors_list[i]->cur_weapon].cal_frames[cal_weapon_range_idle_held_frame]);
 						//if (!ACTOR(i)->horse_rotated) {rotate_actor_and_horse(i,-1); ACTOR(i)->horse_rotated=1;}
-						
+
 						}
 						else
 						cal_actor_set_anim(i,actors_defs[actor_type].weapon[actors_list[i]->cur_weapon].cal_frames[cal_weapon_range_idle_frame]);
@@ -1395,7 +1395,7 @@ void next_command()
 								//printf("rotating the horse client side!\n");
 								actors_list[actors_list[i]->attached_actor]->rotate_z_speed=range_rotation/360.0;
 								actors_list[actors_list[i]->attached_actor]->rotate_time_left=360;
-								actors_list[actors_list[i]->attached_actor]->rotating=1;								
+								actors_list[actors_list[i]->attached_actor]->rotating=1;
 							}
 						}
 					}
@@ -1464,7 +1464,7 @@ void next_command()
 						if (action->reload) {
 							missiles_log_message("%s (%d): fire and reload", actors_list[i]->actor_name, actors_list[i]->actor_id);
 							// launch fire and reload animation
-					
+
 							//if(actors_list[i]->actor_id==yourself) printf("%i, enter reload\n",thecount);
 							if(HAS_HORSE(i))
 							cal_actor_set_anim(i,actors_defs[actor_type].weapon[actors_list[i]->cur_weapon].cal_frames[cal_weapon_range_fire_held_frame]);
@@ -1974,7 +1974,7 @@ void add_command_to_actor(int actor_id, unsigned char command)
 				//strip horse queue too
 				int j=0;
 				actor *horse=actors_list[act->attached_actor];
-				
+
 			for(k=0; k<MAX_CMD_QUEUE; k++){
 				switch(horse->que[k]){
 					case pain1:
@@ -1998,8 +1998,8 @@ void add_command_to_actor(int actor_id, unsigned char command)
 				}
 			}
 			}
-				
-			
+
+
 
 			if(act->last_command == nothing)
 			{
@@ -2028,7 +2028,7 @@ void add_command_to_actor(int actor_id, unsigned char command)
 					k2 = push_command_in_actor_queue(wait_cmd, actors_list[act->attached_actor]);
 					break;
 				default:
-					k2 = push_command_in_actor_queue(command, actors_list[act->attached_actor]);			
+					k2 = push_command_in_actor_queue(command, actors_list[act->attached_actor]);
 			}
 		}
 		else
@@ -2047,7 +2047,7 @@ void add_command_to_actor(int actor_id, unsigned char command)
 			// we received an enter_combat, look back in the queue
 			// if a leave_combat is found and all the commands in between
 			// are turning commands, just ignore the leave and the enter combat commands
-			
+
 			int j=k-1;
 			int j2=k2-1;
 			while(act->que[j]>=turn_n&&act->que[j]<=turn_nw&&j>=0) j--; //skip rotations
@@ -2069,7 +2069,7 @@ void add_command_to_actor(int actor_id, unsigned char command)
 					//if(act->actor_id==yourself) printf("   horse %s: skipped %i and %i\n",act->actor_name,j2,k2);
 				}
 			}
-			
+
 			//if(act->actor_id==yourself) printf("   ***Skip Done***\n");
 			//if(act->actor_id==yourself) print_queue(act);
 		}
@@ -2226,7 +2226,7 @@ void add_command_to_actor(int actor_id, unsigned char command)
 
 void queue_emote(actor *act, emote_data *emote){
 	int j,k;
-	
+
 	for (k = 0; k < MAX_EMOTE_QUEUE; k++) {
 		if (act->emote_que[k].origin!=SERVER_EMOTE) {
 			if (k <= MAX_EMOTE_QUEUE - 2) {
@@ -2254,7 +2254,7 @@ void add_emote_to_actor(int actor_id, int emote_id){
 
 	LOCK_ACTORS_LISTS();
 	act=get_actor_ptr_from_id(actor_id);
-	
+
 	//printf("SERVER MSG\nwe have actor %i %p\n",actor_id,act);
 	if(emote_id!=0) {
 		//dirty, but avoids warnings :P
@@ -2276,7 +2276,7 @@ void add_emote_to_actor(int actor_id, int emote_id){
 			return;
 		}*/
 	} else emote=NULL;
-	
+
 	//printf("emote message to be added %p\n",emote);
 	if (!act) {
 		LOG_ERROR("%s (Emote) %d - NULL actor passed", cant_add_command, emote);
@@ -2525,14 +2525,14 @@ void calc_actor_types(int sex, int race, int *buf, int *len){
 	buf[11]=emote_actor_type(draegoni_male);
 	buf[12]=emote_actor_type(-1); //all other mobs
 	buf[13]=emote_actor_type(-1); //all other mobs
-	
+
 
 	if(sex<0&&race<0){
-		*len=14;	
+		*len=14;
 	} else if (sex<0) {
 		*len=2;
 		buf[0]=buf[race*2];
-		buf[1]=buf[race*2+1];		
+		buf[1]=buf[race*2+1];
 	} else if(race<0) {
 		int i;
 		*len=7;
@@ -2540,14 +2540,14 @@ void calc_actor_types(int sex, int race, int *buf, int *len){
 	} else {
 		*len=1;
 		buf[0]=buf[race*2+sex];
-	}	
+	}
 }
 
 void set_emote_anim(emote_data *emote, emote_frame *frames, int sex, int race, int held, int idle){
 	int buf[14];
 	int len;
 	int i,h;
-	
+
 	h=(held<=0) ? 0:1;
 	calc_actor_types(sex,race,buf,&len);
 	for(i=0;i<len;i++) {
@@ -3959,7 +3959,7 @@ int parse_actor_frames (actor_types *act, const xmlNode *cfg, const xmlNode *def
 				struct cal_anim *anim;
 				if(!strncasecmp(etag,(const char*) item->name,9)) {
 					//load emote frame
-					j=get_int_property(item,"index");	
+					j=get_int_property(item,"index");
 					get_string_value(str, sizeof(str), item);
 					if(!act->emote_frames)
 						act->emote_frames=create_hash_table(EMOTES_FRAMES,hash_fn_int,cmp_fn_int,free);
@@ -3971,7 +3971,7 @@ int parse_actor_frames (actor_types *act, const xmlNode *cfg, const xmlNode *def
 #endif	//NEW_SOUND
 					, get_int_property(item, "duration")
 					);
-					hash_add(act->emote_frames, (void*)(NULL+j), (void*)anim);					
+					hash_add(act->emote_frames, (void*)(NULL+j), (void*)anim);
 					continue;
 				}
 			}

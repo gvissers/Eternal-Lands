@@ -21,6 +21,7 @@
 #include "tabs.h"
 #include "translate.h"
 #include "text.h"
+#include "xml.h"
 
 
 int encyclopedia_win=-1;
@@ -148,7 +149,7 @@ CHECK_GL_ERRORS();
 int click_encyclopedia_handler(window_info *win, int mx, int my, Uint32 flags)
 {
 	_Text *t=Page[currentpage].T.Next;
-	
+
 	if(flags&ELW_WHEEL_UP) {
 		vscrollbar_scroll_up(encyclopedia_win, encyclopedia_scroll_id);
 	} else if(flags&ELW_WHEEL_DOWN) {
@@ -484,7 +485,7 @@ void ReadCategoryXML(xmlNode * a_node)
 				x=2;
 				y+=(size)?18:15;
 			}
-			
+
 			//<nlkx>
 			if(!xmlStrcasecmp(cur_node->name,(xmlChar*)"nlkx")){
 				y+=(size)?18:15;
@@ -499,7 +500,7 @@ void ReadCategoryXML(xmlNode * a_node)
 				ParseImage(cur_node->properties);
 				I->mouseover=mouseover;
 				mouseover=0;
-			
+
 				while(i->Next!=NULL)i=i->Next;
 				I->id=id;
 				I->Next=NULL;
@@ -512,7 +513,7 @@ void ReadCategoryXML(xmlNode * a_node)
 						x+=xend;
 					if(yposupdate)
 						y+=yend-((size)?18:15);
-					
+
 				}else{
 					I->x=i->x;
 					I->y=i->y;
@@ -553,7 +554,7 @@ void ReadCategoryXML(xmlNode * a_node)
 #endif	/* NEW_TEXTURES */
 				I->mouseover=mouseover;
 				mouseover=0;
-				
+
 				while(i->Next!=NULL)i=i->Next;
 				I->id=id;
 				I->Next=NULL;
@@ -577,7 +578,7 @@ void ReadCategoryXML(xmlNode * a_node)
 				I->uend=uend;
 				I->vend=vend;
 				i->Next=I;
-				
+
 				numimage++;
 			}
 
@@ -704,14 +705,14 @@ void ReadIndexXML(xmlNode * a_node)
 void ReadXML(const char *filename)
 {
 	int i;
-	
+
 	xmlDocPtr doc=xmlReadFile(filename, NULL, 0);
 	if (doc==NULL)
 		return;
 
 	ReadIndexXML(xmlDocGetRootElement(doc));
 	xmlFreeDoc(doc);
-	
+
 	// Sanitize all of the page lengths.
 	for (i = 0; i < numpage+1; i++) {
 		if(Page[i].max_y > encyclopedia_menu_y_len - ENCYC_OFFSET)
@@ -845,7 +846,7 @@ static void save_confirmed_page_link(const char *link, const char *title, size_t
 	page_links[num_page_links].from_page_index = from_page_index; /* the base page (help, skills or encycl */
 	num_page_links++;
 	//printf("[%s] [%s] %lu [%s]\n", title, link, (unsigned long)from_page_index, Page[from_page_index].Name);
-} 
+}
 
 
 /*	Free encyclopedia navigation memory before exit.

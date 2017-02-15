@@ -3,7 +3,6 @@
 #include <string.h>
 #include "weather.h"
 #include "actors.h"
-#include "asc.h"
 #include "client_serv.h"
 #include "draw_scene.h"
 #include "elconfig.h"
@@ -21,6 +20,7 @@
 #include "gl_init.h"
 #endif
 #include "sky.h"
+#include "xml.h"
 
 int use_fog = 1;
 int show_weather = 1;
@@ -332,10 +332,10 @@ void update_weather_type(int type, float x, float y, float z, int ticks)
 	int num_drops = weather_ratios[type] * weather_defs[type].density * particles_percentage * 0.01 * MAX_RAIN_DROPS;
 
 	if (num_drops > MAX_RAIN_DROPS) num_drops = MAX_RAIN_DROPS;
-	
+
 	if (weather_drops_count[type] > num_drops)
 		weather_drops_count[type] = num_drops;
-	
+
 	if (num_drops > 0)
 	{
 		int i;
@@ -344,7 +344,7 @@ void update_weather_type(int type, float x, float y, float z, int ticks)
 		float z_move = -weather_defs[type].speed;
 		float dt = ticks * 1E-3;
 		float dx, dy, dz;
-		
+
 		for(i = 0; i < weather_drops_count[type]; ++i)
 		{
 			dx = x_move*(1.1-0.2*RAND_ONE);
@@ -370,7 +370,7 @@ void update_weather_type(int type, float x, float y, float z, int ticks)
 					weather_drops[type][i].pos1[0] -= 16.0f;
 					weather_drops[type][i].pos2[0] -= 16.0f;
 				}
-				
+
 				weather_drops[type][i].pos1[1] += dy * dt;
 				if (weather_drops[type][i].pos1[1] < y - 8.0f)
 				{
@@ -382,7 +382,7 @@ void update_weather_type(int type, float x, float y, float z, int ticks)
 					weather_drops[type][i].pos1[1] -= 16.0f;
 					weather_drops[type][i].pos2[1] -= 16.0f;
 				}
-				
+
 				weather_drops[type][i].pos1[2] += dz * dt;
 			}
 
@@ -390,7 +390,7 @@ void update_weather_type(int type, float x, float y, float z, int ticks)
 			weather_drops[type][i].pos2[1] = weather_drops[type][i].pos1[1] - dy * 0.02;
 			weather_drops[type][i].pos2[2] = weather_drops[type][i].pos1[2] - dz * 0.02;
 		}
-		
+
 		// if there are not enough drops, we recreate new ones
 		if (weather_drops_count[type] < num_drops)
 		{
@@ -451,19 +451,19 @@ void weather_update()
 					weather_areas[i].intensity = 1.0;
 			}
 		}
-	
+
 	// we compute the ratios at the actor position
 	weather_compute_ratios(weather_ratios, -camera_x, -camera_y);
-	
+
 	current_weather_density = weather_get_density_from_ratios(weather_ratios);
 
 	// we compute the weather color at the actor position
 	weather_get_color_from_ratios(weather_color, weather_ratios);
-	
+
 	// we update the weather types
 	for (i = 1; i < MAX_WEATHER_TYPES; ++i)
 		update_weather_type(i, -camera_x, -camera_y, 0.0, ticks);
-	
+
 	last_update = cur_time;
 }
 
@@ -506,10 +506,10 @@ void weather_render()
 	if (light_level[2] > 1.0) light_level[2] = 1.0;
 
     glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
-          
+
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_LIGHTING);
-	
+
 	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -520,7 +520,7 @@ void weather_render()
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisable(GL_TEXTURE_2D);
-	
+
 	for (type = 1; type < MAX_WEATHER_TYPES; ++type)
 		if (!weather_defs[type].use_sprites && weather_drops_count[type] > 0)
 		{
@@ -530,7 +530,7 @@ void weather_render()
 					  weather_defs[type].color[2]*light_level[2],
 					  weather_defs[type].color[3]);
 			glVertexPointer(3, GL_FLOAT, 0, weather_drops[type]);
-	
+
 			for (i = 0; i < weather_drops_count[type]; i += 1000) // to avoid long arrays
 			{
 				int nb = weather_drops_count[type] - i;
@@ -538,12 +538,12 @@ void weather_render()
 				glDrawArrays(GL_LINES, i, nb);
 			}
 		}
-	
+
 	glLineWidth(1.0);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_ALPHA_TEST);
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	
+
 	// we then render the other precipitations as sprites
     glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), weather_particles_coords);
     glVertexPointer(3, GL_FLOAT, 5*sizeof(float), weather_particles_coords+2);
@@ -556,7 +556,7 @@ void weather_render()
 			delta2[0] = weather_defs[type].size*(modelview[0]-modelview[1]);
 			delta2[1] = weather_defs[type].size*(modelview[4]-modelview[5]);
 			delta2[2] = weather_defs[type].size*(modelview[8]-modelview[9]);
-			
+
 			for (i = 0; i < weather_drops_count[type]; ++i)
 			{
 				const weather_drop *d = &weather_drops[type][i];
@@ -579,7 +579,7 @@ void weather_render()
 					  weather_defs[type].color[1]*light_level[1],
 					  weather_defs[type].color[2]*light_level[2],
 					  weather_defs[type].color[3]);
-			
+
 #ifdef	NEW_TEXTURES
 			bind_texture(weather_defs[type].texture);
 #else	/* NEW_TEXTURES */
@@ -637,14 +637,14 @@ void weather_add_lightning(int type, float x, float y)
         lightning_position[1] = y;
         lightning_stop = cur_time + 200 + rand()%200;
         lightning_falling = 1;
-        
+
         skybox_coords_from_ground_coords(lightning_sky_position,
                                          lightning_position[0] + camera_x,
                                          lightning_position[1] + camera_y);
-        
+
         lightning_sky_position[0] -= camera_x;
         lightning_sky_position[1] -= camera_y;
-        
+
 		calc_shadow_matrix();
 
         if (skybox_update_delay > 0)
@@ -684,7 +684,7 @@ void weather_render_lightning()
 #else	/* NEW_TEXTURES */
 		get_and_set_texture_id(lightnings_defs[lightning_type%lightnings_defs_count].texture);
 #endif	/* NEW_TEXTURES */
- 
+
 		glColor4fv(lightning_color);
 		glBegin(GL_QUADS);
 		glTexCoord2f(tex_coords[0], tex_coords[1]);
@@ -748,7 +748,7 @@ void weather_sound_control()
 			}
 		}
 	}
-		
+
 	for (i = 0; i < thunders_count; )
 	{
 		float dx = thunders[i].x_pos + camera_x;
@@ -759,7 +759,7 @@ void weather_sound_control()
 			if (sound_on)
 			{
 				int snd_thunder = 0;
-			
+
 				switch (thunders[i].type)
 				{
 				case 0:  snd_thunder = snd_thndr_1; break;
@@ -769,7 +769,7 @@ void weather_sound_control()
 				case 4:  snd_thunder = snd_thndr_5; break;
 				default: snd_thunder = 0;
 				}
-			
+
 				if (snd_thunder)
 				{
 #ifdef NEW_SOUND
@@ -777,7 +777,7 @@ void weather_sound_control()
 #endif	//NEW_SOUND
 				}
 			}
-			
+
 			// we remove the thunder from the list
 			if (i < --thunders_count)
 				memcpy(&thunders[i], &thunders[thunders_count], sizeof(thunder));

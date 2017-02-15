@@ -19,6 +19,7 @@
 #include "tiles.h"
 #include "translate.h"
 #include "vmath.h"
+#include "xml.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -122,7 +123,7 @@ int missiles_add(int type,
 	missile_type *mis_type = &missiles_defs[type];
 	float direction[3];
 	float dist;
-        
+
 	if (missiles_count >= MAX_MISSILES) {
 		LOG_ERROR("too many missiles, can't add the last one!");
 		return MAX_MISSILES;
@@ -130,7 +131,7 @@ int missiles_add(int type,
 
 	missiles_log_message("missiles_add: origin=(%.2f,%.2f,%.2f), target=(%.2f,%.2f,%.2f) type %u",
 						 origin[0], origin[1], origin[2], target[0], target[1], target[2], shot_type);
-        
+
 	direction[0] = target[0] - origin[0];
 	direction[1] = target[1] - origin[1];
 	direction[2] = target[2] - origin[2];
@@ -147,7 +148,7 @@ int missiles_add(int type,
     else {
         missiles_log_message("missiles_add: distance of the shot: %f", dist);
     }
-        
+
 	mis = &missiles_list[missiles_count++];
 
 	mis->type = type;
@@ -162,7 +163,7 @@ int missiles_add(int type,
 	mis->trace_length = mis_type->trace_length;
 	mis->covered_distance = 0;
 	mis->remaining_distance += shift;
-        
+
 	if (use_eye_candy == 1)
 	{
 		ec_create_missile_effect(missiles_count-1, (poor_man ? 6 : 10), shot_type);
@@ -211,19 +212,19 @@ void missiles_remove(int missile_id)
 		//mis->position[1] -= mis->direction[1] * dist;
 		//mis->position[2] -= mis->direction[2] * dist;
 		missiles_log_message("adding a lost missile at (%f,%f,%f) with rotation (%f,%f,%f)",
-							 mis->position[0] - mis->direction[0] * dist, 
-							 mis->position[1] - mis->direction[1] * dist, 
+							 mis->position[0] - mis->direction[0] * dist,
+							 mis->position[1] - mis->direction[1] * dist,
 							 mis->position[2] - mis->direction[2] * dist,
                              x_rot, y_rot, z_rot);
 		obj_3d_id = add_e3d(missiles_defs[mis->type].lost_mesh,
-							mis->position[0] - mis->direction[0] * dist, 
-							mis->position[1] - mis->direction[1] * dist, 
+							mis->position[0] - mis->direction[0] * dist,
+							mis->position[1] - mis->direction[1] * dist,
 							mis->position[2] - mis->direction[2] * dist,
 							x_rot, y_rot, z_rot, 0, 0, 1.0, 1.0, 1.0, 1);
 		if (obj_3d_id >= 0)
 			missiles_add_lost(obj_3d_id);
 	}
-        
+
 	ec_remove_missile(missile_id);
 
 	--missiles_count;
@@ -240,7 +241,7 @@ void missiles_update()
 	int i;
 	static int last_update = 0;
 	float time_diff = (cur_time - last_update) / 1000.0;
-        
+
 	for (i = 0; i < missiles_count; ) {
 		missile *mis = &missiles_list[i];
 		float dist = mis->speed * time_diff;
@@ -447,7 +448,7 @@ int missiles_fire_arrow(actor *a, float target[3], MissileShotType shot_type)
 	float shift[3] = {0.0, get_actor_scale(a), 0.0};
 	missile_type *mis_type;
 	int mis_type_id;
-        
+
 	mis_type_id = actors_defs[a->actor_type].shield[a->cur_shield].missile_type;
 
 	if (mis_type_id < 0 || mis_type_id >= MAX_MISSILES_DEFS) {
@@ -460,10 +461,10 @@ int missiles_fire_arrow(actor *a, float target[3], MissileShotType shot_type)
 	shift[1] *= mis_type->length;
 
 	cal_get_actor_bone_absolute_position(a, get_actor_bone_id(a, arrow_bone), shift, origin);
-        
+
 /* 	if (shot_type != MISSED_SHOT) */
 	mis_id = missiles_add(mis_type_id, origin, target, 0.0, shot_type);
-	
+
 	if(a->actor_id == yourself)
 	{
 		range_total_shots++;
@@ -483,7 +484,7 @@ int missiles_fire_arrow(actor *a, float target[3], MissileShotType shot_type)
 	}
 	/* 	else */
 /* 		mis_id = missiles_add(a->cur_shield, origin, target, arrow_speed*2.0/3.0, arrow_trace_length*2.0/3.0, 0.0, shot_type); */
-        
+
 	return mis_id;
 }
 
@@ -501,7 +502,7 @@ void missiles_rotate_actor_bones(actor *a)
 		return;
 
 	skel = CalModel_GetSkeleton(a->calmodel);
-        
+
 	if (a->cal_rotation_blend < 1.0) {
 		a->cal_rotation_blend += a->cal_rotation_speed*(cur_time-a->cal_last_rotation_time);
 
@@ -661,14 +662,14 @@ void missiles_aim_at_b(int actor1_id, int actor2_id)
 		UNLOCK_ACTORS_LISTS();
 		return;
 	}
-	
+
 	missiles_log_message("%s (%d): cleaning the queue from missiles_aim_at_b",
 						 act1->actor_name, actor1_id);
 	missiles_clean_range_actions_queue(act1);
 
 	if (act1->range_actions_count < MAX_RANGE_ACTION_QUEUE)	{
 		range_action *action = &act1->range_actions[act1->range_actions_count];
-	
+
 		missiles_log_message("%s (%d): will aim at actor %d (time=%d)", act1->actor_name, actor1_id, actor2_id, cur_time);
 
 		cal_get_actor_bone_absolute_position(act2, get_actor_bone_id(act2, body_top_bone), NULL, action->aim_position);
@@ -740,7 +741,7 @@ void missiles_fire_a_to_b(int actor1_id, int actor2_id)
 	LOCK_ACTORS_LISTS();
 	act1 = get_actor_ptr_from_id(actor1_id);
 	act2 = get_actor_ptr_from_id(actor2_id);
-        
+
 	if (!act1) {
 		LOG_ERROR("missiles_fire_a_to_b: the actor %d does not exists!", actor1_id);
 		UNLOCK_ACTORS_LISTS();
@@ -799,7 +800,7 @@ void missiles_fire_a_to_xyz(int actor_id, float *target)
 		range_action *action = &act->range_actions[act->range_actions_count-1];
 
 		missiles_log_message("%s (%d): will fire to target %f,%f,%f", act->actor_name, actor_id, target[0], target[1], target[2]);
-		
+
 		memcpy(action->fire_position, target, sizeof(float) * 3);
 		missiles_test_target_validity(action->fire_position, "missiles_fire_a_to_xyz");
 		action->fire_actor = -1;
@@ -1064,7 +1065,7 @@ void display_range_win(void)
 {
 	if(range_win < 0){
 		int our_root_win = -1;
-			
+
 		if (!windows_on_top) {
 			our_root_win = game_root_win;
 		}

@@ -17,6 +17,7 @@
 #include "gl_init.h"
 #endif
 #include "io/elfilewrapper.h"
+#include "xml.h"
 
 #ifdef BSD
  #include <stdlib.h>
@@ -49,13 +50,13 @@ static int book1_text = -1;  // Index in the texture cache of the book texture
 
 typedef struct {
 	char file[200];
-	
+
 	int x;
 	int y;
 
 	int w;
 	int h;
-	
+
 	int texture;
 
 	int u[2];
@@ -71,14 +72,14 @@ typedef struct {
 typedef struct _book {
 	char title[35];
 	int id;
-	
+
 	int type;
-	
+
 	int no_pages;
 	page ** pages;
 	int max_width;
 	int max_lines;
-	
+
 	int server_pages;
 	int have_server_pages;
 	int pages_to_scroll;
@@ -98,13 +99,13 @@ void display_book_window(book *b);
 page * add_page(book * b)
 {
 	page *p;
-	
+
 	if(!b) return NULL;
-	
+
 	p=(page*)calloc(1,sizeof(page));
 	p->lines=(char**)calloc(b->max_lines+1,sizeof(char *));
 	p->page_no=b->no_pages+1;
-	
+
 	b->pages=(page**)realloc(b->pages,(b->no_pages+2)*sizeof(page*));
 	b->pages[b->no_pages++]=p;
 	b->pages[b->no_pages]=NULL;
@@ -115,14 +116,14 @@ page * add_page(book * b)
 book *create_book (const char* title, int type, int id)
 {
 	book *b=(book*)calloc(1,sizeof(book));
-	
+
 	switch(type){
-		case 2: 
+		case 2:
 			b->max_width=20;
 			b->max_lines=15;
 			type=2;
 			break;
-		case 1:	
+		case 1:
 		default:
 			b->max_width=29;
 			b->max_lines=20;
@@ -132,16 +133,16 @@ book *create_book (const char* title, int type, int id)
 	b->type=type;
 	b->id=id;
 	safe_snprintf(b->title, sizeof(b->title), "%s", title);
-	
+
 	add_book(b);
-	
+
 	return b;
 }
 
 _image *create_image (const char* file, int x, int y, int w, int h, float u_start, float v_start, float u_end, float v_end)
 {
 	_image *img=(_image *)calloc(1,sizeof(_image));
-	
+
 	img->x=x;
 	img->y=y;
 	img->w=w;
@@ -167,7 +168,7 @@ _image *create_image (const char* file, int x, int y, int w, int h, float u_star
 void free_page(page * p)
 {
 	char **l=p->lines;
-	
+
 	if(p->image) free(p->image);
 	for(;*l;l++) free(*l);
 	free(p->lines);
@@ -178,7 +179,7 @@ void free_book(book * b)
 {
 	int i;
 	page **p;
-	
+
 	p=b->pages;
 	for(i=0;i<b->no_pages;i++,p++) free_page(*p);
 	free(b->pages);
@@ -190,11 +191,11 @@ void free_book(book * b)
 book * get_book(int id)
 {
 	book *b;
-	
+
 	for(b=books;b;b=b->next){
 		if(b->id==id) break;
 	}
-	
+
 	return b;
 }
 
@@ -220,11 +221,11 @@ page * add_str_to_page(char * str, int type, book *b, page *p)
 
 	if(!str) return NULL;
 	if(!p)p=add_page(b);
-	
+
 	newlines=get_lines(str, b->max_width);
 	newlines_ptr = newlines;
 	lines=p->lines;
-	
+
 	for(i=0;*lines;i++,lines++);
 
 	if(type==_AUTHOR){
@@ -253,7 +254,7 @@ page * add_str_to_page(char * str, int type, book *b, page *p)
 		// that it points to.
 		//free(*newlines);
 	}
-	// This is a temporary array that holds the pointers to the lines. It 
+	// This is a temporary array that holds the pointers to the lines. It
 	// can safely be freed.
 	free(newlines_ptr);
 
@@ -297,7 +298,7 @@ char * wrap_line_around_image(char * line, int w, int x, int max_width, char * l
 				}
 			}
 		}
-		
+
 		*line=0;
 	}
 
@@ -315,7 +316,7 @@ page * add_image_to_page(char * in_text, _image *img, book * b, page * p)
 
 	if (img == NULL || b == NULL) return NULL;
 	if(!p || p->image)p=add_page(b);
-	
+
 	max_width=b->max_width;
 	max_lines=b->max_lines;
 
@@ -325,7 +326,7 @@ page * add_image_to_page(char * in_text, _image *img, book * b, page * p)
 	x=img->x/10;
 
 	if(y+h>max_lines || w+x>max_width) return NULL;
-	
+
 	line=p->lines;
 
 	for(;line[i];i++);
@@ -373,17 +374,17 @@ void add_xml_image_to_page(xmlNode * cur, book * b, page *p)
 	y=xmlGetInt(cur,(xmlChar*)"y");
 	w=xmlGetInt(cur,(xmlChar*)"w");
 	h=xmlGetInt(cur,(xmlChar*)"h");
-	
+
 	u_start=xmlGetFloat(cur,(xmlChar*)"u_start");
 	u_end=xmlGetFloat(cur,(xmlChar*)"u_end");
 	if(!u_end)
 		u_end=1;
-	
+
 	v_start=xmlGetFloat(cur,(xmlChar*)"v_start");
 	if(!v_start)
 		v_start=1;
 	v_end=xmlGetFloat(cur,(xmlChar*)"v_end");
-	
+
 	image_path=(char*)xmlGetProp(cur,(xmlChar*)"src");
 	if(!image_path) return;
 
@@ -392,10 +393,10 @@ void add_xml_image_to_page(xmlNode * cur, book * b, page *p)
 	if(cur->children && cur->children->content){
 		MY_XMLSTRCPY(&text, (char*)cur->children->content);
 	}
-	
+
 	if(add_image_to_page(text, img, b, p)==NULL)
 		free(img);
-	
+
 	xmlFree(image_path);
 	if(text)
 		free(text);
@@ -438,7 +439,7 @@ book * parse_book(xmlNode *in, char * title, int type, int id)
 {
 	xmlNode * cur;
 	book * b=create_book(title, type, id);
-	
+
 	for(cur=in;cur;cur=cur->next){
 		if(cur->type == XML_ELEMENT_NODE){
 			if(!xmlStrcasecmp(cur->name,(xmlChar*)"page")){
@@ -478,11 +479,11 @@ book * read_book(char * file, int type, int id)
 	} else {
 		b=parse_book(root->children, (char*)title, type, id);
 	}
-	
+
 	if(title) {
 		xmlFree(title);
 	}
-	
+
 	xmlFreeDoc(doc);
 
 	return b;
@@ -529,7 +530,7 @@ void read_knowledge_book_index()
 	xmlDoc * doc;
 	xmlNode * root=NULL;
 	char path[1024];
-	
+
 	if ((doc = xmlReadFile("knowledge.xml", NULL, 0)) == NULL) {
 			LOG_TO_CONSOLE(c_red1, "Can't open knowledge book index");
 	} else if ((root = xmlDocGetRootElement(doc))==NULL) {
@@ -539,7 +540,7 @@ void read_knowledge_book_index()
 	} else {
 		parse_knowledge_item(root->children);
 	}
-	
+
 	xmlFreeDoc(doc);
 
 	return;
@@ -573,7 +574,7 @@ void open_book(int id)
 
 	if(!b) {
 		char str[5];
-		
+
 		str[0]=SEND_BOOK;
 		*((Uint16*)(str+1))=SDL_SwapLE16((Uint16)id);
 		*((Uint16*)(str+3))=SDL_SwapLE16(0);
@@ -590,7 +591,7 @@ void read_local_book (const char *data, int len)
 	book *b;
 
 	safe_snprintf (file_name, sizeof(file_name), "%.*s", len-3, data+3);
-	
+
 	b = get_book (SDL_SwapLE16 (*((Uint16*)(data+1))));
 	if (b == NULL)
 	{
@@ -603,7 +604,7 @@ void read_local_book (const char *data, int len)
 			return;
 		}
 	}
-	
+
 	display_book_window (b); // Otherwise there's no point...
 }
 
@@ -621,7 +622,7 @@ page * add_image_from_server(char *data, book *b, page *p)
 	if(l>254)l=254;
 	memcpy(image_path, data+2, l);
 	image_path[l]=0;
-	
+
 	data+=l+2;
 
 	l=SDL_SwapLE16(*((Uint16*)(data)));
@@ -644,7 +645,7 @@ page * add_image_from_server(char *data, book *b, page *p)
 
 	img=create_image(image_path, x, y, w, h, u_start, v_start, u_end, v_end);
 	if(add_image_to_page(text, img, b, p)==NULL) free(img);
-	
+
 	return p;
 }
 
@@ -660,7 +661,7 @@ void read_server_book (const char *data, int len)
 		l = sizeof (buffer) - 1;
 	memcpy (buffer, data+6, l);
 	buffer[l] = '\0';
-	
+
 	b = get_book (SDL_SwapLE16 (*((Uint16*)(data+1))));
 	if (b == NULL)
 		b = create_book (buffer, data[0], SDL_SwapLE16 (*((Uint16*)(data+1))));
@@ -702,7 +703,7 @@ void read_server_book (const char *data, int len)
 
 	b->active_page += b->pages_to_scroll;
 	b->pages_to_scroll = 0;
-	
+
 	if (b) display_book_window (b); // Otherwise there's no point...
 }
 
@@ -750,10 +751,10 @@ void display_page(book * b, page * p)
 	char ** l;
 	int i;
 	char str[20];
-	
+
 	if(!p)
 		return;
-	
+
 	set_font(2);
 	if(p->image) {
 		display_image(p->image);
@@ -763,9 +764,9 @@ void display_page(book * b, page * p)
 		glColor3f(0.34f,0.25f, 0.16f);
 		draw_string_zoomed(10,i*18*0.9f,(unsigned char*)*l,0,1.0f);
 	}
-	
+
 	glColor3f(0.385f,0.285f, 0.19f);
-	
+
 	safe_snprintf(str,sizeof(str),"%d",p->page_no);
 	if(b->type==1)
 		draw_string_zoomed(140,b->max_lines*18*0.9f+2,(unsigned char*)str,0,1.0);
@@ -818,7 +819,7 @@ int display_book_handler(window_info *win)
 	int x=32,i,p;
 	char str[20];
 	book *b=win->data;
-	
+
 	if(!b) {
 		toggle_window(book_win);
 		return 1;
@@ -852,7 +853,7 @@ int display_book_handler(window_info *win)
 		glTranslatef(30,15,0);
 	display_book(b, b->type);
 	glPopMatrix();
-	
+
 	glPushMatrix();
 	glTranslatef(0,win->len_y-18,0);
 	book_mouse_y-=(win->len_y-18);
@@ -860,13 +861,13 @@ int display_book_handler(window_info *win)
 	if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>10 && book_mouse_x<(get_string_width((unsigned char*)"<-")*11.0f/12.0f)){
 		glColor3f(0.95f, 0.76f, 0.52f);
 		draw_string(10,-2,(unsigned char*)"<-",0);
-		
+
 		glColor3f(0.77f,0.59f, 0.38f);
 		draw_string(win->len_x-33,-2,(unsigned char*)"->",0);
 	} else if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>win->len_x-33 && book_mouse_x<win->len_x-33+(get_string_width((unsigned char*)"->")*11.0f/12.0f)){
 		glColor3f(0.95f, 0.76f, 0.52f);
 		draw_string(win->len_x-33,-2,(unsigned char*)"->",0);
-		
+
 		glColor3f(0.77f,0.59f, 0.38f);
 		draw_string(10,-2,(unsigned char*)"<-",0);
 	} else {
@@ -884,43 +885,43 @@ int display_book_handler(window_info *win)
 				glColor3f(0.95f, 0.76f, 0.52f);
 				draw_string(x,0,(unsigned char*)str,0);
 				glColor3f(0.77f,0.59f, 0.38f);
-			} else 
+			} else
 				draw_string(x,0,(unsigned char*)str,0);
 		}
 		x=100;
 		p=b->active_page-2;
 		if(p>=0){
 			safe_snprintf(str,sizeof(str),"%d",p+1);
-			
+
 			if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>x && book_mouse_x<x+(get_string_width((unsigned char*)str)*11.0f/12.0f)){
 				glColor3f(0.95f, 0.76f, 0.52f);
 				draw_string(x,0,(unsigned char*)str,0);
 				glColor3f(0.77f,0.59f, 0.38f);
-			} else 
+			} else
 				draw_string(x,0,(unsigned char*)str,0);
 		}
 		x=win->len_x-120;
 		p=b->active_page+2;
 		if(p<b->no_pages){
 			safe_snprintf(str,sizeof(str),"%d",p+1);
-			
+
 			if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>x && book_mouse_x<x+(get_string_width((unsigned char*)str)*11.0f/12.0f)){
 				glColor3f(0.95f, 0.76f, 0.52f);
 				draw_string(x,0,(unsigned char*)str,0);
 				glColor3f(0.77f,0.59f, 0.38f);
-			} else 
+			} else
 				draw_string(x,0,(unsigned char*)str,0);
 		}
 		x=win->len_x-70;
 		p=b->active_page+5;
 		if(p<b->no_pages){
 			safe_snprintf(str,sizeof(str),"%d",p+1);
-			
+
 			if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>x && book_mouse_x<x+(get_string_width((unsigned char*)str)*11.0f/12.0f)){
 				glColor3f(0.95f, 0.76f, 0.52f);
 				draw_string(x,0,(unsigned char*)str,0);
 				glColor3f(0.77f,0.59f, 0.38f);
-			} else 
+			} else
 				draw_string(x,0,(unsigned char*)str,0);
 		}
 	} else if(b->type==2) {
@@ -929,7 +930,7 @@ int display_book_handler(window_info *win)
 			p=b->active_page-i*b->type;
 			if(p>=0){
 				safe_snprintf(str,sizeof(str),"%d",p+1);
-				
+
 				if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>x && book_mouse_x<x+(get_string_width((unsigned char*)str)*11.0f/12.0f)){
 					glColor3f(0.95f, 0.76f, 0.52f);
 					draw_string(x,0,(unsigned char*)str,0);
@@ -944,7 +945,7 @@ int display_book_handler(window_info *win)
 			p=b->active_page+i*b->type;
 			if(p<b->no_pages){
 				safe_snprintf(str,sizeof(str),"%d",p+1);
-				
+
 				if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>x && book_mouse_x<x+(get_string_width((unsigned char*)str)*11.0f/12.0f)){
 					glColor3f(0.95f, 0.76f, 0.52f);
 					draw_string(x,0,(unsigned char*)str,0);
@@ -955,10 +956,10 @@ int display_book_handler(window_info *win)
 			x+=40;
 		}
 	}
-	
+
 	if(book_mouse_y>0 && book_mouse_y<18 && book_mouse_x>win->len_x/2-15 && book_mouse_x<win->len_x/2+15)
 		glColor3f(0.95f, 0.76f, 0.52f);
-	
+
 	draw_string(win->len_x/2-15,0,(unsigned char*)"[X]",0);
 	glPopMatrix();
 #ifdef OPENGL_TRACE
@@ -969,12 +970,12 @@ CHECK_GL_ERRORS();
 
 int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 {
-	int i,x,p;	
+	int i,x,p;
 	book *b=win->data;
 
 	// only handle mouse button clicks, not scroll wheels moves
 	if ( (flags & ELW_MOUSE_BUTTON) == 0) return 0;
-	
+
 	my -= win->len_y;
 	if(my<-2 && my>-18) {
 		if(mx>10 && mx < 20){
@@ -992,7 +993,7 @@ int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 				char str[5];
 				int id=b->id;
 				int pages=b->have_server_pages;
-		
+
 				str[0]=SEND_BOOK;
 				*((Uint16*)(str+1))=SDL_SwapLE16(id);
 				*((Uint16*)(str+3))=SDL_SwapLE16(pages);
@@ -1018,7 +1019,7 @@ int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 				b->active_page-=2;
 			}
 			x=140;
-			
+
 			if(mx>win->len_x/2-15 && mx < win->len_x/2+15) {
 //				char str[5];
 //				int id=b->id;
@@ -1030,11 +1031,11 @@ int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 //					*((Uint16*)(str+3))=SDL_SwapLE16(0xFFFF); // Swap not actually necessary.. But it's cleaner.
 //					my_tcp_send(my_socket, str, 5);
 //				}
-				
+
 				hide_window(win->window_id);
 				book_opened=-1;
 			}
-			
+
 			x=win->len_x-120;
 			p=b->active_page+2;
 			if(p<b->no_pages && mx>=x && mx<x+25){
@@ -1054,11 +1055,11 @@ int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 				}
 				x-=40;
 			}
-			
+
 			if(mx>win->len_x/2-15 && mx < win->len_x/2+15) {
 //				char str[5];
 //				int id=b->id;
-		
+
 //				// Lachesis: Please either fix this branching condition or remove it.
 //				if (10000 > id > 11000) {
 //					str[0]=SEND_BOOK;
@@ -1066,11 +1067,11 @@ int click_book_handler(window_info *win, int mx, int my, Uint32 flags)
 //					*((Uint16*)(str+3))=SDL_SwapLE16(0xFFFF);
 //					my_tcp_send(my_socket, str, 5);
 //				}
-				
+
 				hide_window(win->window_id);
 				book_opened=-1;
 			}
-			
+
 			x=win->len_x/2+50;
 			for(i=1;i<5;i++){
 				p=b->active_page+i*b->type;
@@ -1089,7 +1090,7 @@ int mouseover_book_handler(window_info * win, int mx, int my)
 	//Save for later
 	book_mouse_x=mx;
 	book_mouse_y=my;
-	
+
 	return 0;
 }
 

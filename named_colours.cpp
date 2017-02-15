@@ -16,15 +16,15 @@
 #include <cstring>
 #include <sstream>
 
-#include "asc.h"
 #include "elloggingwrapper.h"
 #include "named_colours.h"
 #include "io/elfilewrapper.h"
+#include "xml.h"
 
 namespace ELGL_Colour
 {
 	//	A single colour tuple.
-	// 
+	//
 	class Colour_Tuple
 	{
 		public:
