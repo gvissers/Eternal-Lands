@@ -3350,7 +3350,8 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 	return ok;
 }
 
-int parse_actor_body_part (actor_types *act, body_part *part, const xmlNode *cfg, const char *part_name, const xmlNode *default_node)
+static int parse_actor_body_part(actor_types *act, body_part *part, const xmlNode *cfg,
+                                 const char *part_name, const xmlNode *default_node)
 {
 	const xmlNode *item;
 	int ok = 1;
@@ -3361,10 +3362,7 @@ int parse_actor_body_part (actor_types *act, body_part *part, const xmlNode *cfg
 		if(item->type == XML_ELEMENT_NODE) {
 			if(xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0) {
 				get_string_value (part->model_name, sizeof (part->model_name), item);
-				if(strcmp("shield",part_name)==0)
-					part->mesh_index = cal_load_weapon_mesh (act, part->model_name, part_name);
-				else
-					part->mesh_index = cal_load_mesh (act, part->model_name, part_name);
+				part->mesh_index = cal_load_mesh (act, part->model_name, part_name);
 			} else if(xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0) {
 				get_string_value (part->skin_name, sizeof (part->skin_name), item);
 			} else if(xmlStrcasecmp(item->name, (xmlChar*)"skinmask") == 0) {
@@ -3388,10 +3386,7 @@ int parse_actor_body_part (actor_types *act, body_part *part, const xmlNode *cfg
 			}
 		if(part->model_name==NULL || *part->model_name=='\0'){
 			get_item_string_value(part->model_name, sizeof(part->model_name), default_node, (xmlChar*)"mesh");
-			if(strcmp("shield",part_name)==0)
-				part->mesh_index= cal_load_weapon_mesh(act, part->model_name, part_name);
-			else
-				part->mesh_index= cal_load_mesh(act, part->model_name, part_name);
+			part->mesh_index= cal_load_mesh(act, part->model_name, part_name);
 		}
 	}
 
