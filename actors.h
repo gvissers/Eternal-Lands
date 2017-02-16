@@ -61,12 +61,6 @@ typedef struct
 	float b; /*!< Blue (0<=b<=1)*/
 }glow_color;
 
-//GLOWS
-#define GLOW_NONE 0 	/*!< RGB: 0.0, 0.0, 0.0*/
-#define GLOW_FIRE 1 	/*!< RGB: 0.5, 0.1, 0.1*/
-#define GLOW_COLD 2 	/*!< RGB: 0.1, 0.1, 0.5*/
-#define GLOW_THERMAL 3 	/*!< RGB: 0.5, 0.1, 0.5*/
-#define GLOW_MAGIC 4	/*!< RGB: 0.5, 0.4, 0.0*/
 extern glow_color glow_colors[10]; /*!< Holds the glow colours defined in GLOW_**/
 /*! \} */
 
@@ -157,22 +151,6 @@ typedef struct
 	/*! \} */
 
 }enhanced_actor;
-
-typedef enum {
-	ACTOR_HEAD_SIZE = 0,
-	ACTOR_SHIELD_SIZE,
-	ACTOR_CAPE_SIZE,
-	ACTOR_HELMET_SIZE,
-	ACTOR_WEAPON_SIZE,
-	ACTOR_SHIRT_SIZE,
-	ACTOR_SKIN_SIZE,
-	ACTOR_HAIR_SIZE,
-	ACTOR_BOOTS_SIZE,
-	ACTOR_LEGS_SIZE,
-	ACTOR_NECK_SIZE,
-	ACTOR_EYES_SIZE,
-	ACTOR_NUM_PARTS
-} actor_parts_enum;
 
 typedef struct
 {
