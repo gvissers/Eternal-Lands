@@ -3685,11 +3685,8 @@ int parse_actor_hair (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 		return 0;
 	}
 
-	if (act->hair == NULL) {
-		int i;
+	if (act->hair == NULL)
 		act->hair = (hair_part*)calloc(actor_part_sizes[ACTOR_HAIR_SIZE], sizeof(hair_part));
-		for (i = actor_part_sizes[ACTOR_HAIR_SIZE]; i--;) act->hair[i].mesh_index= -1;
-	}
 
 	buf= act->hair[col_idx].hair_name;
 	len= sizeof (act->hair[col_idx].hair_name);

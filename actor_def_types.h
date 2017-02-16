@@ -98,7 +98,6 @@ typedef struct
 typedef struct
 {
 	char hair_name[MAX_FILE_PATH];
-	int mesh_index;
 } hair_part;
 
 /*! Sets the models eyes name*/
