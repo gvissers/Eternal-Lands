@@ -2944,11 +2944,8 @@ int parse_actor_skin (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 		return 0;
 	}
 
-	if (act->skin == NULL) {
-		int i;
+	if (act->skin == NULL)
 		act->skin = (skin_part*)calloc(actor_part_sizes[ACTOR_SKIN_SIZE], sizeof(skin_part));
-		for (i = actor_part_sizes[ACTOR_SKIN_SIZE]; i--;) act->skin[i].mesh_index= -1;
-	}
 
 	skin = &(act->skin[col_idx]);
 	ok = 1;

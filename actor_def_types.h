@@ -91,7 +91,6 @@ typedef struct
 	char body_name[MAX_FILE_PATH];
 	char legs_name[MAX_FILE_PATH];
 	char feet_name[MAX_FILE_PATH];
-	int mesh_index;
 } skin_part;
 
 /*! Sets the models hair name*/
