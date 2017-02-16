@@ -3714,11 +3714,8 @@ int parse_actor_eyes (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 		return 0;
 	}
 
-	if (act->eyes == NULL) {
-		int i;
+	if (act->eyes == NULL)
 		act->eyes = (eyes_part*)calloc(actor_part_sizes[ACTOR_EYES_SIZE], sizeof(eyes_part));
-		for (i = actor_part_sizes[ACTOR_EYES_SIZE]; i--;) act->eyes[i].mesh_index= -1;
-	}
 
 	buf= act->eyes[col_idx].eyes_name;
 	len= sizeof (act->eyes[col_idx].eyes_name);

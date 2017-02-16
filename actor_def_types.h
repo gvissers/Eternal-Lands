@@ -104,7 +104,6 @@ typedef struct
 typedef struct
 {
 	char eyes_name[MAX_FILE_PATH];
-	int mesh_index;
 } eyes_part;
 
 /*! Holds info about the boots */
