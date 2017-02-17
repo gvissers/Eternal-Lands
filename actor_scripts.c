@@ -4773,7 +4773,7 @@ int read_actor_defs (const char *dir, const char *index)
 void init_actor_defs()
 {
 	// initialize the whole thing to zero
-	memset (actors_defs, 0, sizeof (actors_defs));
+	memset (actors_defs, 0, MAX_ACTOR_DEFS * sizeof(actor_types));
 	memset (attached_actors_defs, 0, sizeof (attached_actors_defs));
 #ifdef	NEW_TEXTURES
 	set_invert_v_coord();

@@ -448,7 +448,7 @@ extern SDL_mutex *actors_lists_mutex;	/*!< Used for locking between the timer an
 extern actor *actors_list[MAX_ACTORS];	/*!< A list holding all of the actors*/
 extern actor *your_actor; /*!< A pointer to your own character, if available. Shares a mutex with \see actors_list */
 extern int	max_actors;		/*!< The current number of actors in the actors_list + 1*/
-extern actor_types actors_defs[MAX_ACTOR_DEFS];	/*!< The actor definitions*/
+extern actor_types actors_defs[];	/*!< The actor definitions*/
 
 extern attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS]; /*!< The definitions for the attached actors */
 

@@ -893,7 +893,6 @@ void init_stuff()
 	load_sound_config_data(SOUND_CONFIG_PATH);
 #endif // NEW_SOUND
 	update_loading_win(init_actor_defs_str, 4);
-	memset(actors_defs, 0, sizeof(actors_defs));
 
 	LOG_DEBUG("Init actor defs");
 	init_actor_defs();
