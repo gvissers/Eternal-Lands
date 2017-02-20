@@ -16,18 +16,6 @@ extern float sitting; /*!< used to compute several actor related z values */
 
 /*!
  * \ingroup display_actors
- * \brief   Draws the given enhanced actor
- *
- *      Draws the enhanced actor given by \a actor_id, by calling \ref draw_model for the individual parts of the actor.
- *
- * \param actor_id  the id for the actor to draw
- *
- * \callgraph
- */
-void draw_enhanced_actor(actor * actor_id, int banner);
-
-/*!
- * \ingroup display_actors
  * \brief   Unwears the given item \a which_part from the actor \a actor_id.
  *
  *      Unwears the given item \a which_part from the actor given by \a actor_id.

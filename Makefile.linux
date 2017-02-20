@@ -1,4 +1,4 @@
-.PHONY: clean release docs
+.PHONY: tools clean release docs
 
 -include make.conf
 
@@ -31,9 +31,11 @@ PAWN_COBJ = pawn/amx.o pawn/amxaux.o pawn/amxcons.o pawn/amxel.o \
 NEW_TEXTURES_COBJ = image_loading.o
 NEW_TEXTURES_CXXOBJ = engine/hardwarebuffer.o
 CUSTOM_UPDATE_COBJ = custom_update.o new_update.o
+XML_COMPILED_COBJ = actor_defs.o
 #disabled it for now, made too much trouble
 #FSAA_COBJ = fsaa/fsaa_glx.o fsaa/fsaa.o
 FSAA_COBJ = fsaa/fsaa_dummy.o fsaa/fsaa.o
+
 COBJS=2d_objects.o 3d_objects.o \
 	actor_scripts.o actors.o alphamap.o asc.o astrology.o \
 	bbox_tree.o books.o buddy.o buffs.o bags.o \
@@ -127,6 +129,12 @@ $(CXXOBJS): %.o: %.cpp Makefile.linux make.conf
 		mv ".deps/$@.pp" ".deps/$@.P"; \
 	else rm -f ".deps/$@.pp"; exit 1; \
 	fi
+
+actor_defs_inc.c: tools
+	tools/build_actor_defs $(ACTOR_DEFS_PATH) $@
+
+tools:
+	$(MAKE) -C $@
 
 release:
 	@$(MAKE) -f Makefile.linux 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)'

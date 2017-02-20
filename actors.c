@@ -45,7 +45,9 @@ int max_actors=0;
 SDL_mutex *actors_lists_mutex = NULL;	//used for locking between the timer and main threads
 actor *your_actor = NULL;
 
+#ifndef XML_COMPILED
 actor_types actors_defs[MAX_ACTOR_DEFS];
+#endif
 
 attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS];
 
@@ -193,7 +195,7 @@ int add_actor (int actor_type, char * skin_name, float x_pos, float y_pos, float
 	for(k=0;k<MAX_EMOTE_FRAME;k++) our_actor->cur_emote.frames[k].anim_index=-1;
 	our_actor->cur_emote.idle.anim_index=-1;
 	our_actor->cur_emote_sound_cookie=0;
-	
+
 
 
 
@@ -641,7 +643,7 @@ void draw_actor_banner(actor * actor_id, float offset_z)
 	if(display_health_bar && display_health_line && (!actor_id->dead) && (actor_id->kind_of_actor != NPC)){
 		float percentage = (float)actor_id->cur_health/(float)actor_id->max_health;
 		float off;
-		
+
 		if(percentage>110.0f) //deal with massive bars by trimming at 110%
 			percentage = 110.0f;
 		if (display_hp){
