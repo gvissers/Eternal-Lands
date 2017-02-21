@@ -2336,9 +2336,9 @@ int parse_actor_script(const xmlNode *cfg)
 
     for (i = 0; i < NUM_ACTOR_FRAMES; i++)
     {
-        act->cal_frames[i].anim_index= -1;
+        act->cal_frames[i].anim_index = -1;
 #ifdef NEW_SOUND
-        act->cal_frames[i].sound= -1;
+        act->cal_frames[i].sound = -1;
 #endif // NEW_SOUND
     }
 #ifdef NEW_SOUND
@@ -2693,7 +2693,16 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
         << "\t\t.index_size = 0,\n"
         << "\t\t.idle_group = {},\n"
         << "\t\t.group_count = " << act.group_count << ",\n"
-        << "\t\t.cal_frames = {},\n"
+        << "\t\t.cal_frames = {\n";
+    for (int i = 0; i < NUM_ACTOR_FRAMES; ++i)
+    {
+        os << "\t\t\t{ .anim_index = -1"
+#ifdef NEW_SOUND
+            << ", .sound = -1"
+#endif
+            << " },\n";
+    }
+    os << "\t\t},\n"
         << "\t\t.emote_frames = NULL,\n"
         << "\t\t.skeleton_type = -1,\n";
 #ifdef NEW_SOUND

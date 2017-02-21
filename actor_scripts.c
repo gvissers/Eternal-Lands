@@ -3463,12 +3463,12 @@ static struct cal_anim *get_pose_frame(int actor_type, actor *a, int pose_type, 
 			return (struct cal_anim*) he->item;
 	}
 	// No pose or no emote..set defaults
-	switch(pose_type)
+	switch (pose_type)
 	{
 		case EMOTE_SITTING:
 			return &actors_defs[a->actor_type].cal_frames[cal_actor_idle_sit_frame];
 		case EMOTE_STANDING:
-			if(held)
+			if (held)
 			{
 				attachment_props *att_props = get_attachment_props_if_held(a);
 				if (att_props)
