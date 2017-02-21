@@ -105,26 +105,6 @@ typedef struct
 	char eyes_name[MAX_FILE_PATH];
 } eyes_part;
 
-/*! Holds info about the boots */
-typedef struct
-{
-	char boots_name[MAX_FILE_PATH];
-	char model_name[MAX_FILE_PATH];
-	char boots_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-} boots_part;
-
-/*! Holds info about the legs type*/
-typedef struct
-{
-	char legs_name[MAX_FILE_PATH];
-	char model_name[MAX_FILE_PATH];
-	char legs_mask[MAX_FILE_PATH];
-	int glow;
-	int mesh_index;
-} legs_part;
-
 /*! A structure used when loading the actor definitions
  * \sa init_actor_defs*/
 typedef struct cal_anim_group
@@ -210,8 +190,8 @@ typedef struct
 	skin_part  *skin;
 	hair_part  *hair;
 	eyes_part  *eyes;
-	boots_part *boots;
-	legs_part *legs;
+	body_part *boots;
+	body_part *legs;
 	/*! \} */
 
 	/*! \name The current actors walk/run speeds*/

@@ -128,10 +128,6 @@ static hair_part* all_hairs;
 static int all_hairs_used = 0;
 static eyes_part* all_eyes;
 static int all_eyes_used = 0;
-static boots_part* all_boots;
-static int all_boots_used = 0;
-static legs_part* all_legs;
-static int all_legs_used = 0;
 
 struct idle_group_reg
 {
@@ -622,7 +618,7 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 {
     const xmlNode *item;
     int ok, col_idx;
-    legs_part *legs;
+    body_part *legs;
 
     if (!cfg || !cfg->children)
         return 0;
@@ -637,8 +633,8 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!act->legs)
     {
         int i;
-        act->legs = all_legs + all_legs_used;
-        all_legs_used += actor_part_sizes[ACTOR_LEGS_SIZE];
+        act->legs = all_body + all_body_used;
+        all_body_used += actor_part_sizes[ACTOR_LEGS_SIZE];
         for (i = 0; i < actor_part_sizes[ACTOR_LEGS_SIZE]; ++i)
             act->legs[i].mesh_index= -1;
     }
@@ -651,7 +647,7 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
             {
-                get_string_value(legs->legs_name, sizeof (legs->legs_name), item);
+                get_string_value(legs->skin_name, sizeof (legs->skin_name), item);
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
             {
@@ -659,7 +655,7 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"legsmask") == 0)
             {
-                get_string_value(legs->legs_mask, sizeof (legs->legs_mask), item);
+                get_string_value(legs->skin_mask, sizeof (legs->skin_mask), item);
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
             {
@@ -680,8 +676,8 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         const xmlNode *default_node = get_default_node(cfg, defaults);
         if (default_node)
         {
-            if (*legs->legs_name == '\0')
-                get_item_string_value(legs->legs_name, sizeof(legs->legs_name),
+            if (*legs->skin_name == '\0')
+                get_item_string_value(legs->skin_name, sizeof(legs->skin_name),
                                       default_node, (xmlChar*)"skin");
             if (*legs->model_name == '\0')
                 get_item_string_value(legs->model_name, sizeof(legs->model_name),
@@ -690,7 +686,7 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     }
 
     // check the critical information
-    actor_check_string(act, "legs", "skin", legs->legs_name);
+    actor_check_string(act, "legs", "skin", legs->skin_name);
     actor_check_string(act, "legs", "model", legs->model_name);
 
     return ok;
@@ -1282,7 +1278,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 {
     const xmlNode *item;
     int ok, col_idx;
-    boots_part *boots;
+    body_part *boots;
 
     if (!cfg || !cfg->children)
         return 0;
@@ -1297,8 +1293,8 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
     if (!act->boots)
     {
         int i;
-        act->boots = all_boots + all_boots_used;
-        all_boots_used += actor_part_sizes[ACTOR_BOOTS_SIZE];
+        act->boots = all_body + all_body_used;
+        all_body_used += actor_part_sizes[ACTOR_BOOTS_SIZE];
         for (i = 0; i < actor_part_sizes[ACTOR_BOOTS_SIZE]; ++i)
             act->boots[i].mesh_index= -1;
     }
@@ -1311,7 +1307,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
             {
-                get_string_value(boots->boots_name, sizeof (boots->boots_name), item);
+                get_string_value(boots->skin_name, sizeof(boots->skin_name), item);
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
             {
@@ -1319,7 +1315,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"bootsmask") == 0)
             {
-                get_string_value(boots->boots_mask, sizeof (boots->boots_mask), item);
+                get_string_value(boots->skin_mask, sizeof (boots->skin_mask), item);
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
             {
@@ -1341,8 +1337,8 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
         if (default_node)
         {
-            if (*boots->boots_name == '\0')
-                get_item_string_value(boots->boots_name, sizeof(boots->boots_name),
+            if (*boots->skin_name == '\0')
+                get_item_string_value(boots->skin_name, sizeof(boots->skin_name),
                                       default_node, (xmlChar*)"skin");
             if (*boots->model_name == '\0')
             {
@@ -1353,7 +1349,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
     }
 
     // check the critical information
-    actor_check_string(act, "boots", "boots", boots->boots_name);
+    actor_check_string(act, "boots", "skin", boots->skin_name);
     actor_check_string(act, "boots", "model", boots->model_name);
 
     return ok;
@@ -2452,7 +2448,9 @@ static int init_actor_defs(const char* dir)
     int nr_body = actor_part_sizes[ACTOR_HEAD_SIZE]
                 + actor_part_sizes[ACTOR_CAPE_SIZE]
                 + actor_part_sizes[ACTOR_HELMET_SIZE]
-                + actor_part_sizes[ACTOR_NECK_SIZE];
+                + actor_part_sizes[ACTOR_NECK_SIZE]
+                + actor_part_sizes[ACTOR_BOOTS_SIZE]
+                + actor_part_sizes[ACTOR_LEGS_SIZE];
 
     // initialize the whole thing to zero
     std::memset(actors_defs, 0, sizeof(actors_defs));
@@ -2465,8 +2463,6 @@ static int init_actor_defs(const char* dir)
     all_skins = new skin_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_SKIN_SIZE]];
     all_hairs = new hair_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_HAIR_SIZE]];
     all_eyes = new eyes_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_EYES_SIZE]];
-    all_boots = new boots_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_BOOTS_SIZE]];
-    all_legs = new legs_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_LEGS_SIZE]];
 
     return read_actor_defs(dir, "actor_defs.xml");
 }
@@ -2619,56 +2615,6 @@ std::ostream& write_actor_eyes(std::ostream& os)
     return os << "};\n\n";
 }
 
-std::ostream& operator<<(std::ostream& os, const boots_part& part)
-{
-    const char *glow_name = glow_mode_name(part.glow);
-
-    os << "\t{\n"
-        << "\t\t.boots_name = \"" << part.boots_name << "\",\n"
-        << "\t\t.model_name = \"" <<  part.model_name << "\",\n"
-        << "\t\t.boots_mask = \"" << part.boots_mask << "\",\n";
-    if (glow_name)
-        os << "\t\t.glow = " << glow_name << ",\n";
-    else
-        os << "\t\t.glow = " << part.glow << ",\n";
-    os << "\t\t.mesh_index = -1\n"
-        << "\t},\n";
-    return os;
-}
-
-std::ostream& write_actor_boots(std::ostream& os)
-{
-    os << "static boots_part actor_boots[" << all_boots_used << "] = {\n";
-    for (int i = 0; i < all_boots_used; ++i)
-        os << all_boots[i];
-    return os << "};\n\n";
-}
-
-std::ostream& operator<<(std::ostream& os, const legs_part& part)
-{
-    const char *glow_name = glow_mode_name(part.glow);
-
-    os <<  "\t{\n"
-        << "\t\t.legs_name = \"" << part.legs_name << "\",\n"
-        << "\t\t.model_name = \"" << part.model_name << "\",\n"
-        << "\t\t.legs_mask = \"" << part.legs_mask << "\",\n";
-    if (glow_name)
-        os << "\t\t.glow = " << glow_name << ",\n";
-    else
-        os << "\t\t.glow = " << part.glow << ",\n";
-    os << "\t\t.mesh_index = -1\n"
-        << "\t},\n";
-    return os;
-}
-
-std::ostream& write_actor_legs(std::ostream& os)
-{
-    os << "static legs_part actor_legs[" << all_legs_used << "] = {\n";
-    for (int i = 0; i < all_legs_used; ++i)
-        os << all_legs[i];
-    return os << "};\n\n";
-}
-
 std::ostream& operator<<(std::ostream& os, const actor_types& act)
 {
     const char* type_name = actor_type_name(act.actor_type);
@@ -2749,11 +2695,11 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
     else
         os << "\t\t.eyes = NULL,\n";
     if (act.boots)
-        os << "\t\t.boots = actor_boots + " << (act.boots - all_boots) << ",\n";
+        os << "\t\t.boots = actor_body + " << (act.boots - all_body) << ",\n";
     else
         os << "\t\t.boots = NULL,\n";
     if (act.legs)
-        os << "\t\t.legs = actor_legs + " << (act.legs - all_legs) << ",\n";
+        os << "\t\t.legs = actor_body + " << (act.legs - all_body) << ",\n";
     else
         os << "\t\t.legs = NULL,\n";
     os << "\t\t.walk_speed = " << act.walk_speed << ",\n"
@@ -3007,8 +2953,6 @@ void write_c_file(std::ostream& os)
     write_actor_skins(os);
     write_actor_hairs(os);
     write_actor_eyes(os);
-    write_actor_boots(os);
-    write_actor_legs(os);
     write_idle_group_regs(os);
     write_frames_regs(os);
     write_weapon_frames_regs(os);
@@ -3034,8 +2978,6 @@ void cleanup()
     delete[] all_skins;
     delete[] all_hairs;
     delete[] all_eyes;
-    delete[] all_boots;
-    delete[] all_legs;
 }
 
 int main(int argc, const char *argv[])

@@ -214,7 +214,7 @@ Uint32 delay_texture_item_change(actor* a, const int which_part, const int which
 			a->delayed_item_changes[a->delayed_item_changes_count] = which_id;
 			a->delayed_item_type_changes[a->delayed_item_changes_count] = which_part;
 			a->delayed_item_changes_count++;
-	
+
 			return 1;
 		}
 	}
@@ -365,7 +365,7 @@ void actor_wear_item(int actor_id,Uint8 which_part, Uint8 which_id)
 	int j;
 #endif
 
-	
+
 	for(i=0;i<max_actors;i++)
 		{
 			if(actors_list[i])
@@ -582,8 +582,8 @@ void actor_wear_item(int actor_id,Uint8 which_part, Uint8 which_id)
 							}
 						else if (which_part==KIND_OF_LEG_ARMOR)
 							{
-								my_strcp(actors_list[i]->body_parts->pants_tex,actors_defs[actors_list[i]->actor_type].legs[which_id].legs_name);
-								my_strcp(actors_list[i]->body_parts->pants_mask,actors_defs[actors_list[i]->actor_type].legs[which_id].legs_mask);
+								strcpy(actors_list[i]->body_parts->pants_tex, actors_defs[actors_list[i]->actor_type].legs[which_id].skin_name);
+								strcpy(actors_list[i]->body_parts->pants_mask, actors_defs[actors_list[i]->actor_type].legs[which_id].skin_mask);
 #ifdef CUSTOM_LOOK
 								custom_path(actors_list[i]->body_parts->pants_tex, playerpath, guildpath);
 								custom_path(actors_list[i]->body_parts->pants_mask, playerpath, guildpath);
@@ -604,8 +604,8 @@ void actor_wear_item(int actor_id,Uint8 which_part, Uint8 which_id)
 
 						else if (which_part==KIND_OF_BOOT_ARMOR)
 							{
-								my_strcp(actors_list[i]->body_parts->boots_tex,actors_defs[actors_list[i]->actor_type].boots[which_id].boots_name);
-								my_strcp(actors_list[i]->body_parts->boots_mask,actors_defs[actors_list[i]->actor_type].boots[which_id].boots_mask);
+								my_strcp(actors_list[i]->body_parts->boots_tex, actors_defs[actors_list[i]->actor_type].boots[which_id].skin_name);
+								my_strcp(actors_list[i]->body_parts->boots_mask, actors_defs[actors_list[i]->actor_type].boots[which_id].skin_mask);
 #ifdef CUSTOM_LOOK
 								custom_path(actors_list[i]->body_parts->boots_tex, playerpath, guildpath);
 								custom_path(actors_list[i]->body_parts->boots_mask, playerpath, guildpath);
@@ -958,11 +958,19 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	}
 #endif
 	//boots
-	my_strncp(this_actor->boots_tex,actors_defs[actor_type].boots[boots].boots_name,sizeof(this_actor->boots_tex));
-	my_strncp(this_actor->boots_mask,actors_defs[actor_type].boots[boots].boots_mask,sizeof(this_actor->boots_mask));
+	safe_strncpy(this_actor->boots_tex,
+		actors_defs[actor_type].boots[boots].skin_name,
+		sizeof(this_actor->boots_tex));
+	safe_strncpy(this_actor->boots_mask,
+		actors_defs[actor_type].boots[boots].skin_mask,
+		sizeof(this_actor->boots_mask));
 	//legs
-	my_strncp(this_actor->pants_tex,actors_defs[actor_type].legs[pants].legs_name,sizeof(this_actor->pants_tex));
-	my_strncp(this_actor->pants_mask,actors_defs[actor_type].legs[pants].legs_mask,sizeof(this_actor->pants_mask));
+	safe_strncpy(this_actor->pants_tex,
+		actors_defs[actor_type].legs[pants].skin_name,
+		sizeof(this_actor->pants_tex));
+	safe_strncpy(this_actor->pants_mask,
+		actors_defs[actor_type].legs[pants].skin_mask,
+		sizeof(this_actor->pants_mask));
 
 #ifdef CUSTOM_LOOK
 	if(kind_of_actor != NPC)
@@ -1325,10 +1333,18 @@ actor * add_actor_interface(float x, float y, float z_rot, float scale, int acto
 #ifdef NEW_EYES
 	my_strncp(this_actor->eyes_tex,actors_defs[actor_type].eyes[eyes].eyes_name,sizeof(this_actor->eyes_tex));
 #endif
-	my_strncp(this_actor->boots_tex,actors_defs[actor_type].boots[boots].boots_name,sizeof(this_actor->boots_tex));
-	my_strncp(this_actor->boots_mask,actors_defs[actor_type].boots[boots].boots_mask,sizeof(this_actor->boots_mask));
-	my_strncp(this_actor->pants_tex,actors_defs[actor_type].legs[pants].legs_name,sizeof(this_actor->pants_tex));
-	my_strncp(this_actor->pants_mask,actors_defs[actor_type].legs[pants].legs_mask,sizeof(this_actor->pants_mask));
+	safe_strncpy(this_actor->boots_tex,
+		actors_defs[actor_type].boots[boots].skin_name,
+		sizeof(this_actor->boots_tex));
+	safe_strncpy(this_actor->boots_mask,
+		actors_defs[actor_type].boots[boots].skin_mask,
+		sizeof(this_actor->boots_mask));
+	safe_strncpy(this_actor->pants_tex,
+		actors_defs[actor_type].legs[pants].skin_name,
+		sizeof(this_actor->pants_tex));
+	safe_strncpy(this_actor->pants_mask,
+		actors_defs[actor_type].legs[pants].skin_mask,
+		sizeof(this_actor->pants_mask));
 
 #ifdef	NEW_TEXTURES
 	a=actors_list[add_enhanced_actor(this_actor, x*0.5f, y*0.5f, 0.00000001f, z_rot, scale, 0, 0)];

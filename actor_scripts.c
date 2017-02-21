@@ -744,12 +744,12 @@ int parse_actor_legs (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 	for (item = cfg->children; item; item = item->next) {
 		if (item->type == XML_ELEMENT_NODE) {
 			if (xmlStrcasecmp (item->name, (xmlChar*)"skin") == 0) {
-				get_string_value (legs->legs_name, sizeof (legs->legs_name), item);
+				get_string_value (legs->skin_name, sizeof (legs->skin_name), item);
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"mesh") == 0) {
 				get_string_value (legs->model_name, sizeof (legs->model_name), item);
 				legs->mesh_index = cal_load_mesh (act, legs->model_name, "legs");
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"legsmask") == 0) {
-				get_string_value (legs->legs_mask, sizeof (legs->legs_mask), item);
+				get_string_value (legs->skin_mask, sizeof (legs->skin_mask), item);
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"glow") == 0) {
 				int mode = find_description_index (glow_mode_dict, (char*)item->children->content, "glow mode");
 				if (mode < 0) mode = GLOW_NONE;
@@ -766,8 +766,8 @@ int parse_actor_legs (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 		const xmlNode *default_node = get_default_node(cfg, defaults);
 
 		if(default_node){
-			if (*legs->legs_name=='\0')
-				get_item_string_value(legs->legs_name, sizeof(legs->legs_name), default_node, (xmlChar*)"skin");
+			if (*legs->skin_name=='\0')
+				get_item_string_value(legs->skin_name, sizeof(legs->skin_name), default_node, (xmlChar*)"skin");
 			if (*legs->model_name=='\0'){
 				get_item_string_value(legs->model_name, sizeof(legs->model_name), default_node, (xmlChar*)"mesh");
 				legs->mesh_index= cal_load_mesh(act, legs->model_name, "legs");
@@ -776,7 +776,7 @@ int parse_actor_legs (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 	}
 
 	// check the critical information
-	actor_check_string(act, "legs", "skin", legs->legs_name);
+	actor_check_string(act, "legs", "skin", legs->skin_name);
 	actor_check_string(act, "legs", "model", legs->model_name);
 	actor_check_int(act, "legs", "mesh", legs->mesh_index);
 
@@ -1858,12 +1858,12 @@ int parse_actor_boots (actor_types *act, const xmlNode *cfg, const xmlNode *defa
 	for (item = cfg->children; item; item = item->next) {
 		if (item->type == XML_ELEMENT_NODE) {
 			if (xmlStrcasecmp (item->name, (xmlChar*)"skin") == 0) {
-				get_string_value (boots->boots_name, sizeof (boots->boots_name), item);
+				get_string_value (boots->skin_name, sizeof (boots->skin_name), item);
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"mesh") == 0) {
 				get_string_value (boots->model_name, sizeof (boots->model_name), item);
 				boots->mesh_index = cal_load_mesh (act, boots->model_name, "boots");
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"bootsmask") == 0) {
-				get_string_value (boots->boots_mask, sizeof (boots->boots_mask), item);
+				get_string_value (boots->skin_mask, sizeof (boots->skin_mask), item);
 			} else if (xmlStrcasecmp (item->name, (xmlChar*)"glow") == 0) {
 				int mode = find_description_index (glow_mode_dict, (char*)item->children->content, "glow mode");
 				if (mode < 0) mode = GLOW_NONE;
@@ -1880,8 +1880,8 @@ int parse_actor_boots (actor_types *act, const xmlNode *cfg, const xmlNode *defa
 		const xmlNode *default_node = get_default_node(cfg, defaults);
 
 		if(default_node){
-			if (*boots->boots_name=='\0')
-				get_item_string_value(boots->boots_name, sizeof(boots->boots_name), default_node, (xmlChar*)"skin");
+			if (*boots->skin_name=='\0')
+				get_item_string_value(boots->skin_name, sizeof(boots->skin_name), default_node, (xmlChar*)"skin");
 			if (*boots->model_name=='\0')
 			{
 				get_item_string_value(boots->model_name, sizeof(boots->model_name), default_node, (xmlChar*)"mesh");
@@ -1891,7 +1891,7 @@ int parse_actor_boots (actor_types *act, const xmlNode *cfg, const xmlNode *defa
 	}
 
 	// check the critical information
-	actor_check_string(act, "boots", "boots", boots->boots_name);
+	actor_check_string(act, "boots", "skin", boots->skin_name);
 	actor_check_string(act, "boots", "model", boots->model_name);
 	actor_check_int(act, "boots", "mesh", boots->mesh_index);
 

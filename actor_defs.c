@@ -354,7 +354,7 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
         {
             for (j = 0; j < 40; ++j)
             {
-                boots_part *part = act->boots + j;
+                body_part *part = act->boots + j;
                 if (*part->model_name)
                 {
                     part->mesh_index = cal_load_mesh(act, part->model_name, "boots", act->mesh_scale);
@@ -366,8 +366,8 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
         {
             for (j = 0; j < 60; ++j)
             {
-                legs_part *part = act->legs + j;
-                if (*part->legs_name)
+                body_part *part = act->legs + j;
+                if (*part->skin_name)
                 {
                     part->mesh_index = cal_load_mesh(act, part->model_name, "legs", act->mesh_scale);
                     actor_check_int(act, "legs", "mesh", part->mesh_index);
