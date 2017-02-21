@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <GL/gl.h>
@@ -51,6 +52,8 @@ const int actor_part_sizes[ACTOR_NUM_PARTS] = {
 } // namespace
 #endif /* EXT_ACTOR_DICT */
 
+static std::unordered_set<std::string> string_table;
+
 namespace
 {
 
@@ -68,6 +71,19 @@ std::string lc_value(const xmlNode *node)
     return res;
 }
 
+std::string item_value(const xmlNode *item, const char *name)
+{
+    for (const xmlNode *node = item->children; node; node = node->next)
+    {
+        if (node->type == XML_ELEMENT_NODE
+            && xmlStrcasecmp(node->name, reinterpret_cast<const xmlChar*>(name)) == 0)
+        {
+            return value(node);
+        }
+    }
+    return std::string();
+}
+
 std::string property(const xmlNode *node, const char *prop)
 {
     for (const xmlAttr *attr = node->properties; attr; attr = attr->next)
@@ -83,6 +99,14 @@ std::string lc_property(const xmlNode *node, const char *prop)
     std::string res = property(node, prop);
     std::transform(res.begin(), res.end(), res.begin(), ::tolower);
     return res;
+}
+
+const char* char_ptr_of(const std::string& str)
+{
+    auto iter = string_table.find(str);
+    if (iter == string_table.end())
+        iter = string_table.insert(str).first;
+    return iter->c_str();
 }
 
 } // namespace
@@ -476,23 +500,23 @@ int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defau
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
             {
-                get_string_value(shirt->arms_name, sizeof(shirt->arms_name), item);
+                shirt->arms_name = char_ptr_of(value(item));
             }
             else if(xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
             {
-                get_string_value(shirt->model_name, sizeof(shirt->model_name), item);
+                shirt->model_name = char_ptr_of(value(item));
             }
             else if(xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
             {
-                get_string_value(shirt->torso_name, sizeof(shirt->torso_name), item);
+                shirt->torso_name = char_ptr_of(value(item));
             }
             else if(xmlStrcasecmp(item->name, (xmlChar*)"armsmask") == 0)
             {
-                get_string_value(shirt->arms_mask, sizeof(shirt->arms_mask), item);
+                shirt->arms_mask = char_ptr_of(value(item));
             }
             else if(xmlStrcasecmp(item->name, (xmlChar*)"torsomask") == 0)
             {
-                get_string_value(shirt->torso_mask, sizeof(shirt->torso_mask), item);
+                shirt->torso_mask = char_ptr_of(value(item));
             }
             else
             {
@@ -508,17 +532,12 @@ int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defau
         const xmlNode *default_node = get_default_node(cfg, defaults);
         if (default_node)
         {
-            if (*shirt->arms_name == '\0')
-                get_item_string_value(shirt->arms_name, sizeof(shirt->arms_name),
-                                      default_node, (xmlChar*)"arms");
-            if (*shirt->model_name == '\0')
-            {
-                get_item_string_value(shirt->model_name, sizeof(shirt->model_name),
-                                      default_node, (xmlChar*)"mesh");
-            }
-            if (*shirt->torso_name == '\0')
-                get_item_string_value(shirt->torso_name, sizeof(shirt->torso_name),
-                                      default_node, (xmlChar*)"torso");
+            if (!shirt->arms_name || *shirt->arms_name == '\0')
+                shirt->arms_name = char_ptr_of(item_value(default_node, "arms"));
+            if (!shirt->model_name || *shirt->model_name == '\0')
+                shirt->model_name = char_ptr_of(item_value(default_node, "mesh"));
+            if (!shirt->torso_name || *shirt->torso_name == '\0')
+                shirt->torso_name = char_ptr_of(item_value(default_node, "torso"));
         }
     }
 
@@ -562,27 +581,27 @@ int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"hands") == 0)
             {
-                get_string_value(skin->hands_name, sizeof (skin->hands_name), item);
+                skin->hands_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"head") == 0)
             {
-                get_string_value(skin->head_name, sizeof (skin->head_name), item);
+                skin->head_name= char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
             {
-                get_string_value(skin->body_name, sizeof (skin->body_name), item);
+                skin->body_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
             {
-                get_string_value(skin->arms_name, sizeof (skin->arms_name), item);
+                skin->arms_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"legs") == 0)
             {
-                get_string_value(skin->legs_name, sizeof (skin->legs_name), item);
+                skin->legs_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"feet") == 0)
             {
-                get_string_value(skin->feet_name, sizeof (skin->feet_name), item);
+                skin->feet_name = char_ptr_of(value(item));
             }
             else
             {
@@ -599,11 +618,9 @@ int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         if (default_node)
         {
             if (!skin->hands_name || *skin->hands_name == '\0')
-                get_item_string_value(skin->hands_name, sizeof(skin->hands_name),
-                                      default_node, (xmlChar*)"hands");
+                skin->hands_name = char_ptr_of(item_value(default_node, "hands"));
             if (!skin->head_name || *skin->head_name == '\0')
-                get_item_string_value(skin->head_name, sizeof(skin->head_name),
-                                      default_node, (xmlChar*)"head");
+                skin->head_name = char_ptr_of(item_value(default_node, "head"));
         }
     }
 
@@ -647,15 +664,15 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
             {
-                get_string_value(legs->skin_name, sizeof (legs->skin_name), item);
+                legs->skin_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
             {
-                get_string_value(legs->model_name, sizeof (legs->model_name), item);
+                legs->model_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"legsmask") == 0)
             {
-                get_string_value(legs->skin_mask, sizeof (legs->skin_mask), item);
+                legs->skin_mask = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
             {
@@ -676,12 +693,10 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         const xmlNode *default_node = get_default_node(cfg, defaults);
         if (default_node)
         {
-            if (*legs->skin_name == '\0')
-                get_item_string_value(legs->skin_name, sizeof(legs->skin_name),
-                                      default_node, (xmlChar*)"skin");
-            if (*legs->model_name == '\0')
-                get_item_string_value(legs->model_name, sizeof(legs->model_name),
-                                      default_node, (xmlChar*)"mesh");
+            if (!legs->skin_name || *legs->skin_name == '\0')
+                legs->skin_name = char_ptr_of(item_value(default_node, "skin"));
+            if (!legs->model_name || *legs->model_name == '\0')
+                legs->model_name = char_ptr_of(item_value(default_node, "mesh"));
         }
     }
 
@@ -707,15 +722,15 @@ static int parse_actor_body_part(actor_types *act, body_part *part, const xmlNod
 
         if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
         {
-            get_string_value(part->model_name, sizeof (part->model_name), item);
+            part->model_name = char_ptr_of(value(item));
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
         {
-            get_string_value(part->skin_name, sizeof (part->skin_name), item);
+            part->skin_name = char_ptr_of(value(item));
         }
         else if(xmlStrcasecmp(item->name, (xmlChar*)"skinmask") == 0)
         {
-            get_string_value(part->skin_mask, sizeof (part->skin_mask), item);
+            part->skin_mask = char_ptr_of(value(item));
         }
         else if(xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
         {
@@ -735,16 +750,10 @@ static int parse_actor_body_part(actor_types *act, body_part *part, const xmlNod
         if (!part->skin_name || *part->skin_name == '\0')
         {
             if (strcmp(part_name, "head"))
-            {   // heads don't have separate skins here
-                get_item_string_value(part->skin_name, sizeof(part->skin_name),
-                                      default_node, (xmlChar*)"skin");
-            }
+                part->skin_name = char_ptr_of(item_value(default_node, "skin"));
         }
         if (!part->model_name || *part->model_name == '\0')
-        {
-            get_item_string_value(part->model_name, sizeof(part->model_name),
-                                  default_node, (xmlChar*)"mesh");
-        }
+            part->model_name = char_ptr_of(item_value(default_node, "mesh"));
     }
 
     // check the critical information
@@ -796,7 +805,7 @@ int parse_actor_neck(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     type_idx = get_int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_NECK_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -824,7 +833,7 @@ int parse_actor_cape(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     type_idx = get_int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_CAPE_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -854,7 +863,7 @@ int parse_actor_head(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         type_idx = head_number_dict.at(lc_property(cfg, "number"));
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_HEAD_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -874,8 +883,6 @@ int parse_actor_head(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 int parse_actor_hair(actor_types *act, const xmlNode *cfg)
 {
     int col_idx;
-    size_t len;
-    char *buf;
 
     if (!cfg || !cfg->children)
         return 0;
@@ -883,7 +890,7 @@ int parse_actor_hair(actor_types *act, const xmlNode *cfg)
     col_idx = get_int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_HAIR_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -893,9 +900,7 @@ int parse_actor_hair(actor_types *act, const xmlNode *cfg)
         all_hairs_used += actor_part_sizes[ACTOR_HAIR_SIZE];
     }
 
-    buf = act->hair[col_idx].hair_name;
-    len = sizeof(act->hair[col_idx].hair_name);
-    get_string_value(buf, len, cfg);
+    act->hair[col_idx].hair_name = char_ptr_of(value(cfg));
 
     return 1;
 }
@@ -903,8 +908,6 @@ int parse_actor_hair(actor_types *act, const xmlNode *cfg)
 int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
 {
     int col_idx;
-    size_t len;
-    char *buf;
 
     if (!cfg || !cfg->children)
         return 0;
@@ -912,7 +915,7 @@ int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
     col_idx = get_int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_EYES_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -922,9 +925,7 @@ int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
         all_eyes_used += actor_part_sizes[ACTOR_EYES_SIZE];
     }
 
-    buf = act->eyes[col_idx].eyes_name;
-    len = sizeof(act->eyes[col_idx].eyes_name);
-    get_string_value(buf, len, cfg);
+    act->eyes[col_idx].eyes_name = char_ptr_of(value(cfg));
 
     return 1;
 }
@@ -1265,7 +1266,7 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
             }
             else if (index != -2)
             {
-                fprintf(stderr, "unknown frame property \"%s\"\n", item->name);
+                std::cerr << "unknown frame property \"" << item->name << "\"\n";
                 ok = 0;
             }
         }
@@ -1286,7 +1287,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
     col_idx = get_int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_BOOTS_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -1307,15 +1308,15 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
             {
-                get_string_value(boots->skin_name, sizeof(boots->skin_name), item);
+                boots->skin_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
             {
-                get_string_value(boots->model_name, sizeof (boots->model_name), item);
+                boots->model_name = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"bootsmask") == 0)
             {
-                get_string_value(boots->skin_mask, sizeof (boots->skin_mask), item);
+                boots->skin_mask = char_ptr_of(value(item));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
             {
@@ -1324,7 +1325,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
             }
             else
             {
-                fprintf(stderr, "unknown legs property \"%s\"\n", item->name);
+                std::cerr << "unknown legs property \"" << item->name << "\"\n";
                 ok = 0;
             }
         }
@@ -1337,14 +1338,10 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
         if (default_node)
         {
-            if (*boots->skin_name == '\0')
-                get_item_string_value(boots->skin_name, sizeof(boots->skin_name),
-                                      default_node, (xmlChar*)"skin");
-            if (*boots->model_name == '\0')
-            {
-                get_item_string_value(boots->model_name, sizeof(boots->model_name),
-                                      default_node, (xmlChar*)"mesh");
-            }
+            if (!boots->skin_name || *boots->skin_name == '\0')
+                boots->skin_name = char_ptr_of(item_value(default_node, "skin"));
+            if (!boots->model_name || *boots->model_name == '\0')
+                boots->model_name = char_ptr_of(item_value(default_node, "mesh"));
         }
     }
 
@@ -1371,15 +1368,15 @@ int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *
 
         if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
         {
-            get_string_value(part->model_name, sizeof (part->model_name), item);
+            part->model_name = char_ptr_of(value(item));
         }
         else if(xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
         {
-            get_string_value(part->skin_name, sizeof (part->skin_name), item);
+            part->skin_name = char_ptr_of(value(item));
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"skinmask") == 0)
         {
-            get_string_value (part->skin_mask, sizeof (part->skin_mask), item);
+            part->skin_mask = char_ptr_of(value(item));
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
         {
@@ -1401,10 +1398,7 @@ int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *
     if (default_node)
     {
         if (!part->model_name || *part->model_name == '\0')
-        {
-            get_item_string_value(part->model_name, sizeof(part->model_name),
-                                  default_node, (xmlChar*)"mesh");
-        }
+            part->model_name = char_ptr_of(item_value(default_node, "mesh"));
     }
 
     // check the critical information
@@ -1464,15 +1458,15 @@ int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon, const xmlNo
 
             if (!strcmp(name, "mesh"))
             {
-                get_string_value(weapon->model_name, sizeof (weapon->model_name), item);
+                weapon->model_name = char_ptr_of(value(item));
             }
             else if (!strcmp(name, "skin"))
             {
-                get_string_value(weapon->skin_name, sizeof (weapon->skin_name), item);
+                weapon->skin_name = char_ptr_of(value(item));
             }
             else if (!strcmp(name, "skinmask"))
             {
-                get_string_value(weapon->skin_mask, sizeof (weapon->skin_mask), item);
+                weapon->skin_mask = char_ptr_of(value(item));
             }
             else if (!strcmp(name, "glow"))
             {
@@ -1878,15 +1872,11 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
         if (default_node)
         {
             if (!weapon->skin_name || *weapon->skin_name=='\0')
-                get_item_string_value(weapon->skin_name, sizeof(weapon->skin_name),
-                                      default_node, (xmlChar*)"skin");
+                weapon->skin_name = char_ptr_of(item_value(default_node, "skin"));
             if (type_idx != GLOVE_FUR && type_idx != GLOVE_LEATHER)
             {   // these dont have meshes
                 if (!weapon->model_name || *weapon->model_name=='\0')
-                {
-                    get_item_string_value(weapon->model_name, sizeof(weapon->model_name),
-                                          default_node, (xmlChar*)"mesh");
-                }
+                    weapon->model_name = char_ptr_of(item_value(default_node, "mesh"));
             }
             // TODO: combat animations
         }
@@ -2362,7 +2352,7 @@ int parse_actor_script(const xmlNode *cfg)
     if ((!act->head || !*act->head[0].model_name) && !act->shirt)
     {
         act->shirt = all_shirts + all_shirts_used;
-        all_shirts_used += actor_part_sizes[ACTOR_SHIRT_SIZE]; // XXX 1?
+        all_shirts_used += 1; // actor_part_sizes[ACTOR_SHIRT_SIZE];
     }
 
     return ok;
@@ -2451,30 +2441,47 @@ static int init_actor_defs(const char* dir)
                 + actor_part_sizes[ACTOR_NECK_SIZE]
                 + actor_part_sizes[ACTOR_BOOTS_SIZE]
                 + actor_part_sizes[ACTOR_LEGS_SIZE];
+    int nr_shields = actor_part_sizes[ACTOR_SHIELD_SIZE];
+    int nr_weapons = actor_part_sizes[ACTOR_WEAPON_SIZE];
+    int nr_shirts = actor_part_sizes[ACTOR_SHIRT_SIZE];
+    int nr_skins = actor_part_sizes[ACTOR_SKIN_SIZE];
+    int nr_hairs = actor_part_sizes[ACTOR_HAIR_SIZE];
+    int nr_eyes = actor_part_sizes[ACTOR_EYES_SIZE];
 
     // initialize the whole thing to zero
     std::memset(actors_defs, 0, sizeof(actors_defs));
     std::memset(attached_actors_defs, 0, sizeof(attached_actors_defs));
 
     all_body = new body_part[MAX_ACTOR_DEFS * nr_body];
-    all_shields = new shield_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_SHIELD_SIZE]];
-    all_weapons = new weapon_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_WEAPON_SIZE]];
-    all_shirts = new shirt_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_SHIRT_SIZE]];
-    all_skins = new skin_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_SKIN_SIZE]];
-    all_hairs = new hair_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_HAIR_SIZE]];
-    all_eyes = new eyes_part[MAX_ACTOR_DEFS * actor_part_sizes[ACTOR_EYES_SIZE]];
+    all_shields = new shield_part[MAX_ACTOR_DEFS * nr_shields];
+    all_weapons = new weapon_part[MAX_ACTOR_DEFS * nr_weapons];
+    all_shirts = new shirt_part[MAX_ACTOR_DEFS * nr_shirts];
+    all_skins = new skin_part[MAX_ACTOR_DEFS * nr_skins];
+    all_hairs = new hair_part[MAX_ACTOR_DEFS * nr_hairs];
+    all_eyes = new eyes_part[MAX_ACTOR_DEFS * nr_eyes];
+
+    std::memset(all_body, 0, MAX_ACTOR_DEFS * nr_body * sizeof(body_part));
+    std::memset(all_shields, 0, MAX_ACTOR_DEFS * nr_shields * sizeof(shield_part));
+    std::memset(all_weapons, 0, MAX_ACTOR_DEFS * nr_weapons * sizeof(weapon_part));
+    std::memset(all_shirts, 0, MAX_ACTOR_DEFS * nr_shirts * sizeof(shirt_part));
+    std::memset(all_skins, 0, MAX_ACTOR_DEFS * nr_skins * sizeof(skin_part));
+    std::memset(all_hairs, 0, MAX_ACTOR_DEFS * nr_hairs * sizeof(hair_part));
+    std::memset(all_eyes, 0, MAX_ACTOR_DEFS * nr_eyes * sizeof(eyes_part));
 
     return read_actor_defs(dir, "actor_defs.xml");
 }
 
 std::ostream& operator<<(std::ostream& os, const body_part& part)
 {
-    const char *glow_name = glow_mode_name(part.glow);
+    const char* model_name = part.model_name ? part.model_name : "";
+    const char* skin_name = part.skin_name ? part.skin_name : "";
+    const char* skin_mask = part.skin_mask ? part.skin_mask : "";
+    const char* glow_name = glow_mode_name(part.glow);
 
     os << "\t{\n"
-        << "\t\t.model_name = \"" << part.model_name << "\",\n"
-        << "\t\t.skin_name = \"" << part.skin_name << "\",\n"
-        << "\t\t.skin_mask = \"" << part.model_name << "\",\n";
+        << "\t\t.model_name = \"" << model_name << "\",\n"
+        << "\t\t.skin_name = \"" << skin_name << "\",\n"
+        << "\t\t.skin_mask = \"" << skin_mask << "\",\n";
     if (glow_name)
         os << "\t\t.glow = " << glow_name << ",\n";
     else
@@ -2494,12 +2501,15 @@ std::ostream& write_actor_body(std::ostream& os)
 
 std::ostream &operator<<(std::ostream& os, const shield_part& part)
 {
+    const char* model_name = part.model_name ? part.model_name : "";
+    const char* skin_name = part.skin_name ? part.skin_name : "";
+    const char* skin_mask = part.skin_mask ? part.skin_mask : "";
     const char *glow_name = glow_mode_name(part.glow);
 
     os << "\t{\n"
-        << "\t\t.model_name = \"" << part.model_name << "\",\n"
-        << "\t\t.skin_name = \"" << part.skin_name << "\",\n"
-        << "\t\t.skin_mask = \"" << part.model_name << "\",\n";
+        << "\t\t.model_name = \"" << model_name << "\",\n"
+        << "\t\t.skin_name = \"" << skin_name << "\",\n"
+        << "\t\t.skin_mask = \"" << skin_mask << "\",\n";
     if (glow_name)
         os << "\t\t.glow = " << glow_name << ",\n";
     else
@@ -2520,12 +2530,15 @@ std::ostream& write_actor_shields(std::ostream& os)
 
 std::ostream& operator<<(std::ostream& os, const weapon_part& part)
 {
+    const char* model_name = part.model_name ? part.model_name : "";
+    const char* skin_name = part.skin_name ? part.skin_name : "";
+    const char* skin_mask = part.skin_mask ? part.skin_mask : "";
     const char *glow_name = glow_mode_name(part.glow);
 
     os << "\t{\n"
-        << "\t\t.model_name = \"" << part.model_name << "\",\n"
-        << "\t\t.skin_name = \"" << part.skin_name << "\",\n"
-        << "\t\t.skin_mask = \"" << part.model_name << "\",\n";
+        << "\t\t.model_name = \"" << model_name << "\",\n"
+        << "\t\t.skin_name = \"" << skin_name << "\",\n"
+        << "\t\t.skin_mask = \"" << skin_mask << "\",\n";
     if (glow_name)
         os << "\t\t.glow = " << glow_name << ",\n";
     else
@@ -2548,12 +2561,18 @@ std::ostream& write_actor_weapons(std::ostream& os)
 
 std::ostream& operator<<(std::ostream& os, const shirt_part& part)
 {
+    const char* model_name = part.model_name ? part.model_name : "";
+    const char* arms_name = part.arms_name ? part.arms_name : "";
+    const char* torso_name = part.torso_name ? part.torso_name : "";
+    const char* arms_mask = part.arms_mask ? part.arms_mask : "";
+    const char* torso_mask = part.torso_mask ? part.torso_mask : "";
+
     return os << "\t{\n"
-        << "\t\t.model_name = \"" << part.model_name << "\",\n"
-        << "\t\t.arms_name = \"" << part.arms_name << "\",\n"
-        << "\t\t.torso_name = \"" << part.torso_name << "\",\n"
-        << "\t\t.arms_mask = \"" << part.arms_mask << "\",\n"
-        << "\t\t.torso_mask = \"" << part.torso_mask << "\",\n"
+        << "\t\t.model_name = \"" << model_name << "\",\n"
+        << "\t\t.arms_name = \"" << arms_name << "\",\n"
+        << "\t\t.torso_name = \"" << torso_name << "\",\n"
+        << "\t\t.arms_mask = \"" << arms_mask << "\",\n"
+        << "\t\t.torso_mask = \"" << torso_mask << "\",\n"
         << "\t\t.mesh_index = -1\n"
         << "\t},\n";
 }
@@ -2568,12 +2587,20 @@ std::ostream& write_actor_shirts(std::ostream& os)
 
 std::ostream& operator<<(std::ostream& os, const skin_part &part)
 {
+    const char* hands_name = part.hands_name ? part.hands_name : "";
+    const char* head_name = part.head_name ? part.head_name : "";
+    const char* arms_name = part.arms_name ? part.arms_name : "";
+    const char* body_name = part.body_name ? part.body_name : "";
+    const char* legs_name = part.legs_name ? part.legs_name : "";
+    const char* feet_name = part.feet_name ? part.feet_name : "";
+
     return os << "\t{\n"
-        << "\t\t.hands_name = \"" << part.hands_name << "\",\n"
-        << "\t\t.head_name = \"" << part.head_name << "\",\n"
-        << "\t\t.body_name = \"" << part.body_name << "\",\n"
-        << "\t\t.legs_name = \"" << part.legs_name << "\",\n"
-        << "\t\t.feet_name = \"" << part.feet_name << "\",\n"
+        << "\t\t.hands_name = \"" << hands_name << "\",\n"
+        << "\t\t.head_name = \"" << head_name << "\",\n"
+        << "\t\t.arms_name = \"" << arms_name << "\",\n"
+        << "\t\t.body_name = \"" << body_name << "\",\n"
+        << "\t\t.legs_name = \"" << legs_name << "\",\n"
+        << "\t\t.feet_name = \"" << feet_name << "\",\n"
         << "\t},\n";
 }
 
@@ -2588,7 +2615,8 @@ std::ostream& write_actor_skins(std::ostream& os)
 std::ostream& operator<<(std::ostream& os, const hair_part& part)
 {
     return os << "\t{\n"
-        << "\t\t.hair_name = \"" << part.hair_name << "\"\n"
+        << "\t\t.hair_name = \""
+        << (part.hair_name ? part.hair_name : "") << "\"\n"
         << "\t},\n";
 }
 
@@ -2603,7 +2631,8 @@ std::ostream& write_actor_hairs(std::ostream& os)
 std::ostream& operator<<(std::ostream& os, const eyes_part& part)
 {
     return os << "\t{\n"
-        << "\t\t.eyes_name = \"" << part.eyes_name << "\",\n"
+        << "\t\t.eyes_name = \""
+        << (part.eyes_name ? part.eyes_name : "") << "\",\n"
         << "\t},\n";
 }
 
@@ -2991,21 +3020,25 @@ int main(int argc, const char *argv[])
     if (!init_actor_defs(argv[1]))
     {
         std::cerr << "Problem reading actor defs\n";
-        return 1;
+        goto err;
     }
 
-    std::ofstream os(argv[2]);
-    if (!os.good())
     {
-        std::cerr << "Unable to open output file \"" << argv[2] << "\"\n";
-        cleanup();
-        return 1;
+        std::ofstream os(argv[2]);
+        if (!os.good())
+        {
+            std::cerr << "Unable to open output file \"" << argv[2] << "\"\n";
+            goto err;
+        }
+        write_c_file(os);
+        os.close();
     }
-    write_c_file(os);
-    os.close();
 
     cleanup();
-
     return 0;
+
+err:
+    cleanup();
+    return 1;
 }
 

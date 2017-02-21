@@ -38,9 +38,15 @@ typedef enum
 /*! Sets the main model type*/
 typedef struct
 {
+#ifdef XML_COMPILED
+	const char* model_name;
+	const char* skin_name;
+	const char* skin_mask;
+#else
 	char model_name[MAX_FILE_PATH];
 	char skin_name[MAX_FILE_PATH];
 	char skin_mask[MAX_FILE_PATH];
+#endif
 	int glow;
 	int mesh_index;
 } body_part;
@@ -48,61 +54,96 @@ typedef struct
 /*! Sets the shield type*/
 typedef struct
 {
+#ifdef XML_COMPILED
+	const char* model_name;
+	const char* skin_name;
+	const char* skin_mask;
+#else
 	char model_name[MAX_FILE_PATH];
 	char skin_name[MAX_FILE_PATH];
 	char skin_mask[MAX_FILE_PATH];
+#endif
 	int glow;
 	int mesh_index;
-
 	int missile_type; /*!< The type of equipped missiles (>=0 if a quiver is equipped, -1 if a regular shield is equipped) */
 } shield_part;
 
 /*! Sets the weapon type (including animation frame names)*/
 typedef struct
 {
+#ifdef XML_COMPILED
+	const char* model_name;
+	const char* skin_name;
+	const char* skin_mask;
+#else
 	char model_name[MAX_FILE_PATH];
 	char skin_name[MAX_FILE_PATH];
 	char skin_mask[MAX_FILE_PATH];
+#endif
 	int glow;
 	int mesh_index;
 	int turn_horse;
 	int unarmed;
-
 	struct cal_anim cal_frames[NUM_WEAPON_FRAMES];
 } weapon_part;
 
 /*! Defines the main models looks*/
 typedef struct
 {
+#ifdef XML_COMPILED
+	const char* model_name;
+	const char* arms_name;
+	const char* torso_name;
+	const char* arms_mask;
+	const char* torso_mask;
+#else
 	char model_name[MAX_FILE_PATH];
 	char arms_name[MAX_FILE_PATH];
 	char torso_name[MAX_FILE_PATH];
 	char arms_mask[MAX_FILE_PATH];
 	char torso_mask[MAX_FILE_PATH];
+#endif
 	int mesh_index;
 } shirt_part;
 
 /*! Sets the models hands and head*/
 typedef struct
 {
+#ifdef XML_COMPILED
+	const char* hands_name;
+	const char* head_name;
+	const char* arms_name;
+	const char* body_name;
+	const char* legs_name;
+	const char* feet_name;
+#else
 	char hands_name[MAX_FILE_PATH];
 	char head_name[MAX_FILE_PATH];
 	char arms_name[MAX_FILE_PATH];
 	char body_name[MAX_FILE_PATH];
 	char legs_name[MAX_FILE_PATH];
 	char feet_name[MAX_FILE_PATH];
+#endif
 } skin_part;
 
 /*! Sets the models hair name*/
 typedef struct
 {
+#ifdef XML_COMPILED
+    const char* hair_name;
+#else
 	char hair_name[MAX_FILE_PATH];
+#endif
 } hair_part;
 
 /*! Sets the models eyes name*/
 typedef struct
 {
+#ifdef XML_COMPILED
+    const char* eyes_name;
+#else
 	char eyes_name[MAX_FILE_PATH];
+#endif
 } eyes_part;
 
 /*! A structure used when loading the actor definitions
