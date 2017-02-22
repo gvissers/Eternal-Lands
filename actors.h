@@ -450,7 +450,7 @@ extern actor *your_actor; /*!< A pointer to your own character, if available. Sh
 extern int	max_actors;		/*!< The current number of actors in the actors_list + 1*/
 extern actor_types actors_defs[];	/*!< The actor definitions*/
 extern attached_actors_types attached_actors_defs[]; /*!< The definitions for the attached actors */
-
+extern const int nr_actor_defs; /*!< The number of actor definitions actually known
 
 static __inline__ int is_actor_barehanded(actor *act, int hand){
 	if(hand==EMOTE_BARE_L)

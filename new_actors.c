@@ -701,11 +701,10 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	ERR();
 #endif
 
-	if(actor_type >= MAX_ACTOR_DEFS || (actor_type > 0 && actors_defs[actor_type].actor_type != actor_type) ){
-		char    str[256];
-
-		safe_snprintf(str, sizeof(str), "Illegal/missing enhanced actor definition %d", actor_type);
-		LOG_ERROR(str);
+	if (actor_type >= nr_actor_defs
+		|| (actor_type > 0 && actors_defs[actor_type].actor_type != actor_type) )
+	{
+		LOG_ERROR("Illegal/missing enhanced actor definition %d", actor_type);
 		return;		// We cannot load an actor without a def (seg fault) so bail here.
 	}
 

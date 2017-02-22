@@ -2759,7 +2759,7 @@ std::ostream& write_actor_types(std::ostream& os, int nr_actor_defs)
         os << actors_defs[i];
     os << "};\n"
         << "attached_actors_types attached_actors_defs[" << nr_actor_defs << "];\n"
-        << "static const int nr_actor_defs = " << nr_actor_defs << ";\n\n";
+        << "const int nr_actor_defs = " << nr_actor_defs << ";\n\n";
 
     return os;
 }

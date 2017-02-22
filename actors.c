@@ -48,6 +48,7 @@ actor *your_actor = NULL;
 #ifndef XML_COMPILED
 actor_types actors_defs[MAX_ACTOR_DEFS];
 attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS];
+const int nr_actor_defs = MAX_ACTOR_DEFS;
 #endif // XML_COMPILED
 
 void draw_actor_overtext( actor* actor_ptr ); /* forward declaration */
@@ -255,9 +256,16 @@ void add_actor_attachment(int actor_id, int attachment_type)
 		}
 
 	if (!parent)
-		LOG_ERROR("unable to add an attached actor: actor with id %d doesn't exist!", actor_id);
-	else if(attachment_type < 0 || attachment_type >= MAX_ACTOR_DEFS || (attachment_type > 0 && actors_defs[attachment_type].actor_type != attachment_type) )
-		LOG_ERROR("unable to add an attached actor: illegal/missing actor definition %d", attachment_type);
+	{
+		LOG_ERROR("unable to add an attached actor: actor with id %d doesn't exist!",
+			actor_id);
+	}
+	else if (attachment_type < 0 || attachment_type >= nr_actor_defs
+		|| (attachment_type > 0 && actors_defs[attachment_type].actor_type != attachment_type))
+	{
+		LOG_ERROR("unable to add an attached actor: illegal/missing actor definition %d",
+			attachment_type);
+	}
 	else
 	{
 		int id = add_actor(attachment_type, actors_defs[attachment_type].skin_name,
@@ -1482,7 +1490,9 @@ void add_actor_from_server (const char *in_data, int len)
 			attachment_type = (unsigned char)in_data[17+strlen(in_data+17)+3];
 	}
 
-	if(actor_type < 0 || actor_type >= MAX_ACTOR_DEFS || (actor_type > 0 && actors_defs[actor_type].actor_type != actor_type) ){
+	if (actor_type < 0 || actor_type >= nr_actor_defs
+		|| (actor_type > 0 && actors_defs[actor_type].actor_type != actor_type))
+	{
 		LOG_ERROR("Illegal/missing actor definition %d", actor_type);
 	}
 
