@@ -23,8 +23,6 @@ typedef struct
     const char *sound_scale;
 #endif
     int duration;
-    int act_idx;
-    int frame_idx;
 } frames_reg;
 
 typedef struct
@@ -36,9 +34,8 @@ typedef struct
 #endif
     int duration;
     int act_idx;
-    int weapon_idx;
     int frame_idx;
-} weapon_frames_reg;
+} emote_reg;
 
 typedef struct
 {
@@ -68,22 +65,6 @@ typedef struct
 	int act_idx;
 	int frame_idx;
 } sound_reg;
-
-typedef struct
-{
-	const char* sound;
-	const char* sound_scale;
-	int act_idx;
-	int weapon_idx;
-	int frame_idx;
-} weapon_sound_reg;
-
-typedef struct
-{
-    const char *name;
-    float scale;
-    int act_idx;
-} battlecry_reg;
 #endif
 
 #include "actor_defs_inc.c"
@@ -228,7 +209,7 @@ struct cal_anim cal_load_idle(actor_types *act, const char *str)
 
 void init_actor_defs()
 {
-    int i, j;
+    int i, j, k;
 
 memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
 
@@ -336,6 +317,28 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
                     part->mesh_index = cal_load_mesh(act, part->model_name, "weapon", act->skel_scale);
                     actor_check_int(act, "weapon.mesh", part->model_name, part->mesh_index);
                 }
+                for (k = 0; k < NUM_WEAPON_FRAMES; ++k)
+                {
+                    int reg_idx = part->cal_frames[k].anim_index;
+                    if (reg_idx >= 0)
+                    {
+                        const frames_reg *reg = frames_regs + reg_idx;
+                        part->cal_frames[k]
+                            = cal_load_anim(act, reg->fname,
+#ifdef NEW_SOUND
+                                            reg->sound, reg->sound_scale,
+#endif // NEW_SOUND
+                                            reg->duration);
+                    }
+
+                    reg_idx = part->cal_frames[k].sound;
+                    if (reg_idx >= 0)
+                    {
+                        const sound_reg *reg = sound_regs + reg_idx;
+                        cal_set_anim_sound(part->cal_frames + k, reg->sound,
+                               reg->sound_scale);
+                    }
+                }
             }
         }
         if (act->shirt)
@@ -374,6 +377,44 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
                 }
             }
         }
+
+#ifdef NEW_SOUND
+        if (act->battlecry.sound >= 0)
+        {
+            const sound_reg *reg = sound_regs + act->battlecry.sound;
+            int idx = get_index_for_sound_type_name(reg->sound);
+            if (idx == -1)
+            {
+                LOG_ERROR("Unknown battlecry sound (%s) in actor def: %s\n",
+                    reg->sound, act->actor_name);
+            }
+            act->battlecry.sound = idx;
+            act->battlecry.scale = *reg->sound_scale ? atof(reg->sound_scale) : 1.0f;
+        }
+#endif
+
+        for (j = 0; j < NUM_ACTOR_FRAMES; ++j)
+        {
+            int reg_idx = act->cal_frames[j].anim_index;
+            if (reg_idx >= 0)
+            {
+                const frames_reg *reg = frames_regs + reg_idx;
+                act->cal_frames[j] = cal_load_anim(act, reg->fname,
+#ifdef NEW_SOUND
+                                                   reg->sound, reg->sound_scale,
+#endif // NEW_SOUND
+                                                   reg->duration);
+            }
+
+#ifdef NEW_SOUND
+            reg_idx = act->cal_frames[j].sound;
+            if (reg_idx >= 0)
+            {
+                const sound_reg *reg = sound_regs + reg_idx;
+                cal_set_anim_sound(act->cal_frames + j, reg->sound, reg->sound_scale);
+            }
+#endif
+        }
     }
 
     for (i = 0; i < nr_idle_group_regs; ++i)
@@ -383,31 +424,9 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
         act->idle_group[reg->group_idx].anim[reg->anim_idx] = cal_load_idle(act, reg->fname);
     }
 
-    for (i = 0; i < nr_frames_regs; ++i)
-    {
-        const frames_reg *reg = frames_regs + i;
-        actor_types *act = actors_defs + reg->act_idx;
-        act->cal_frames[reg->frame_idx] = cal_load_anim(act, reg->fname,
-#ifdef NEW_SOUND
-                                                        reg->sound, reg->sound_scale,
-#endif // NEW_SOUND
-                                                        reg->duration);
-    }
-    for (i = 0; i < nr_weapon_frames_regs; ++i)
-    {
-        const weapon_frames_reg *reg = weapon_frames_regs + i;
-        actor_types *act = actors_defs + reg->act_idx;
-        weapon_part *weapon = act->weapon + reg->weapon_idx;
-        weapon->cal_frames[reg->frame_idx] = cal_load_anim(act, reg->fname,
-#ifdef NEW_SOUND
-                                                           reg->sound, reg->sound_scale,
-#endif // NEW_SOUND
-                                                           reg->duration);
-    }
-
     for (i = 0; i < nr_emote_regs; ++i)
     {
-        const frames_reg *reg = emote_regs + i;
+        const emote_reg *reg = emote_regs + i;
         actor_types *act = actors_defs + reg->act_idx;
         if (!act->emote_frames)
             act->emote_frames = create_hash_table(EMOTES_FRAMES, hash_fn_int, cmp_fn_int, free);
@@ -472,43 +491,6 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
 #endif
                             reg->duration);
     }
-
-#ifdef NEW_SOUND
-    if (have_sound_config)
-    {
-        for (i = 0; i < nr_sound_regs; ++i)
-        {
-            const sound_reg *reg = sound_regs + i;
-            actor_types *act = actors_defs + reg->act_idx;
-            cal_set_anim_sound(act->cal_frames + reg->frame_idx, reg->sound,
-                            reg->sound_scale);
-        }
-        for (i = 0; i < nr_weapon_sound_regs; ++i)
-        {
-            const weapon_sound_reg *reg = weapon_sound_regs + i;
-            actor_types *act = actors_defs + reg->act_idx;
-            weapon_part *weapon = act->weapon + reg->weapon_idx;
-            cal_set_anim_sound(weapon->cal_frames + reg->frame_idx, reg->sound,
-                            reg->sound_scale);
-        }
-        for (i = 0; i < nr_battlecry_regs; ++i)
-        {
-            const battlecry_reg *reg = battlecry_regs + i;
-            actor_types *act = actors_defs + reg->act_idx;
-            int idx = get_index_for_sound_type_name(reg->name);
-            if (idx == -1)
-            {
-                LOG_ERROR("Unknown battlecry sound (%s) in actor def: %s\n",
-                    reg->name, act->actor_name);
-            }
-            else
-            {
-                act->battlecry.sound = idx;
-                act->battlecry.scale = reg->scale;
-            }
-        }
-    }
-#endif // NEW_SOUND
 }
 
 void free_actor_defs()

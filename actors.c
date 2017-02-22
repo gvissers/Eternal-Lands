@@ -47,9 +47,8 @@ actor *your_actor = NULL;
 
 #ifndef XML_COMPILED
 actor_types actors_defs[MAX_ACTOR_DEFS];
-#endif
-
 attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS];
+#endif // XML_COMPILED
 
 void draw_actor_overtext( actor* actor_ptr ); /* forward declaration */
 

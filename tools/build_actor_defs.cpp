@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -173,10 +174,34 @@ struct frames_reg
     std::string sound_scale;
 #endif
     int duration;
+
+    frames_reg(const std::string& fname,
+#ifdef NEW_SOUND
+               const std::string& sound, const std::string& sound_scale,
+#endif
+               int duration):
+        fname(fname),
+#ifdef NEW_SOUND
+        sound(sound), sound_scale(sound_scale),
+#endif
+        duration(duration) {}
+};
+
+std::vector<frames_reg> frames_regs;
+std::unordered_map<std::string, int> frames_regs_known;
+
+struct emote_reg
+{
+    std::string fname;
+#ifdef NEW_SOUND
+    std::string sound;
+    std::string sound_scale;
+#endif
+    int duration;
     int act_idx;
     int frame_idx;
 
-    frames_reg(const std::string& fname,
+    emote_reg(const std::string& fname,
 #ifdef NEW_SOUND
                const std::string& sound, const std::string& sound_scale,
 #endif
@@ -188,35 +213,7 @@ struct frames_reg
         duration(duration), act_idx(act_idx), frame_idx(frame_idx) {}
 };
 
-std::vector<frames_reg> emote_regs;
-std::vector<frames_reg> frames_regs;
-
-struct weapon_frames_reg
-{
-    std::string fname;
-#ifdef NEW_SOUND
-    std::string sound;
-    std::string sound_scale;
-#endif
-    int duration;
-    int act_idx;
-    int weapon_idx;
-    int frame_idx;
-
-    weapon_frames_reg(const std::string& fname,
-#ifdef NEW_SOUND
-                      const std::string& sound, const std::string& sound_scale,
-#endif
-                      int duration, int act_idx, int weapon_idx, int frame_idx):
-        fname(fname),
-#ifdef NEW_SOUND
-        sound(sound), sound_scale(sound_scale),
-#endif
-        duration(duration), act_idx(act_idx), weapon_idx(weapon_idx),
-        frame_idx(frame_idx) {}
-};
-
-std::vector<weapon_frames_reg> weapon_frames_regs;
+std::vector<emote_reg> emote_regs;
 
 struct bone_reg
 {
@@ -263,42 +260,13 @@ struct sound_reg
 {
 	std::string sound;
 	std::string sound_scale;
-	int act_idx;
-	int frame_idx;
 
-	sound_reg(const std::string& sound, const std::string& sound_scale,
-					 int act_idx, int frame_idx):
-		sound(sound), sound_scale(sound_scale), act_idx(act_idx),
-		frame_idx(frame_idx) {}
-};
-
-struct weapon_sound_reg
-{
-	std::string sound;
-	std::string sound_scale;
-	int act_idx;
-	int weapon_idx;
-	int frame_idx;
-
-	weapon_sound_reg(const std::string& sound, const std::string& sound_scale,
-					 int act_idx, int weapon_idx, int frame_idx):
-		sound(sound), sound_scale(sound_scale), act_idx(act_idx),
-		weapon_idx(weapon_idx), frame_idx(frame_idx) {}
-};
-
-struct battlecry_reg
-{
-    std::string name;
-    float scale;
-    int act_idx;
-
-    battlecry_reg(const std::string& name, float scale, int act_idx):
-        name(name), scale(scale), act_idx(act_idx) {}
+	sound_reg(const std::string& sound, const std::string& sound_scale):
+		sound(sound), sound_scale(sound_scale) {}
 };
 
 std::vector<sound_reg> sound_regs;
-std::vector<weapon_sound_reg> weapon_sound_regs;
-std::vector<battlecry_reg> battlecry_regs;
+std::unordered_map<std::string, int> sound_regs_known;
 #endif
 
 
@@ -941,7 +909,7 @@ static int cal_get_idle_group(actor_types *act, const char *name)
     }
 
     idx = act->group_count++;
-    strncpy(act->idle_group[idx].name, name, sizeof(act->idle_group[idx].name));
+    act->idle_group[idx].name = char_ptr_of(name);
 
     return idx;
 }
@@ -957,6 +925,31 @@ static void parse_idle_group(actor_types *act, const char *str)
     int group_idx = cal_get_idle_group(act, gname);
     int anim_idx = act->idle_group[group_idx].count++;
     idle_group_regs.emplace_back(fname, act - actors_defs, group_idx, anim_idx);
+}
+
+static int get_frames_reg_index(const std::string& fname,
+#ifdef NEW_SOUND
+                         const std::string& sound, const std::string& sound_scale,
+#endif
+                         int duration)
+{
+    std::ostringstream os;
+    os << fname << '|' << sound << '|' << sound_scale << '|' << duration;
+
+    std::string key = os.str();
+    auto iter = frames_regs_known.find(key);
+    if (iter != frames_regs_known.end())
+        return iter->second;
+
+    int idx = frames_regs.size();
+    frames_regs.emplace_back(fname,
+#ifdef NEW_SOUND
+                             sound, sound_scale,
+#endif
+                             duration);
+    frames_regs_known.emplace(key, idx);
+
+    return idx;
 }
 
 int parse_actor_frames(actor_types *act, const xmlNode *cfg)
@@ -1256,13 +1249,13 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
 
             if (index >= 0)
             {
-                frames_regs.emplace_back(value(item),
+                act->cal_frames[index].anim_index
+                    = get_frames_reg_index(value(item),
 #ifdef NEW_SOUND
-                                         property(item, "sound"),
-                                         property(item, "sound_scale"),
+                                           property(item, "sound"),
+                                           property(item, "sound_scale"),
 #endif // NEW_SOUND
-                                         get_int_property(item, "duration"),
-                                         act - actors_defs, index);
+                                           get_int_property(item, "duration"));
             }
             else if (index != -2)
             {
@@ -1438,8 +1431,25 @@ int parse_actor_shield(actor_types *act, const xmlNode *cfg, const xmlNode *defa
                                    default_node);
 }
 
-int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon, const xmlNode *cfg,
-                              const xmlNode *defaults)
+#ifdef NEW_SOUND
+static int get_sound_reg_index(const std::string& sound,
+                               const std::string& sound_scale)
+{
+    std::string key = sound + '|' + sound_scale;
+    auto iter = sound_regs_known.find(key);
+    if (iter != sound_regs_known.end())
+        return iter->second;
+
+    int idx = sound_regs.size();
+    sound_regs.emplace_back(sound, sound_scale);
+    sound_regs_known.emplace(key, idx);
+
+    return idx;
+}
+#endif
+
+static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
+                                     const xmlNode *cfg, const xmlNode *defaults)
 {
     const xmlNode *item;
     char name[256];
@@ -1476,123 +1486,103 @@ int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon, const xmlNo
             }
             else if (!strcmp(name, "snd_attack_up1"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_1_frame);
+                weapon->cal_frames[cal_weapon_attack_up_1_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up2"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_2_frame);
+                weapon->cal_frames[cal_weapon_attack_up_2_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up3"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_3_frame);
+                weapon->cal_frames[cal_weapon_attack_up_3_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up4"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_4_frame);
+                weapon->cal_frames[cal_weapon_attack_up_4_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up5"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_5_frame);
+                weapon->cal_frames[cal_weapon_attack_up_5_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up6"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_6_frame);
+                weapon->cal_frames[cal_weapon_attack_up_6_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up7"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_7_frame);
+                weapon->cal_frames[cal_weapon_attack_up_7_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up8"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_8_frame);
+                weapon->cal_frames[cal_weapon_attack_up_8_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up9"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_9_frame);
+                weapon->cal_frames[cal_weapon_attack_up_9_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_up10"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_up_10_frame);
+                weapon->cal_frames[cal_weapon_attack_up_10_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down1"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_1_frame);
+                weapon->cal_frames[cal_weapon_attack_down_1_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down2"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_2_frame);
+                weapon->cal_frames[cal_weapon_attack_down_2_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down3"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_3_frame);
+                weapon->cal_frames[cal_weapon_attack_down_3_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down4"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_4_frame);
+                weapon->cal_frames[cal_weapon_attack_down_4_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down5"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_5_frame);
+                weapon->cal_frames[cal_weapon_attack_down_5_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down6"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_6_frame);
+                weapon->cal_frames[cal_weapon_attack_down_6_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down7"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_7_frame);
+                weapon->cal_frames[cal_weapon_attack_down_7_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down8"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_8_frame);
+                weapon->cal_frames[cal_weapon_attack_down_8_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down9"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_9_frame);
+                weapon->cal_frames[cal_weapon_attack_down_9_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (!strcmp(name, "snd_attack_down10"))
             {
-                weapon_sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                               act - actors_defs, weapon - act->weapon,
-                                               cal_weapon_attack_down_10_frame);
+                weapon->cal_frames[cal_weapon_attack_down_10_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
 #endif	//NEW_SOUND
             }
             else
@@ -1801,15 +1791,13 @@ int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon, const xmlNo
 
                 if (index > -1)
                 {
-                    weapon_frames_regs.emplace_back(value(item),
+                    weapon->cal_frames[index].anim_index
+                        = get_frames_reg_index(value(item),
 #ifdef NEW_SOUND
-                                                    property(item, "sound"),
-                                                    property(item, "sound_scale"),
+                                               property(item, "sound"),
+                                               property(item, "sound_scale"),
 #endif	//NEW_SOUND
-                                                    get_int_property(item, "duration"),
-                                                    act - actors_defs,
-                                                    weapon - act->weapon,
-                                                    index);
+                                               get_int_property(item, "duration"));
                 }
                 else
                 {
@@ -2046,76 +2034,74 @@ int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
             get_string_value(str, sizeof(str), item);
             if (xmlStrcasecmp(item->name, (xmlChar*)"walk") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_walk_frame);
+                act->cal_frames[cal_actor_walk_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"run") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_run_frame);
+                act->cal_frames[cal_actor_run_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"die1") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_die1_frame);
+                act->cal_frames[cal_actor_die1_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"die2") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_die2_frame);
+                act->cal_frames[cal_actor_die2_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"pain1") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_pain1_frame);
-
+                act->cal_frames[cal_actor_pain1_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"pain2") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_pain2_frame);
+                act->cal_frames[cal_actor_pain2_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"pick") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_pick_frame);
+                act->cal_frames[cal_actor_pick_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"drop") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_drop_frame);
+                act->cal_frames[cal_actor_drop_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"harvest") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_harvest_frame);
+                act->cal_frames[cal_actor_harvest_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_cast") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_attack_cast_frame);
+                act->cal_frames[cal_actor_attack_cast_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_ranged") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_attack_ranged_frame);
+                act->cal_frames[cal_actor_attack_ranged_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"sit_down") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_sit_down_frame);
+                act->cal_frames[cal_actor_sit_down_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"stand_up") == 0)
             {
-                sound_regs.emplace_back(value(item), property(item, "sound_scale"),
-                                        act - actors_defs, cal_actor_stand_up_frame);
+                act->cal_frames[cal_actor_stand_up_frame].sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             // These sounds are only found in the <sounds> block as they aren't tied to an animation
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"battlecry") == 0)
             {
-                std::string scale_str = property(item, "sound_scale");
-                float scale = scale_str.empty() ? 1.0f : atof(scale_str.c_str());
-                battlecry_regs.emplace_back(value(item), scale, act - actors_defs);
+                act->battlecry.sound
+                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
             else
             {
@@ -2316,7 +2302,7 @@ int parse_actor_script(const xmlNode *cfg)
     act->group_count = 0;
     for (i = 0; i < 16; ++i)
     {
-        act->idle_group[i].name[0] = '\0';
+        act->idle_group[i].name = NULL;
         act->idle_group[i].count= 0;
     }
 
@@ -2546,9 +2532,13 @@ std::ostream& operator<<(std::ostream& os, const weapon_part& part)
     os << "\t\t.mesh_index = -1,\n"
         << "\t\t.turn_horse = " << part.turn_horse << ",\n"
         << "\t\t.unarmed = " << part.unarmed << ",\n"
-        << "\t\t.cal_frames = {}\n"
-        << "\t},\n";
-    return os;
+        << "\t\t.cal_frames = {\n";
+    for (int i = 0; i < NUM_WEAPON_FRAMES; ++i)
+    {
+        os << "\t\t\t{ .anim_index = " << part.cal_frames[i].anim_index
+            << ", .sound = " << part.cal_frames[i].sound << " },\n";
+    }
+    return os << "\t\t}\n\t},\n";
 }
 
 std::ostream& write_actor_weapons(std::ostream& os)
@@ -2665,15 +2655,30 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
         << "\t\t.vertex_buffer = 0,\n"
         << "\t\t.index_buffer = 0,\n"
         << "\t\t.index_type = 0,\n"
-        << "\t\t.index_size = 0,\n"
-        << "\t\t.idle_group = {},\n"
-        << "\t\t.group_count = " << act.group_count << ",\n"
+        << "\t\t.index_size = 0,\n";
+    if (act.group_count == 0)
+    {
+        os << "\t\t.idle_group = {},\n";
+    }
+    else
+    {
+        os << "\t\t.idle_group = {";
+        for (int i = 0; i < act.group_count; ++i)
+        {
+            const cal_animations *group = act.idle_group + i;
+            os << "\t\t\t.name = \"" << group->name << "\",\n"
+                << "\t\t\t.count = " << group->count << ",\n"
+                << "\t\t\t.anim = {}\n";
+        }
+        os << "\t\t},\n";
+    }
+    os << "\t\t.group_count = " << act.group_count << ",\n"
         << "\t\t.cal_frames = {\n";
     for (int i = 0; i < NUM_ACTOR_FRAMES; ++i)
     {
-        os << "\t\t\t{ .anim_index = -1"
+        os << "\t\t\t{ .anim_index = " << act.cal_frames[i].anim_index
 #ifdef NEW_SOUND
-            << ", .sound = -1"
+            << ", .sound = " << act.cal_frames[i].sound
 #endif
             << " },\n";
     }
@@ -2681,7 +2686,7 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
         << "\t\t.emote_frames = NULL,\n"
         << "\t\t.skeleton_type = -1,\n";
 #ifdef NEW_SOUND
-    os << "\t\t.battlecry = {},\n";
+    os << "\t\t.battlecry = { .sound = " << act.battlecry.sound << " },\n";
 #endif
     if (act.head)
         os << "\t\t.head = actor_body + " << (act.head - all_body) << ",\n";
@@ -2746,6 +2751,7 @@ std::ostream& write_actor_types(std::ostream& os, int nr_actor_defs)
     for (int i = 0; i < nr_actor_defs; ++i)
         os << actors_defs[i];
     os << "};\n"
+        << "attached_actors_types attached_actors_defs[" << nr_actor_defs << "];\n"
         << "static const int nr_actor_defs = " << nr_actor_defs << ";\n\n";
 
     return os;
@@ -2779,9 +2785,7 @@ std::ostream& operator<<(std::ostream& os, const frames_reg& reg)
         << "\t\t.sound = \"" << reg.sound << "\",\n"
         << "\t\t.sound_scale = \"" << reg.sound_scale << "\",\n"
 #endif
-        << "\t\t.duration = " << reg.duration << ",\n"
-        << "\t\t.act_idx = " << reg.act_idx << ",\n"
-        << "\t\t.frame_idx = " << reg.frame_idx << "\n"
+        << "\t\t.duration = " << reg.duration << '\n'
         << "\t},\n";
 }
 
@@ -2790,13 +2794,12 @@ std::ostream& write_frames_regs(std::ostream& os)
     os << "static const frames_reg frames_regs[" << frames_regs.size() << "] = {\n";
     for (const auto& reg: frames_regs)
         os << reg;
-    os << "};\n"
-        << "static const int nr_frames_regs = " << frames_regs.size() << ";\n\n";
+    os << "};\n";
 
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const weapon_frames_reg& reg)
+std::ostream& operator<<(std::ostream& os, const emote_reg& reg)
 {
     return os << "\t{\n"
         << "\t\t.fname = \"" << reg.fname << "\",\n"
@@ -2806,26 +2809,13 @@ std::ostream& operator<<(std::ostream& os, const weapon_frames_reg& reg)
 #endif
         << "\t\t.duration = " << reg.duration << ",\n"
         << "\t\t.act_idx = " << reg.act_idx << ",\n"
-        << "\t\t.weapon_idx = " << reg.weapon_idx << ",\n"
-        << "\t\t.frame_idx = " << reg.frame_idx << "\n"
+        << "\t\t.frame_idx = " << reg.frame_idx << '\n'
         << "\t},\n";
-}
-
-std::ostream& write_weapon_frames_regs(std::ostream& os)
-{
-    os << "static const weapon_frames_reg weapon_frames_regs["
-        << weapon_frames_regs.size() << "] = {\n";
-    for (const auto& reg: weapon_frames_regs)
-        os << reg;
-    os << "};\n"
-        << "static const int nr_weapon_frames_regs = " << weapon_frames_regs.size() << ";\n\n";
-
-    return os;
 }
 
 std::ostream& write_emote_regs(std::ostream& os)
 {
-    os << "static const frames_reg emote_regs[" << emote_regs.size() << "] = {\n";
+    os << "static const emote_reg emote_regs[" << emote_regs.size() << "] = {\n";
     for (const auto& reg: emote_regs)
         os << reg;
     os << "};\n"
@@ -2904,9 +2894,7 @@ std::ostream& operator<<(std::ostream& os, const sound_reg& reg)
 {
     return os << "\t{\n"
         << "\t\t.sound = \"" << reg.sound << "\",\n"
-        << "\t\t.sound_scale = \"" << reg.sound_scale << "\",\n"
-        << "\t\t.act_idx = " << reg.act_idx << ",\n"
-        << "\t\t.frame_idx = " << reg.frame_idx << "\n"
+        << "\t\t.sound_scale = \"" << reg.sound_scale << "\"\n"
         << "\t},\n";
 }
 
@@ -2917,46 +2905,6 @@ std::ostream& write_sound_regs(std::ostream& os)
         os << reg;
     os << "};\n"
         << "static const int nr_sound_regs = " << sound_regs.size() << ";\n\n";
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const weapon_sound_reg& reg)
-{
-    return os << "\t{\n"
-        << "\t\t.sound = \"" << reg.sound << "\",\n"
-        << "\t\t.sound_scale = \"" << reg.sound_scale << "\",\n"
-        << "\t\t.act_idx = " << reg.act_idx << ",\n"
-        << "\t\t.weapon_idx = " << reg.weapon_idx << ",\n"
-        << "\t\t.frame_idx = " << reg.frame_idx << "\n"
-        << "\t},\n";
-}
-
-std::ostream& write_weapon_sound_regs(std::ostream& os)
-{
-    os << "static weapon_sound_reg weapon_sound_regs[" << weapon_sound_regs.size() << "] = {\n";
-    for (const auto& reg: weapon_sound_regs)
-        os << reg;
-    os << "};\n"
-        << "static const int nr_weapon_sound_regs = " << weapon_sound_regs.size() << ";\n\n";
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const battlecry_reg& reg)
-{
-    return os << "\t{\n"
-        << "\t\t.name = \"" << reg.name << "\",\n"
-        << "\t\t.scale = " << reg.scale << ",\n"
-        << "\t\t.act_idx = " << reg.act_idx << "\n"
-        << "\t},\n";
-}
-
-std::ostream& write_battlecry_regs(std::ostream& os)
-{
-    os << "static const battlecry_reg battlecry_regs[" << battlecry_regs.size() << "] = {\n";
-    for (const auto& reg: battlecry_regs)
-        os << reg;
-    os << "};\n"
-        << "static const int nr_battlecry_regs = " << battlecry_regs.size() << ";\n\n";
     return os;
 }
 #endif
@@ -2984,15 +2932,12 @@ void write_c_file(std::ostream& os)
     write_actor_eyes(os);
     write_idle_group_regs(os);
     write_frames_regs(os);
-    write_weapon_frames_regs(os);
     write_emote_regs(os);
     write_parent_regs(os);
     write_local_regs(os);
     write_attached_frames_regs(os);
 #ifdef NEW_SOUND
     write_sound_regs(os);
-    write_weapon_sound_regs(os);
-    write_battlecry_regs(os);
 #endif
     write_actor_types(os, nr_actor_defs);
     write_skeleton_names(os, nr_actor_defs);
