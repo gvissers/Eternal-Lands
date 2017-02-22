@@ -154,16 +154,7 @@ static int all_hairs_used = 0;
 static eyes_part* all_eyes;
 static int all_eyes_used = 0;
 
-struct idle_group_reg
-{
-    std::string fname;
-    int act_idx, group_idx, anim_idx;
-
-    idle_group_reg(const char *fname, int act_idx, int group_idx, int anim_idx):
-        fname(fname), act_idx(act_idx), group_idx(group_idx), anim_idx(anim_idx) {}
-};
-
-std::vector<idle_group_reg> idle_group_regs;
+std::vector<std::string> idle_group_regs;
 static char skeleton_names[MAX_ACTOR_DEFS][256];
 
 struct frames_reg
@@ -924,7 +915,8 @@ static void parse_idle_group(actor_types *act, const char *str)
 
     int group_idx = cal_get_idle_group(act, gname);
     int anim_idx = act->idle_group[group_idx].count++;
-    idle_group_regs.emplace_back(fname, act - actors_defs, group_idx, anim_idx);
+    act->idle_group[group_idx].anim[anim_idx].anim_index = idle_group_regs.size();
+    idle_group_regs.emplace_back(fname);
 }
 
 static int get_frames_reg_index(const std::string& fname,
@@ -2666,9 +2658,24 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
         for (int i = 0; i < act.group_count; ++i)
         {
             const cal_animations *group = act.idle_group + i;
-            os << "\t\t\t.name = \"" << group->name << "\",\n"
-                << "\t\t\t.count = " << group->count << ",\n"
-                << "\t\t\t.anim = {}\n";
+            os << "\t\t\t{\n"
+                << "\t\t\t\t.name = \"" << group->name << "\",\n"
+                << "\t\t\t\t.count = " << group->count << ",\n";
+            if (group->count == 0)
+            {
+                os << "\t\t\t\t.anim = {}\n";
+            }
+            else
+            {
+                os << "\t\t\t\t.anim = {\n";
+                for (int j = 0; j < group->count; ++j)
+                {
+                    os << "\t\t\t\t\t{ .anim_index = "
+                        << group->anim[j].anim_index << " },\n";
+                }
+                os << "\t\t\t\t}\n";
+            }
+            os << "\t\t\t},\n";
         }
         os << "\t\t},\n";
     }
@@ -2757,24 +2764,12 @@ std::ostream& write_actor_types(std::ostream& os, int nr_actor_defs)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const idle_group_reg& reg)
-{
-    return os << "\t{\n"
-        << "\t\t.fname = \"" << reg.fname << "\",\n"
-        << "\t\t.act_idx = " << reg.act_idx << ",\n"
-        << "\t\t.group_idx = " << reg.group_idx << "%d,\n"
-        << "\t\t.anim_idx = " << reg.anim_idx << "\n"
-        << "\t},\n";
-}
-
 std::ostream& write_idle_group_regs(std::ostream& os)
 {
-    os << "static const idle_group_reg idle_group_regs[" << idle_group_regs.size() << "] = {\n";
+    os << "static const char* idle_group_regs[" << idle_group_regs.size() << "] = {\n";
     for (const auto& reg: idle_group_regs)
-        os << reg;
-    os << "};\n"
-        << "static const int nr_idle_group_regs = " << idle_group_regs.size() << ";\n\n";
-    return os;
+        os << "\t\"" << reg << "\",\n";
+    return os << "};\n\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const frames_reg& reg)
