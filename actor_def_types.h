@@ -189,9 +189,15 @@ typedef struct
 	/*! \name Model data*/
 	/*! \{ */
 	int actor_type;
+#ifdef XML_COMPILED
+	const char* actor_name;
+	const char* skin_name;
+	const char* file_name;
+#else
 	char actor_name[66];
 	char skin_name[MAX_FILE_PATH];
 	char file_name[256];
+#endif
 	/*! \} */
 
 	float actor_scale;

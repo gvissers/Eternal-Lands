@@ -397,7 +397,7 @@ void unload_sound(int index);
 int get_3d_obj_walk_sound(char * filename);
 int get_2d_obj_walk_sound(char * filename);
 int get_boundary_walk_sound(int x_pos, int y_pos);
-int get_tile_sound(int tile_type, char * actor_type);
+static int get_tile_sound(int tile_type, const char* actor_type);
 int find_sound_from_cookie(unsigned int cookie);
 int time_of_day_valid(int flags);
 int sound_bounds_check(int x, int y, map_sound_boundary_def * bounds);
@@ -3355,7 +3355,7 @@ int get_2d_obj_walk_sound(char * filename)
 	return -1;
 }
 
-int get_tile_sound(int tile_type, char * actor_type)
+static int get_tile_sound(int tile_type, const char* actor_type)
 {
 	int i, j, k;
 

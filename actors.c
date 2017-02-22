@@ -79,7 +79,10 @@ void init_actors_lists()
 }
 
 //return the ID (number in the actors_list[]) of the new allocated actor
-int add_actor (int actor_type, char * skin_name, float x_pos, float y_pos, float z_pos, float z_rot, float scale, char remappable, short skin_color, short hair_color, short eyes_color, short shirt_color, short pants_color, short boots_color, int actor_id)
+static int add_actor(int actor_type, const char* skin_name,
+	float x_pos, float y_pos, float z_pos, float z_rot, float scale,
+	char remappable, short skin_color, short hair_color, short eyes_color,
+	short shirt_color, short pants_color, short boots_color, int actor_id)
 {
 	int texture_id;
 	int i;

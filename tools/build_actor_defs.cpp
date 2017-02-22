@@ -2136,11 +2136,11 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             }
             else if (!strcmp(name, "skin"))
             {
-                get_string_value(act->skin_name, sizeof(act->skin_name), item);
+                act->skin_name = char_ptr_of(value(item));
             }
             else if (!strcmp(name, "mesh"))
             {
-                get_string_value(act->file_name, sizeof(act->file_name), item);
+                act->file_name = char_ptr_of(value(item));
             }
             else if (!strcmp(name, "actor_scale"))
             {
@@ -2282,15 +2282,14 @@ int parse_actor_script(const xmlNode *cfg)
 
     act = actors_defs + act_idx;
     // watch for loading an actor more then once
-    if (act->actor_type > 0 || *act->actor_name)
+    if (act->actor_type > 0 || act->actor_name)
     {
         fprintf(stderr, "Data Error in %s(%d): Already loaded %s(%d)\n",
                 get_string_property(cfg, "type"), act_idx, act->actor_name,
                 act->actor_type);
     }
     act->actor_type= act_idx;	// memorize the ID & name to help in debugging
-    strncpy(act->actor_name, get_string_property(cfg, "type"),
-            sizeof(act->actor_name));
+    act->actor_name = char_ptr_of(property(cfg, "type"));
     actor_check_string(act, "actor", "name", act->actor_name);
 
     //Initialize Cal3D settings
@@ -2644,10 +2643,19 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
         os << "\t\t.actor_type = " << type_name << ",\n";
     else
         os << "\t\t.actor_type = " << act.actor_type << ",\n";
-    os << "\t\t.actor_name = \"" << act.actor_name << "\",\n"
-        << "\t\t.skin_name = \"" << act.skin_name << "\",\n"
-        << "\t\t.file_name = \"" << act.file_name << "\",\n"
-        << "\t\t.actor_scale = " << act.actor_scale << ",\n"
+    if (act.actor_name)
+        os << "\t\t.actor_name = \"" << act.actor_name << "\",\n";
+    else
+        os << "\t\t.actor_name = \"\",\n";
+    if (act.skin_name)
+        os << "\t\t.skin_name = \"" << act.skin_name << "\",\n";
+    else
+        os << "\t\t.skin_name = \"\",\n";
+    if (act.file_name)
+        os << "\t\t.file_name = \"" << act.file_name << "\",\n";
+    else
+        os << "\t\t.file_name = \"\",\n";
+    os << "\t\t.actor_scale = " << act.actor_scale << ",\n"
         << "\t\t.scale = " << act.scale << ",\n"
         << "\t\t.mesh_scale = " << act.mesh_scale << ",\n"
         << "\t\t.skel_scale = " << act.skel_scale << ",\n"
@@ -2916,7 +2924,7 @@ int get_nr_actor_defs()
 {
     for (int nr_actor_defs = MAX_ACTOR_DEFS; nr_actor_defs > 0; --nr_actor_defs)
     {
-        if (*actors_defs[nr_actor_defs-1].actor_name)
+        if (actors_defs[nr_actor_defs-1].actor_name)
             return nr_actor_defs;
     }
     return 0;
