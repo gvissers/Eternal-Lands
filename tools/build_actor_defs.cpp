@@ -155,7 +155,7 @@ static eyes_part* all_eyes;
 static int all_eyes_used = 0;
 
 std::vector<std::string> idle_group_regs;
-static char skeleton_names[MAX_ACTOR_DEFS][256];
+std::vector<std::string> skeleton_names;
 
 struct frames_reg
 {
@@ -2107,6 +2107,15 @@ int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
 }
 #endif	//NEW_SOUND
 
+static int get_skeleton_index(const std::string& name)
+{
+    auto iter = std::find(skeleton_names.begin(), skeleton_names.end(), name);
+    if (iter != skeleton_names.end())
+        return iter - skeleton_names.begin();
+    skeleton_names.push_back(name);
+    return skeleton_names.size() - 1;
+}
+
 int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
                       const xmlNode *defaults)
 {
@@ -2151,8 +2160,7 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             }
             else if (!strcmp(name, "skeleton"))
             {
-                int idx = act - actors_defs;
-                get_string_value(skeleton_names[idx], sizeof(skeleton_names[idx]), item);
+                act->skeleton_type = get_skeleton_index(value(item));
             }
             else if (!strcmp(name, "walk_speed"))
             { // unused
@@ -2287,6 +2295,7 @@ int parse_actor_script(const xmlNode *cfg)
 
     //Initialize Cal3D settings
     act->coremodel = NULL;
+    act->skeleton_type = -1;
     act->actor_scale = 1.0;
     act->scale = 1.0;
     act->mesh_scale = 1.0;
@@ -2691,7 +2700,7 @@ std::ostream& operator<<(std::ostream& os, const actor_types& act)
     }
     os << "\t\t},\n"
         << "\t\t.emote_frames = NULL,\n"
-        << "\t\t.skeleton_type = -1,\n";
+        << "\t\t.skeleton_type = " << act.skeleton_type << ",\n";
 #ifdef NEW_SOUND
     os << "\t\t.battlecry = { .sound = " << act.battlecry.sound << " },\n";
 #endif
@@ -2819,13 +2828,12 @@ std::ostream& write_emote_regs(std::ostream& os)
     return os;
 }
 
-std::ostream& write_skeleton_names(std::ostream &os, int nr_actor_defs)
+std::ostream& write_skeleton_names(std::ostream &os)
 {
-    os << "static const char* skeleton_names[" << nr_actor_defs << "] = {\n";
-    for (int i = 0; i < nr_actor_defs; ++i)
-        os << "\t\"" << skeleton_names[i] << "\",\n";
-    os << "};\n\n";
-    return os;
+    os << "static const char* skeleton_names[" << skeleton_names.size() << "] = {\n";
+    for (const auto& name: skeleton_names)
+        os << "\t\"" << name << "\",\n";
+    return os << "};\n\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const bone_reg& reg)
@@ -2934,8 +2942,8 @@ void write_c_file(std::ostream& os)
 #ifdef NEW_SOUND
     write_sound_regs(os);
 #endif
+    write_skeleton_names(os);
     write_actor_types(os, nr_actor_defs);
-    write_skeleton_names(os, nr_actor_defs);
 }
 
 void cleanup()

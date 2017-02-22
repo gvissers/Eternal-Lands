@@ -222,17 +222,19 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
         actor_types *act = actors_defs + i;
         if (!*act->actor_name)
             continue;
-        if (*skeleton_names[i])
+        if (act->skeleton_type >= 0)
         {
+            const char* name = skeleton_names[act->skeleton_type];
+
             act->coremodel = CalCoreModel_New("Model");
-            if (!CalCoreModel_ELLoadCoreSkeleton(act->coremodel, skeleton_names[i]))
+            if (!CalCoreModel_ELLoadCoreSkeleton(act->coremodel, name))
             {
-                LOG_ERROR("Cal3d error: %s: %s", skeleton_names[i], CalError_GetLastErrorDescription());
+                LOG_ERROR("Cal3d error: %s: %s", name, CalError_GetLastErrorDescription());
                 act->skeleton_type = -1;
             }
             else
             {
-                act->skeleton_type = get_skeleton(act->coremodel, skeleton_names[i]);
+                act->skeleton_type = get_skeleton(act->coremodel, name);
             }
         }
         if (act->coremodel)
