@@ -396,27 +396,23 @@ void actor_check_int(actor_types *act, const char *section,
 
 const xmlNode *get_default_node(const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    const char *group;
-
     // first, check for errors
     if (!defaults || !cfg)
         return NULL;
 
     // let's find out what group to look for
-    group = get_string_property(cfg, "group");
+    std::string group = lc_property(cfg, "group");
 
     // look for defaul entries with the same name
-    for (item=defaults->children; item; item=item->next)
+    for (const xmlNode *item = defaults->children; item; item = item->next)
     {
         if (item->type != XML_ELEMENT_NODE)
             continue;
 
         if (xmlStrcasecmp(item->name, cfg->name) == 0)
         {
-            const char *item_group = get_string_property(item, "group");
             // either both have no group, or both groups match
-            if (xmlStrcasecmp((xmlChar*)item_group, (xmlChar*)group) == 0)
+            if (lc_property(item, "group") == group)
                 // this is the default entry we want then!
                 return item;
         }
@@ -947,7 +943,6 @@ static int get_frames_reg_index(const std::string& fname,
 int parse_actor_frames(actor_types *act, const xmlNode *cfg)
 {
     const xmlNode *item;
-    char str[255];
     int ok = 1;
 
     if (!cfg)
@@ -960,8 +955,8 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
             int index = -1;
             if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_IDLE_GROUP") == 0)
             {
-                get_string_value(str, sizeof(str), item);
-                parse_idle_group(act, str);
+                std::string str = value(item);
+                parse_idle_group(act, str.c_str());
                 index = -2;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_walk") == 0)
@@ -2013,7 +2008,6 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
 int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
 {
     const xmlNode *item;
-    char str[255];
     int ok;
 
     if (!cfg) return 0;
@@ -2023,7 +2017,6 @@ int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
     {
         if (item->type == XML_ELEMENT_NODE)
         {
-            get_string_value(str, sizeof(str), item);
             if (xmlStrcasecmp(item->name, (xmlChar*)"walk") == 0)
             {
                 act->cal_frames[cal_actor_walk_frame].sound
