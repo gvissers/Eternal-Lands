@@ -1374,7 +1374,7 @@ int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *
         }
         else
         {
-            fprintf(stderr, "unknown shield property \"%s\"\n", item->name);
+            std::cerr << "unknown shield property \"" << item->name << "\"\n";
             ok = 0;
         }
     }
@@ -1403,7 +1403,7 @@ int parse_actor_shield(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     type_idx = get_int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_SHIELD_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -1793,7 +1793,7 @@ static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
                 }
                 else
                 {
-                    fprintf(stderr, "unknown weapon property \"%s\"\n", item->name);
+                    std::cerr << "unknown weapon property \"" << item->name << "\"\n";
                     ok = 0;
                 }
             }
@@ -1818,7 +1818,7 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     type_idx = get_int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_WEAPON_SIZE])
     {
-        fprintf(stderr, "Unable to find id/property node %s\n", cfg->name);
+        std::cerr << "Unable to find id/property node " << cfg->name << '\n';
         return 0;
     }
 
@@ -1927,8 +1927,8 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                         }
                         else
                         {
-                            fprintf(stderr, "unknown attachment shift attribute \"%s\"\n",
-                                    attr->name);
+                            std::cerr << "unknown attachment shift attribute \""
+                                << attr->name << "\"\n";
                             ok = 0;
                         }
                     }
@@ -1996,7 +1996,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
             }
             else
             {
-                fprintf(stderr, "unknown attachment property \"%s\"\n", item->name);
+                std::cerr << "unknown attachment property \"" << item->name << "\"\n";
                 ok = 0;
             }
         }
@@ -2097,7 +2097,7 @@ int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
             }
             else
             {
-                fprintf(stderr, "Unknown sound \"%s\"", item->name);
+                std::cerr << "Unknown sound \"" << item->name << "\"\n";
                 ok = 0;
             }
         }
@@ -2241,7 +2241,7 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
                 int id = get_int_property(item, "id");
                 if (id < 0 || id >= MAX_ACTOR_DEFS)
                 {
-                    fprintf(stderr, "Unable to find id/property node %s\n", item->name);
+                    std::cerr << "Unable to find id/property node " << item->name << '\n';
                     ok = 0;
                 }
                 else
@@ -2251,7 +2251,7 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             }
             else
             {
-                fprintf(stderr, "Unknown actor attribute \"%s\"\n", item->name);
+                std::cerr << "Unknown actor attribute \"" << item->name << "\"\n";
                 ok = 0;
             }
         }
@@ -2275,8 +2275,8 @@ int parse_actor_script(const xmlNode *cfg)
     act_idx = get_int_property(cfg, "id");
     if (act_idx < 0 || act_idx >= MAX_ACTOR_DEFS)
     {
-        fprintf(stderr, "Data Error in %s(%d): Actor ID out of range %d\n",
-                get_string_property(cfg, "type"), act_idx, act_idx);
+        std::cerr << "Data Error in " << property(cfg, "type")
+            << '(' << act_idx << "): Actor ID " << act_idx << " out of range\n";
         return 0;
     }
 
@@ -2284,9 +2284,9 @@ int parse_actor_script(const xmlNode *cfg)
     // watch for loading an actor more then once
     if (act->actor_type > 0 || act->actor_name)
     {
-        fprintf(stderr, "Data Error in %s(%d): Already loaded %s(%d)\n",
-                get_string_property(cfg, "type"), act_idx, act->actor_name,
-                act->actor_type);
+        std::cerr << "Data Error in " << property(cfg, "type")
+            << '(' << act_idx << "): Already loaded " << act->actor_name
+            << '(' << act->actor_type << ")\n";
     }
     act->actor_type= act_idx;	// memorize the ID & name to help in debugging
     act->actor_name = char_ptr_of(property(cfg, "type"));
@@ -2359,7 +2359,7 @@ int parse_actor_defs(const xmlNode *node)
             }
             else
             {
-                fprintf(stderr, "parse error: actor or include expected\n");
+                std::cerr << "parse error: actor or include expected\n";
                 ok = 0;
             }
         }
@@ -2384,25 +2384,25 @@ static int read_actor_defs(const char *dir, const char *index)
     doc = xmlReadFile(fname, NULL, XML_PARSE_NOENT);
     if (!doc)
     {
-        fprintf(stderr, "Unable to read actor definition file %s\n", fname);
+        std::cerr << "Unable to read actor definition file " << fname << '\n';
         return 0;
     }
 
     root = xmlDocGetRootElement(doc);
     if (!root)
     {
-        fprintf(stderr, "Unable to parse actor definition file %s\n", fname);
+        std::cerr << "Unable to parse actor definition file " << fname << '\n';
         ok = 0;
 #ifndef EXT_ACTOR_DICT
     }
     else if (xmlStrcasecmp(root->name, (xmlChar*)"actors") != 0)
     {
-        fprintf(stderr, "Unknown key \"%s\" (\"actors\" expected).\n", root->name);
+        std::cerr << "Unknown key \"" << root->name << "\" (\"actors\" expected).\n";
 #else // EXT_ACTOR_DICT
     }
     else if (xmlStrcasecmp(root->name, (xmlChar*)"actor_data") != 0)
     {
-        fprintf(stderr, "Unknown key \"%s\" (\"actor_data\" expected).\n", root->name);
+        std::cerr << "Unknown key \"" << root->name << "\" (\"actor_data\" expected).\n";
 #endif // EXT_ACTOR_DICT
         ok = 0;
     }
