@@ -319,10 +319,13 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
                 }
                 for (k = 0; k < NUM_WEAPON_FRAMES; ++k)
                 {
-                    int reg_idx = part->cal_frames[k].anim_index;
-                    if (reg_idx >= 0)
+#ifdef NEW_SOUND
+                    int snd_idx = part->cal_frames[k].sound;
+#endif
+                    int anim_idx = part->cal_frames[k].anim_index;
+                    if (anim_idx >= 0)
                     {
-                        const frames_reg *reg = frames_regs + reg_idx;
+                        const frames_reg *reg = frames_regs + anim_idx;
                         part->cal_frames[k]
                             = cal_load_anim(act, reg->fname,
 #ifdef NEW_SOUND
@@ -331,10 +334,9 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
                                             reg->duration);
                     }
 
-                    reg_idx = part->cal_frames[k].sound;
-                    if (reg_idx >= 0)
+                    if (snd_idx >= 0)
                     {
-                        const sound_reg *reg = sound_regs + reg_idx;
+                        const sound_reg *reg = sound_regs + snd_idx;
                         cal_set_anim_sound(part->cal_frames + k, reg->sound,
                                reg->sound_scale);
                     }
@@ -395,10 +397,13 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
 
         for (j = 0; j < NUM_ACTOR_FRAMES; ++j)
         {
-            int reg_idx = act->cal_frames[j].anim_index;
-            if (reg_idx >= 0)
+#ifdef NEW_SOUND
+            int snd_idx = act->cal_frames[j].sound;
+#endif
+            int anim_idx = act->cal_frames[j].anim_index;
+            if (anim_idx >= 0)
             {
-                const frames_reg *reg = frames_regs + reg_idx;
+                const frames_reg *reg = frames_regs + anim_idx;
                 act->cal_frames[j] = cal_load_anim(act, reg->fname,
 #ifdef NEW_SOUND
                                                    reg->sound, reg->sound_scale,
@@ -407,21 +412,26 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
             }
 
 #ifdef NEW_SOUND
-            reg_idx = act->cal_frames[j].sound;
-            if (reg_idx >= 0)
+            if (snd_idx >= 0)
             {
-                const sound_reg *reg = sound_regs + reg_idx;
+                const sound_reg *reg = sound_regs + snd_idx;
                 cal_set_anim_sound(act->cal_frames + j, reg->sound, reg->sound_scale);
             }
 #endif
         }
-    }
 
-    for (i = 0; i < nr_idle_group_regs; ++i)
-    {
-        const idle_group_reg *reg = idle_group_regs + i;
-        actor_types *act = actors_defs + reg->act_idx;
-        act->idle_group[reg->group_idx].anim[reg->anim_idx] = cal_load_idle(act, reg->fname);
+        for (j = 0; j < act->group_count; ++j)
+        {
+            for (k = 0; k < act->idle_group[i].count; ++k)
+            {
+                int reg_idx = act->idle_group[j].anim[k].anim_index;
+                if (reg_idx >= 0)
+                {
+                    act->idle_group[j].anim[k]
+                        = cal_load_idle(act, idle_group_regs[reg_idx]);
+                }
+            }
+        }
     }
 
     for (i = 0; i < nr_emote_regs; ++i)
