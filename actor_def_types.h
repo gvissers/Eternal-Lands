@@ -150,7 +150,11 @@ typedef struct
  * \sa init_actor_defs*/
 typedef struct cal_anim_group
 {
+#ifdef XML_COMPILED
+	const char* name;
+#else
 	char name[32];
+#endif
 	int count;
 	struct cal_anim anim[16];
 } cal_animations;
