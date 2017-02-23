@@ -8,8 +8,5 @@ LDFLAGS = $(shell xml2-config --libs)
 
 all: build_actor_defs
 
-build_actor_defs: build_actor_defs.o xml.o
+build_actor_defs: build_actor_defs.o
 	$(CXX) -o$@ $^ $(LDFLAGS)
-
-xml.o: ../xml.c
-	$(CC) $(CFLAGS) -c -o$@ $<

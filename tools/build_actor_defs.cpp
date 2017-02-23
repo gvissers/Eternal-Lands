@@ -14,7 +14,6 @@
 
 #include "../actor_def_types.h"
 #include "../client_serv.h"
-#include "../xml.h"
 
 #ifdef EXT_ACTOR_DICT
 static int actor_part_sizes[ACTOR_NUM_PARTS];
@@ -72,6 +71,30 @@ std::string lc_value(const xmlNode *node)
     return res;
 }
 
+bool bool_value(const xmlNode *node, bool def=false)
+{
+    std::string sval = lc_value(node);
+    if (sval.empty())
+        return def;
+    return sval == "yes" || sval == "true" || sval == "1";
+}
+
+int int_value(const xmlNode *node, int def=0)
+{
+    std::string sval = value(node);
+    if (sval.empty())
+        return def;
+    return std::stoi(sval);
+}
+
+int float_value(const xmlNode *node, float def=0.0f)
+{
+    std::string sval = value(node);
+    if (sval.empty())
+        return def;
+    return std::stof(sval);
+}
+
 std::string item_value(const xmlNode *item, const char *name)
 {
     for (const xmlNode *node = item->children; node; node = node->next)
@@ -100,6 +123,14 @@ std::string lc_property(const xmlNode *node, const char *prop)
     std::string res = property(node, prop);
     std::transform(res.begin(), res.end(), res.begin(), ::tolower);
     return res;
+}
+
+int int_property(const xmlNode *node, const char *prop, int def=-1)
+{
+    std::string sval = property(node, prop);
+    if (sval.empty())
+        return def;
+    return std::stoi(sval);
 }
 
 const char* char_ptr_of(const std::string& str)
@@ -435,7 +466,7 @@ int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defau
     if (!cfg || !cfg->children)
         return 0;
 
-    int col_idx = get_int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_SHIRT_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -516,7 +547,7 @@ int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx= get_int_property(cfg, "id");
+    col_idx= int_property(cfg, "id");
     if (col_idx < 0)
         col_idx = skin_color_dict.at(lc_property(cfg, "color"));
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_SKIN_SIZE])
@@ -598,7 +629,7 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx= get_int_property(cfg, "id");
+    col_idx= int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_LEGS_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -732,7 +763,7 @@ int parse_actor_helmet(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_HELMET_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -760,7 +791,7 @@ int parse_actor_neck(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_NECK_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -788,7 +819,7 @@ int parse_actor_cape(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_CAPE_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -816,7 +847,7 @@ int parse_actor_head(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if(type_idx < 0)
         type_idx = head_number_dict.at(lc_property(cfg, "number"));
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_HEAD_SIZE])
@@ -845,7 +876,7 @@ int parse_actor_hair(actor_types *act, const xmlNode *cfg)
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = get_int_property(cfg, "id");
+    col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_HAIR_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -870,7 +901,7 @@ int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = get_int_property(cfg, "id");
+    col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_EYES_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1231,9 +1262,9 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
                                         property(item, "sound"),
                                         property(item, "sound_scale"),
 #endif
-                                        get_int_property(item, "duration"),
+                                        int_property(item, "duration"),
                                         act - actors_defs,
-                                        get_int_property(item, "index"));
+                                        int_property(item, "index"));
                 continue;
             }
 
@@ -1245,7 +1276,7 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
                                            property(item, "sound"),
                                            property(item, "sound_scale"),
 #endif // NEW_SOUND
-                                           get_int_property(item, "duration"));
+                                           int_property(item, "duration"));
             }
             else if (index != -2)
             {
@@ -1267,7 +1298,7 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = get_int_property(cfg, "id");
+    col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_BOOTS_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1368,7 +1399,7 @@ int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"missile") == 0)
         {
-            part->missile_type = get_int_value(item);
+            part->missile_type = int_value(item);
         }
         else
         {
@@ -1398,7 +1429,7 @@ int parse_actor_shield(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_SHIELD_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1787,7 +1818,7 @@ static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
                                                property(item, "sound"),
                                                property(item, "sound_scale"),
 #endif	//NEW_SOUND
-                                               get_int_property(item, "duration"));
+                                               int_property(item, "duration"));
                 }
                 else
                 {
@@ -1813,7 +1844,7 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = get_int_property(cfg, "id");
+    type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_WEAPON_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1840,8 +1871,8 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
     weapon = act->weapon + type_idx;
     ok = parse_actor_weapon_detail(act, weapon, cfg, defaults);
-    weapon->turn_horse = get_int_property(cfg, "turn_horse");
-    weapon->unarmed = (get_int_property(cfg, "unarmed") <= 0) ? 0 : 1;
+    weapon->turn_horse = int_property(cfg, "turn_horse");
+    weapon->unarmed = (int_property(cfg, "unarmed") <= 0) ? 0 : 1;
 
     // check for default entries, if found, use them to fill in missing data
     if (defaults)
@@ -1891,7 +1922,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"holder") == 0)
             {
-                att->actor_type[act_idx2].is_holder = get_bool_value(item);
+                att->actor_type[act_idx2].is_holder = bool_value(item);
                 if (att->actor_type[act_idx2].is_holder)
                     held_act_idx = act_idx2;
                 else
@@ -1946,7 +1977,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
                                                   property(item, "sound"),
                                                   property(item, "sound_scale"),
 #endif
-                                                  get_int_property(item, "duration"),
+                                                  int_property(item, "duration"),
                                                   act_idx1,
                                                   act_idx2,
                                                   held_act_idx,
@@ -1960,7 +1991,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
                                                   property(item, "sound"),
                                                   property(item, "sound_scale"),
 #endif
-                                                  get_int_property(item, "duration"),
+                                                  int_property(item, "duration"),
                                                   act_idx1,
                                                   act_idx2,
                                                   held_act_idx,
@@ -1974,7 +2005,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
                                                   property(item, "sound"),
                                                   property(item, "sound_scale"),
 #endif
-                                                  get_int_property(item, "duration"),
+                                                  int_property(item, "duration"),
                                                   act_idx1,
                                                   act_idx2,
                                                   held_act_idx,
@@ -1988,7 +2019,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
                                                   property(item, "sound"),
                                                   property(item, "sound_scale"),
 #endif
-                                                  get_int_property(item, "duration"),
+                                                  int_property(item, "duration"),
                                                   act_idx1,
                                                   act_idx2,
                                                   held_act_idx,
@@ -2002,7 +2033,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
                                                   property(item, "sound"),
                                                   property(item, "sound_scale"),
 #endif
-                                                  get_int_property(item, "duration"),
+                                                  int_property(item, "duration"),
                                                   act_idx1,
                                                   act_idx2,
                                                   held_act_idx,
@@ -2145,7 +2176,7 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
 
             if (!strcmp(name, "ghost"))
             {
-                act->ghost = get_bool_value(item);
+                act->ghost = bool_value(item);
             }
             else if (!strcmp(name, "skin"))
             {
@@ -2157,19 +2188,19 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             }
             else if (!strcmp(name, "actor_scale"))
             {
-                act->actor_scale = get_float_value(item);
+                act->actor_scale = float_value(item);
             }
             else if (!strcmp(name, "scale"))
             {
-                act->scale = get_float_value(item);
+                act->scale = float_value(item);
             }
             else if (!strcmp(name, "mesh_scale"))
             {
-                act->mesh_scale = get_float_value(item);
+                act->mesh_scale = float_value(item);
             }
             else if (!strcmp(name, "bone_scale"))
             {
-                act->skel_scale = get_float_value(item);
+                act->skel_scale = float_value(item);
             }
             else if (!strcmp(name, "skeleton"))
             {
@@ -2177,15 +2208,15 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             }
             else if (!strcmp(name, "walk_speed"))
             { // unused
-                act->walk_speed= get_float_value(item);
+                act->walk_speed= float_value(item);
             }
             else if (!strcmp(name, "run_speed"))
             { // unused
-                act->run_speed = get_float_value(item);
+                act->run_speed = float_value(item);
             }
             else if (!strcmp(name, "step_duration"))
             {
-                act->step_duration = get_int_value(item);
+                act->step_duration = int_value(item);
             }
             else if (!strcmp(name, "defaults"))
             {
@@ -2251,7 +2282,7 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
 #endif	//NEW_SOUND
             else if (!strcmp(name, "actor_attachment"))
             {
-                int id = get_int_property(item, "id");
+                int id = int_property(item, "id");
                 if (id < 0 || id >= MAX_ACTOR_DEFS)
                 {
                     std::cerr << "Unable to find id/property node " << item->name << '\n';
@@ -2284,7 +2315,7 @@ int parse_actor_script(const xmlNode *cfg)
     if (!cfg || !cfg->children)
         return 0;
 
-    act_idx = get_int_property(cfg, "id");
+    act_idx = int_property(cfg, "id");
     if (act_idx < 0 || act_idx >= MAX_ACTOR_DEFS)
     {
         std::cerr << "Data Error in " << property(cfg, "type")
@@ -2717,7 +2748,7 @@ int parse_emote_def(emote_data *emote, const xmlNode *node)
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"timeout") == 0)
         {
-            emote->timeout = get_int_value(item);
+            emote->timeout = int_value(item);
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"name") == 0)
         {
@@ -2777,7 +2808,7 @@ int parse_emotes_defs(const xmlNode *node)
         {
             if (xmlStrcasecmp(def->name, (xmlChar*)"emote") == 0)
             {
-                int id = get_int_property(def, "id");
+                int id = int_property(def, "id");
                 if (id < 0)
                 {
                     std::cerr << "Unable to find id property " << def->name << '\n';
@@ -2791,7 +2822,7 @@ int parse_emotes_defs(const xmlNode *node)
             }
             else if (xmlStrcasecmp(def->name, (xmlChar*)"frames") == 0)
             {
-                int act_type = get_int_property(def, "actor_type");
+                int act_type = int_property(def, "actor_type");
                 if (act_type < 0)
                 {
                     ok &= parse_actor_frames(actors_defs + human_female, def->children);
