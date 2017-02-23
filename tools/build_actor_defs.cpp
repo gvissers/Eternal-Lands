@@ -3408,6 +3408,7 @@ std::ostream& operator<<(std::ostream& os, const emote_data& data)
     os << "\t{\n"
         << "\t\t.id = " << data.id << ",\n"
         << "\t\t.barehanded = " << int(data.barehanded) << ",\n"
+        << "\t\t.pose = " << int(data.pose) << ",\n"
         << "\t\t.timeout = " << data.timeout << ",\n"
         << "\t\t.anims = {\n";
     for (int type = 0; type < EMOTE_ACTOR_TYPES; ++type)
