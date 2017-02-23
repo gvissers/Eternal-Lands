@@ -31,6 +31,7 @@
 #include "translate.h"
 
 static void cal_actor_set_random_idle(int id);
+static int emote_actor_type(int actor_type);
 static void flush_delayed_item_changes(actor *a);
 static int get_motion_vector(int move_cmd, int *dx, int *dy);
 static struct cal_anim *get_pose_frame(int actor_type, actor *a, int pose_type, int held);
@@ -242,7 +243,6 @@ void init_emote(emote_data *emote){
 	emote->name[0]=0;
 	emote->desc[0]=0;
 }
-
 
 // 0=f 1=m <0=any, race 0=human, 1=elf, 2=dwarf, 3=orchan, 4=gnome, 5=draegoni, 6=monster
 void calc_actor_types(int sex, int race, int *buf, int *len){
@@ -3242,6 +3242,27 @@ void destroy_all_actors()
 	my_timer_adjust = 0;
 	harvesting_effect_reference = NULL;
 	UNLOCK_ACTORS_LISTS();	//unlock it since we are done
+}
+
+//ugliest mapping functions ever :/
+static int emote_actor_type(int actor_type)
+{
+	switch(actor_type)
+	{
+		case human_female: return 0;
+		case human_male: return 1;
+		case elf_female: return 2;
+		case elf_male: return 3;
+		case dwarf_female: return 4;
+		case dwarf_male: return 5;
+		case orchan_female: return 6;
+		case orchan_male: return 7;
+		case gnome_female: return 8;
+		case gnome_male: return 9;
+		case draegoni_female: return 10;
+		case draegoni_male: return 11;
+		default: return 12; //all other mobs
+	}
 }
 
 static void flush_delayed_item_changes(actor *a)

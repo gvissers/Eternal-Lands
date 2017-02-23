@@ -131,7 +131,7 @@ $(CXXOBJS): %.o: %.cpp Makefile.linux make.conf
 	fi
 
 actor_defs_inc.c: tools
-	tools/build_actor_defs $(ACTOR_DEFS_PATH) $@
+	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
 
 tools:
 	$(MAKE) -C $@

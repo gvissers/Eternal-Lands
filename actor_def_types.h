@@ -259,4 +259,42 @@ typedef struct
 	int step_duration;
 } actor_types;
 
+#define MAX_EMOTE_LEN 20
+#define MAX_EMOTE_FRAME 8
+
+#define EMOTE_SITTING 0
+#define EMOTE_WALKING 1
+#define EMOTE_RUNNING 2
+#define EMOTE_STANDING 3
+
+#define EMOTE_ACTOR_TYPES 13
+#define EMOTE_TIMEOUT 2000
+
+#define EMOTE_BARE_L 2
+#define EMOTE_BARE_R 4
+
+typedef struct _emote_frame
+{
+	int nframes;
+	int ids[MAX_EMOTE_FRAME];
+	struct _emote_frame *next;
+} emote_frame;
+
+typedef struct _emote_type
+{
+	int id;
+	char barehanded;
+	unsigned char pose;
+	int timeout; //default 2 sec
+	emote_frame *anims[EMOTE_ACTOR_TYPES][4][2];
+	char name[20];
+	char desc[80];
+} emote_data;
+
+typedef struct _emote_dict
+{
+	char command[MAX_EMOTE_LEN+1];	// The command to trigger the emote
+	emote_data *emote;
+} emote_dict;
+
 #endif /* ACTOR_DEF_TYPES_H */

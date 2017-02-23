@@ -263,6 +263,8 @@ std::vector<sound_reg> sound_regs;
 std::unordered_map<std::string, int> sound_regs_known;
 #endif
 
+std::unordered_map<int, emote_data*> emotes;
+std::unordered_map<std::string, emote_dict*> emote_cmds;
 
 static void my_tolower(char *src)
 {
@@ -427,14 +429,10 @@ const xmlNode *get_default_node(const xmlNode *cfg, const xmlNode *defaults)
 
 int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    int ok, col_idx;
-    shirt_part *shirt;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = get_int_property(cfg, "id");
+    int col_idx = get_int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_SHIRT_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -443,44 +441,43 @@ int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
     if (!act->shirt)
     {
-        int i;
         act->shirt = all_shirts + all_shirts_used;
         all_shirts_used += actor_part_sizes[ACTOR_SHIRT_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_SHIRT_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_SHIRT_SIZE]; ++i)
             act->shirt[i].mesh_index= -1;
     }
 
-    shirt = act->shirt + col_idx;
-    ok = 1;
-    for (item=cfg->children; item; item=item->next)
+    shirt_part *shirt = act->shirt + col_idx;
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
-        if (item->type == XML_ELEMENT_NODE)
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
         {
-            if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
-            {
-                shirt->arms_name = char_ptr_of(value(item));
-            }
-            else if(xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
-            {
-                shirt->model_name = char_ptr_of(value(item));
-            }
-            else if(xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
-            {
-                shirt->torso_name = char_ptr_of(value(item));
-            }
-            else if(xmlStrcasecmp(item->name, (xmlChar*)"armsmask") == 0)
-            {
-                shirt->arms_mask = char_ptr_of(value(item));
-            }
-            else if(xmlStrcasecmp(item->name, (xmlChar*)"torsomask") == 0)
-            {
-                shirt->torso_mask = char_ptr_of(value(item));
-            }
-            else
-            {
-                std::cerr << "unknown shirt property \"" << item->name << "\"\n";
-                ok = 0;
-            }
+            shirt->arms_name = char_ptr_of(value(item));
+        }
+        else if(xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
+        {
+            shirt->model_name = char_ptr_of(value(item));
+        }
+        else if(xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
+        {
+            shirt->torso_name = char_ptr_of(value(item));
+        }
+        else if(xmlStrcasecmp(item->name, (xmlChar*)"armsmask") == 0)
+        {
+            shirt->arms_mask = char_ptr_of(value(item));
+        }
+        else if(xmlStrcasecmp(item->name, (xmlChar*)"torsomask") == 0)
+        {
+            shirt->torso_mask = char_ptr_of(value(item));
+        }
+        else
+        {
+            std::cerr << "unknown shirt property \"" << item->name << "\"\n";
+            ok = 0;
         }
     }
 
@@ -2373,23 +2370,18 @@ int parse_actor_defs(const xmlNode *node)
     return ok;
 }
 
-static int read_actor_defs(const char *dir, const char *index)
+static int read_actor_defs(const std::string& dir, const std::string& index)
 {
-    const xmlNode *root;
-    xmlDoc *doc;
-    char fname[120];
-    int ok = 1;
-
-    snprintf(fname, sizeof(fname), "%s/%s", dir, index);
-
-    doc = xmlReadFile(fname, NULL, XML_PARSE_NOENT);
+    std::string fname = dir + '/' + index;
+    xmlDoc *doc = xmlReadFile(fname.c_str(), NULL, XML_PARSE_NOENT);
     if (!doc)
     {
         std::cerr << "Unable to read actor definition file " << fname << '\n';
         return 0;
     }
 
-    root = xmlDocGetRootElement(doc);
+    int ok = 1;
+    const xmlNode *root = xmlDocGetRootElement(doc);
     if (!root)
     {
         std::cerr << "Unable to parse actor definition file " << fname << '\n';
@@ -2420,7 +2412,7 @@ static int read_actor_defs(const char *dir, const char *index)
     return ok;
 }
 
-static int init_actor_defs(const char* dir)
+static int init_actor_defs(const std::string& dir)
 {
     int nr_body = actor_part_sizes[ACTOR_HEAD_SIZE]
                 + actor_part_sizes[ACTOR_CAPE_SIZE]
@@ -2456,6 +2448,405 @@ static int init_actor_defs(const char* dir)
     std::memset(all_eyes, 0, MAX_ACTOR_DEFS * nr_eyes * sizeof(eyes_part));
 
     return read_actor_defs(dir, "actor_defs.xml");
+}
+
+// XXX
+// void free_emote_data(void *data)
+// {
+// 	emote_data *emote = data;
+// 	emote_frame *head, *frame, *tf;
+// 	int i, j, k;
+// 	if (!emote)
+// 		return;
+//
+// 	for (i = 0; i < EMOTE_ACTOR_TYPES; i++)
+// 	{
+// 		for (j = 0; j < 4; j++)
+// 		{
+// 			for (k = 0; k < 2; k++)
+// 			{
+// 				head = emote->anims[i][j][k];
+// 				if (!head)
+// 					continue;
+//
+// 				flag_emote_frames(emote, head);
+//
+// 				for (frame = head, tf = head->next; tf; frame = tf, tf = tf->next)
+// 					free(frame);
+// 				free(frame);
+// 			}
+// 		}
+// 	}
+// 	free(emote);
+// }
+
+void init_emote(emote_data *emote)
+{
+    emote->timeout = EMOTE_TIMEOUT;
+    emote->barehanded = 0;
+    for (int i = 0; i < EMOTE_ACTOR_TYPES; i++)
+    {
+        emote->anims[i][EMOTE_SITTING][0] = emote->anims[i][EMOTE_SITTING][1] = nullptr;
+        emote->anims[i][EMOTE_WALKING][0] = emote->anims[i][EMOTE_WALKING][1] = nullptr;
+        emote->anims[i][EMOTE_RUNNING][0] = emote->anims[i][EMOTE_RUNNING][1] = nullptr;
+        emote->anims[i][EMOTE_STANDING][0] = emote->anims[i][EMOTE_STANDING][1] = nullptr;
+    }
+    emote->name[0] = '\0';
+    emote->desc[0] = '\0';
+}
+
+emote_data *new_emote(int id)
+{
+    emote_data *emote = new emote_data;
+    init_emote(emote);
+    emote->id = id;
+    emotes[id] = emote;
+
+    return emote;
+}
+
+void add_emote_to_dict(const xmlNode *node, emote_data *emote)
+{
+    emote_dict *entry = new emote_dict;
+    get_string_value(entry->command, sizeof(entry->command), node);
+    entry->emote = emote;
+    emote_cmds[entry->command] = entry;
+}
+
+emote_frame *get_emote_frames(const xmlNode *node)
+{
+    emote_frame *frames = nullptr, *head = nullptr;
+
+    for (const xmlNode *item = node->children; item; item = item->next)
+    {
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"anim") == 0)
+        {
+            if (!head)
+            {
+                frames = head = new emote_frame;
+            }
+            else
+            {
+                frames->next = new emote_frame;
+                frames = frames->next;
+            }
+
+            std::istringstream ss(value(item));
+            std::string sid;
+            int k;
+            for (k = 0; ss && k < MAX_EMOTE_FRAME; ++k)
+            {
+                if (!getline(ss, sid, '|'))
+                    break;
+                frames->ids[k++] = atoi(sid.c_str());
+            }
+            frames->nframes = k;
+        }
+        else
+        {
+            std::cerr << "unknown emote property \"" << item->name << "\"\n";
+        }
+    }
+
+    return head;
+}
+
+void get_emote_props(const xmlNode *item, int *sex, int *race, int *held)
+{
+    std::string s_sex = lc_property(item, "sex");
+    std::string s_race = lc_property(item, "race");
+    std::string s_held = lc_property(item, "held");
+
+    *sex = *race = *held = -1;
+
+    if (s_sex == "m")
+        *sex = 1;
+    else if (s_sex == "f")
+        *sex = 0;
+
+    if (s_race == "human")
+        *race = 0;
+    else if (s_race == "elf")
+        *race = 1;
+    else if (s_race == "dwarf")
+        *race = 2;
+    else if (s_race == "orchan")
+        *race = 3;
+    else if (s_race == "gnome")
+        *race = 4;
+    else if (s_race == "draegoni")
+        *race = 5;
+    else if (s_race == "monster")
+        *race = 6;
+
+    if (s_held == "true" || s_held == "1")
+        *held = 1;
+    else if (s_held == "false" || s_held == "0")
+        *held = 0;
+}
+
+//ugliest mapping functions ever :/
+static int emote_actor_type(int actor_type)
+{
+	switch(actor_type)
+    {
+		case human_female: return 0;
+		case human_male: return 1;
+		case elf_female: return 2;
+		case elf_male: return 3;
+		case dwarf_female: return 4;
+		case dwarf_male: return 5;
+		case orchan_female: return 6;
+		case orchan_male: return 7;
+		case gnome_female: return 8;
+		case gnome_male: return 9;
+		case draegoni_female: return 10;
+		case draegoni_male: return 11;
+		default: return 12; //all other mobs
+	}
+}
+
+// 0=f 1=m <0=any, race 0=human, 1=elf, 2=dwarf, 3=orchan, 4=gnome, 5=draegoni, 6=monster
+void calc_actor_types(int sex, int race, int *buf, int *len)
+{
+    buf[0] = emote_actor_type(human_female);
+    buf[1] = emote_actor_type(human_male);
+    buf[2] = emote_actor_type(elf_female);
+    buf[3] = emote_actor_type(elf_male);
+    buf[4] = emote_actor_type(dwarf_female);
+    buf[5] = emote_actor_type(dwarf_male);
+    buf[6] = emote_actor_type(orchan_female);
+    buf[7] = emote_actor_type(orchan_male);
+    buf[8] = emote_actor_type(gnome_female);
+    buf[9] = emote_actor_type(gnome_male);
+    buf[10] = emote_actor_type(draegoni_female);
+    buf[11] = emote_actor_type(draegoni_male);
+    buf[12] = emote_actor_type(-1); //all other mobs
+    buf[13] = emote_actor_type(-1); //all other mobs
+
+    if (sex < 0 && race < 0)
+    {
+        *len = 14;
+    } else if (sex < 0)
+    {
+        *len = 2;
+        buf[0] = buf[race*2];
+        buf[1] = buf[race*2+1];
+    }
+    else if (race < 0)
+    {
+        *len = 7;
+        for (int i=sex; i < 14; i += 2)
+            buf[i/2] = buf[i];
+    }
+    else
+    {
+        *len = 1;
+        buf[0] = buf[race*2+sex];
+    }
+}
+
+
+void set_emote_anim(emote_data *emote, emote_frame *frames,
+                    int sex, int race, int held, int idle)
+{
+    int buf[14];
+    int len;
+    int i,h;
+
+    h = (held <= 0) ? 0 : 1;
+    calc_actor_types(sex, race, buf, &len);
+    for (i = 0; i < len; i++)
+    {
+        if(held < 0)
+            emote->anims[buf[i]][idle][1-h]  =frames;
+        emote->anims[buf[i]][idle][h] = frames;
+    }
+}
+
+int parse_emote_def(emote_data *emote, const xmlNode *node)
+{
+    if (!node || !node->children)
+        return 0;
+
+    std::string bare = property(node, "barehanded"); //returns "" if not specified
+    emote->barehanded = 0;
+    if (!bare.empty())
+    {
+        if (bare[0] == 'B')
+            emote->barehanded = EMOTE_BARE_L | EMOTE_BARE_R;
+        else if (bare[0] == 'L')
+            emote->barehanded = EMOTE_BARE_L;
+        else if (bare[0] == 'R')
+            emote->barehanded = EMOTE_BARE_R;
+    }
+
+    std::string pose = lc_property(node, "pose"); //returns "" if not specified
+    emote->pose = EMOTE_STANDING + 1;
+    if (pose == "sitting")
+        emote->pose = EMOTE_SITTING;
+    else if (pose == "walking")
+        emote->pose = EMOTE_WALKING;
+    else if (pose == "standing")
+        emote->pose = EMOTE_STANDING;
+    else if (pose == "running")
+        emote->pose = EMOTE_RUNNING;
+
+    int ok = 1;
+    int s, r, h;
+    for (const xmlNode *item = node->children; item; item = item->next)
+    {
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"command") == 0)
+        {
+            add_emote_to_dict(item, emote);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"timeout") == 0)
+        {
+            emote->timeout = get_int_value(item);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"name") == 0)
+        {
+            get_string_value(emote->name, sizeof(emote->name), item);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"desc") == 0)
+        {
+            get_string_value(emote->desc, sizeof(emote->desc), item);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"default") == 0)
+        {
+            emote_frame *frames = get_emote_frames(item);
+            get_emote_props(item, &s, &r, &h);
+            set_emote_anim(emote, frames, s, r, h, EMOTE_SITTING);
+            set_emote_anim(emote, frames, s, r, h, EMOTE_WALKING);
+            set_emote_anim(emote, frames, s, r, h, EMOTE_STANDING);
+            set_emote_anim(emote, frames, s, r, h, EMOTE_RUNNING);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"sitting") == 0)
+        {
+            get_emote_props(item, &s, &r, &h);
+            set_emote_anim(emote, get_emote_frames(item), s, r, h, EMOTE_SITTING);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"walking") == 0)
+        {
+            get_emote_props(item, &s, &r, &h);
+            set_emote_anim(emote, get_emote_frames(item), s, r, h, EMOTE_WALKING);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"standing") == 0)
+        {
+            get_emote_props(item, &s, &r, &h);
+            set_emote_anim(emote, get_emote_frames(item), s, r, h, EMOTE_STANDING);
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"running") == 0)
+        {
+            get_emote_props(item, &s, &r, &h);
+            set_emote_anim(emote, get_emote_frames(item), s, r, h, EMOTE_RUNNING);
+        }
+        else
+        {
+            std::cerr << "unknown emote property \"" << item->name << "\"\n";
+            ok = 0;
+        }
+    }
+
+    return ok;
+}
+
+int parse_emotes_defs(const xmlNode *node)
+{
+    emote_data *emote = NULL;
+    int ok = 1;
+
+    for (const xmlNode *def = node->children; def; def = def->next)
+    {
+        if (def->type == XML_ELEMENT_NODE)
+        {
+            if (xmlStrcasecmp(def->name, (xmlChar*)"emote") == 0)
+            {
+                int id = get_int_property(def, "id");
+                if (id < 0)
+                {
+                    std::cerr << "Unable to find id property " << def->name << '\n';
+                    ok = 0;
+                }
+                else
+                {
+                    emote = new_emote(id);
+                    ok &= parse_emote_def(emote, def);
+                }
+            }
+            else if (xmlStrcasecmp(def->name, (xmlChar*)"frames") == 0)
+            {
+                int act_type = get_int_property(def, "actor_type");
+                if (act_type < 0)
+                {
+                    ok &= parse_actor_frames(actors_defs + human_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + human_male, def->children);
+                    ok &= parse_actor_frames(actors_defs + elf_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + elf_male, def->children);
+                    ok &= parse_actor_frames(actors_defs + dwarf_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + dwarf_male, def->children);
+                    ok &= parse_actor_frames(actors_defs + orchan_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + orchan_male, def->children);
+                    ok &= parse_actor_frames(actors_defs + gnome_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + gnome_male, def->children);
+                    ok &= parse_actor_frames(actors_defs + draegoni_female, def->children);
+                    ok &= parse_actor_frames(actors_defs + draegoni_male, def->children);
+                }
+                else
+                {
+                    ok &= parse_actor_frames(&actors_defs[act_type], def->children);
+                }
+            }
+            else
+            {
+                std::cerr << "parse error: emote or include expected\n";
+                ok = 0;
+            }
+        }
+        else if (def->type == XML_ENTITY_REF_NODE)
+        {
+            ok &= parse_emotes_defs(def->children);
+        }
+    }
+
+    return ok;
+}
+
+int read_emotes_defs(const std::string& dir, const std::string& index)
+{
+    std::string fname = dir + '/' + index;
+    xmlDoc *doc = xmlReadFile(fname.c_str(), NULL, 0);
+    if (!doc)
+    {
+        std::cerr << "Unable to read emotes definition file " << fname << '\n';
+        return 0;
+    }
+
+    int ok = 1;
+    const xmlNode *root = xmlDocGetRootElement(doc);
+    if (!root)
+    {
+        std::cerr << "Unable to parse emotes definition file " << fname << '\n';
+        ok = 0;
+    }
+    else if (xmlStrcasecmp(root->name, (xmlChar*)"emotes") != 0)
+    {
+        std::cerr << "Unknown key \"" << root->name << "\" (\"emotes\" expected).\n";
+        ok = 0;
+    }
+    else
+    {
+        ok = parse_emotes_defs(root);
+    }
+
+    xmlFreeDoc(doc);
+    return ok;
 }
 
 std::ostream& write_actor_part_sizes(std::ostream& os)
@@ -3029,28 +3420,35 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    if (!init_actor_defs(argv[1]))
+    int err = 0;
+    std::string data_dir = argv[1];
+    std::string actor_defs_dir = data_dir + "/actor_defs";
+    if (!init_actor_defs(actor_defs_dir))
     {
         std::cerr << "Problem reading actor defs\n";
-        goto err;
+        err = 1;
     }
-
+    if (!err && !read_emotes_defs(data_dir, "emotes.xml"))
+    {
+        std::cerr << "Problem reading emotes defs\n";
+        //err = 1;
+    }
+    if (!err)
     {
         std::ofstream os(argv[2]);
-        if (!os.good())
+        if (os.good())
+        {
+            write_c_file(os);
+            os.close();
+        }
+        else
         {
             std::cerr << "Unable to open output file \"" << argv[2] << "\"\n";
-            goto err;
+            err = 1;
         }
-        write_c_file(os);
-        os.close();
     }
 
     cleanup();
-    return 0;
-
-err:
-    cleanup();
-    return 1;
+    return err;
 }
 

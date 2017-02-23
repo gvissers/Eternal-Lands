@@ -175,61 +175,7 @@ typedef struct
 #define HORSE_FIGHT_TIME 180
 void rotate_actor_and_horse(int id, int mul);
 
-
-
-#define MAX_EMOTE_LEN 20
-#define MAX_EMOTE_FRAME 8
-
-#define EMOTE_SITTING 0
-#define EMOTE_WALKING 1
-#define EMOTE_RUNNING 2
-#define EMOTE_STANDING 3
-
-#define EMOTE_ACTOR_TYPES 13
-#define EMOTE_TIMEOUT 2000
 #define EMOTE_CMDS_HASH 100
-
-
-#define EMOTE_BARE_L 2
-#define EMOTE_BARE_R 4
-
-//ugliest mapping functions ever :/
-static __inline__ int emote_actor_type(int actor_type){
-	switch(actor_type){
-		case human_female: return 0;
-		case human_male: return 1;
-		case elf_female: return 2;
-		case elf_male: return 3;
-		case dwarf_female: return 4;
-		case dwarf_male: return 5;
-		case orchan_female: return 6;
-		case orchan_male: return 7;
-		case gnome_female: return 8;
-		case gnome_male: return 9;
-		case draegoni_female: return 10;
-		case draegoni_male: return 11;
-		default: return 12; //all other mobs
-	}
-}
-
-
-typedef struct _emote_frame {
-	int nframes;
-	int ids[MAX_EMOTE_FRAME];
-	struct _emote_frame *next;
-} emote_frame;
-
-typedef struct _emote_type
-{
-	int id;
-	char barehanded;
-	unsigned char pose;
-	int timeout; //default 2 sec
-	emote_frame *anims[EMOTE_ACTOR_TYPES][4][2];
-	char name[20];
-	char desc[80];
-} emote_data;
-
 
 typedef struct _emote_anim {
 	Uint32 start_time;
@@ -240,11 +186,6 @@ typedef struct _emote_anim {
 	struct cal_anim idle;
 	emote_frame *flow;
 } emote_anim;
-
-typedef struct _emote_dict {
-	char command[MAX_EMOTE_LEN+1];	// The command to trigger the emote
-	emote_data *emote;
-} emote_dict;
 
 extern hash_table *emote_cmds;  //used to search through emotes commands
 extern hash_table *emotes; //used to store emotes
