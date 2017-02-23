@@ -54,9 +54,6 @@ const int actor_part_sizes[ACTOR_NUM_PARTS] = {
 
 static std::unordered_set<std::string> string_table;
 
-namespace
-{
-
 std::string value(const xmlNode *node)
 {
     if (!node->children)
@@ -140,32 +137,6 @@ const char* char_ptr_of(const std::string& str)
         iter = string_table.insert(str).first;
     return iter->c_str();
 }
-
-} // namespace
-
-extern "C"
-{
-
-char* safe_strncpy(char* dest, const char* src, size_t len)
-{
-	if (len > 0)
-	{
-		strncpy(dest, src, len - 1);
-		dest[len - 1] = '\0';
-	}
-	return dest;
-}
-
-void log_error(const char*, const Uint32, const char* message, ...)
-{
-    va_list ap;
-    va_start(ap, message);
-    vfprintf(stderr, message, ap);
-    va_end(ap);
-    fputc('\n', stderr);
-}
-
-} // extern "C"
 
 actor_types actors_defs[MAX_ACTOR_DEFS];
 attached_actors_types attached_actors_defs[MAX_ACTOR_DEFS];
