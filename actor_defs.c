@@ -444,7 +444,10 @@ void init_actor_defs()
         const emote_reg *reg = emote_regs + i;
         actor_types *act = actors_defs + reg->act_idx;
         if (!act->emote_frames)
-            act->emote_frames = create_hash_table(EMOTES_FRAMES, hash_fn_int, cmp_fn_int, free);
+        {
+            act->emote_frames = create_hash_table(EMOTES_FRAMES, hash_fn_int,
+                                                  cmp_fn_int, NULL);
+        }
         emote_anims[i] = cal_load_anim(act, reg->fname,
 #ifdef NEW_SOUND
                                        reg->sound, reg->sound_scale,
@@ -521,10 +524,10 @@ void free_actor_defs()
 
 void free_emotes()
 {
-	int i;
-	for (i = 0; i < nr_actor_defs; i++)
-		destroy_hash_table(actors_defs[i].emote_frames);
-	destroy_hash_table(emote_cmds);
-	destroy_hash_table(emotes);
+    int i;
+    for (i = 0; i < nr_actor_defs; i++)
+        destroy_hash_table(actors_defs[i].emote_frames);
+    destroy_hash_table(emote_cmds);
+    destroy_hash_table(emotes);
 }
 

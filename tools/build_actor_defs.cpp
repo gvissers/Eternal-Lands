@@ -3250,7 +3250,7 @@ std::ostream& write_frames_regs(std::ostream& os)
     os << "static const frames_reg frames_regs[" << frames_regs.size() << "] = {\n";
     for (const auto& reg: frames_regs)
         os << reg;
-    os << "};\n";
+    os << "};\n\n";
 
     return os;
 }
