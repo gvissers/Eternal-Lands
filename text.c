@@ -167,7 +167,7 @@ void open_chat_log(){
 		char logsuffix[7];
 		strftime(logsuffix, sizeof(logsuffix), "%Y%m", l_time);
 		safe_snprintf (chat_log_file, sizeof (chat_log_file),  "chat_log_%s.txt", logsuffix);
-		safe_snprintf (srv_log_file, sizeof (srv_log_file), "srv_log_%s.txt", logsuffix); 
+		safe_snprintf (srv_log_file, sizeof (srv_log_file), "srv_log_%s.txt", logsuffix);
 	}
 	else
 	{
@@ -337,13 +337,13 @@ void send_input_text_line (char *line, int line_len)
 	return;
 }
 
-int match_emote(emote_dict *command, actor *act, int send)
+static int match_emote(const char* command, int send)
 {
 	hash_entry *match;
 
-	// Try to match the input against an emote command and actor type	
-	match=hash_get(emote_cmds,(void*)command->command);
-	
+	// Try to match the input against an emote command and actor type
+	match=hash_get(emote_cmds,(void*)command);
+
 	if(match){
 		//printf("Emote <%s> sent (%p)\n",((emote_dict*)match->item)->command,((emote_dict*)match->item)->emote);
 		//SEND emote to server
@@ -359,10 +359,10 @@ int parse_text_for_emote_commands(const char *text, int len)
 {
 	int i=0, j = 0, wf=0,ef=0, itsme=0;
 	char name[20];	// Yeah, this should be done correctly
-	emote_dict emote_text;
+	char emote_text[MAX_EMOTE_LEN+1];
 	actor *act;
 
-	
+
 	//printf("parsing local for emotes\n");
 	//extract name
 	while(text[i]&&i<20){
@@ -372,7 +372,7 @@ int parse_text_for_emote_commands(const char *text, int len)
 			name[j]=0;
 			if(text[i]==':') i++;
 			break;
-		} 
+		}
 		i++;j++;
 	}
 
@@ -388,11 +388,11 @@ int parse_text_for_emote_commands(const char *text, int len)
 		return 1;		// Eek! We don't have an actor match... o.O
 	}
 
-	if (!(!strncasecmp(act->actor_name, name, strlen(name)) && 
+	if (!(!strncasecmp(act->actor_name, name, strlen(name)) &&
 			(act->actor_name[strlen(name)] == ' ' ||
 			act->actor_name[strlen(name)] == '\0'))){
 		//we are not saying this text, return
-		//UNLOCK_ACTORS_LISTS();			
+		//UNLOCK_ACTORS_LISTS();
 		//return 0;
 			itsme=0;
 	} else itsme=1;
@@ -403,18 +403,18 @@ int parse_text_for_emote_commands(const char *text, int len)
 		if ((text[i]==' ' || text[i]==0)) {
 			if (j&&j<=MAX_EMOTE_LEN) {
 				wf++;
-				emote_text.command[j]=0;
-				ef+=match_emote(&emote_text,act,itsme);
+				emote_text[j]=0;
+				ef+=match_emote(emote_text,itsme);
 			} else wf+= (j) ? 1:0;
 			j=0;
 		} else {
 			if (j<MAX_EMOTE_LEN)
-				emote_text.command[j]=text[i];
+				emote_text[j]=text[i];
 			j++;
 		}
-	} while(text[i++]);	
+	} while(text[i++]);
 	//printf("ef=%i, wf=%i, filter=>%i\n",ef,wf,emote_filter);
-	UNLOCK_ACTORS_LISTS();			
+	UNLOCK_ACTORS_LISTS();
 
 	return  ((ef==wf) ? (emote_filter):(0));
 
@@ -440,7 +440,7 @@ void check_harvesting_effect(void)
 			harvesting_effect_reference = ec_create_ongoing_harvesting2(act, 1.0, 1.0, (poor_man ? 6 : 10), 1.0);
 		UNLOCK_ACTORS_LISTS();
 	}
-}	
+}
 
 
 int filter_or_ignore_text (char *text_to_add, int len, int size, Uint8 channel)
@@ -569,7 +569,7 @@ int filter_or_ignore_text (char *text_to_add, int len, int size, Uint8 channel)
 		}
 		else if (my_strncompare(text_to_add+1, "You found ", 10) && strstr(text_to_add+1, " coins.")) {
 			decrement_harvest_counter(atoi(text_to_add+11));
-		} 
+		}
 		else if (my_strncompare(text_to_add+1, "Send Item UIDs ", 15)) {
 			if (text_to_add[1+15] == '0')
 				item_uid_enabled = 0;

@@ -287,13 +287,22 @@ typedef struct _emote_type
 	unsigned char pose;
 	int timeout; //default 2 sec
 	emote_frame *anims[EMOTE_ACTOR_TYPES][4][2];
+#ifdef XML_COMPILED
+	const char* name;
+	const char* desc;
+#else
 	char name[20];
 	char desc[80];
+#endif
 } emote_data;
 
 typedef struct _emote_dict
 {
+#ifdef XML_COMPILED
+	const char* command;
+#else
 	char command[MAX_EMOTE_LEN+1];	// The command to trigger the emote
+#endif
 	emote_data *emote;
 } emote_dict;
 

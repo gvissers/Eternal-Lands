@@ -47,16 +47,6 @@ static float unwindAngle_Degrees(float fAngle);
 static void update_all_actors();
 static Uint32 update_actor_animation_speed(actor* a, const float time_diff);
 
-// XXX remove later
-#ifdef XML_COMPILED
-hash_table *emote_cmds = NULL;
-hash_table *emotes = NULL;
-int read_emotes_defs(const char *dir, const char *index)
-{
-	return 0;
-}
-#endif
-
 #ifndef XML_COMPILED
 
 #include <stdlib.h>

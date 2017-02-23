@@ -128,7 +128,7 @@ void cleanup_mem(void)
 	free (continent_maps);
 
 	destroy_hash_table(server_marks);
-	
+
 	for (i = 0; i < video_modes_count; i++)
 	{
 		if (video_modes[i].name)
@@ -191,7 +191,7 @@ int start_rendering()
 			olc_process();
 #endif	//OLC
 			my_tcp_flush(my_socket);    // make sure the tcp output buffer is set
-			
+
 			if (have_a_map && cur_time > last_frame_and_command_update + 60) {
 				LOCK_ACTORS_LISTS();
 				next_command();
@@ -264,7 +264,9 @@ int start_rendering()
 	}
 	unload_questlog();
 	save_item_lists();
+#ifndef XML_COMPILED
 	free_emotes();
+#endif
 	free_actor_defs();
 	free_books();
 	free_vars();
@@ -356,7 +358,7 @@ char * check_server_id_on_command_line()
 		return "";
 
 	// FIXME!! This should parse for -options rather than blindly returning the last option!
-	
+
 	return gargv[gargc - 1];
 }
 

@@ -171,7 +171,9 @@ int checkvisitedlist(int x, int y);
  */
 int read_emotes_defs(const char *dir, const char *index);
 
+#ifndef XML_COMPILED
 void free_emotes();
+#endif
 
 #ifdef __cplusplus
 } // extern "C"

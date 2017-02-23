@@ -263,8 +263,11 @@ std::vector<sound_reg> sound_regs;
 std::unordered_map<std::string, int> sound_regs_known;
 #endif
 
-std::unordered_map<int, emote_data*> emotes;
-std::unordered_map<std::string, emote_dict*> emote_cmds;
+std::vector<emote_data*> emotes;
+std::unordered_map<const emote_data*, int> emotes_idxs;
+std::vector<emote_frame*> emote_frames;
+std::unordered_map<const emote_frame*, int> emote_frame_idxs;
+std::vector<emote_dict*> emote_dict_list;
 
 static void my_tolower(char *src)
 {
@@ -2491,8 +2494,8 @@ void init_emote(emote_data *emote)
         emote->anims[i][EMOTE_RUNNING][0] = emote->anims[i][EMOTE_RUNNING][1] = nullptr;
         emote->anims[i][EMOTE_STANDING][0] = emote->anims[i][EMOTE_STANDING][1] = nullptr;
     }
-    emote->name[0] = '\0';
-    emote->desc[0] = '\0';
+    emote->name = nullptr;
+    emote->desc = nullptr;
 }
 
 emote_data *new_emote(int id)
@@ -2500,7 +2503,8 @@ emote_data *new_emote(int id)
     emote_data *emote = new emote_data;
     init_emote(emote);
     emote->id = id;
-    emotes[id] = emote;
+    emotes.push_back(emote);
+    emotes_idxs[emote] = emotes.size() - 1;
 
     return emote;
 }
@@ -2508,9 +2512,9 @@ emote_data *new_emote(int id)
 void add_emote_to_dict(const xmlNode *node, emote_data *emote)
 {
     emote_dict *entry = new emote_dict;
-    get_string_value(entry->command, sizeof(entry->command), node);
+    entry->command = char_ptr_of(value(node));
     entry->emote = emote;
-    emote_cmds[entry->command] = entry;
+    emote_dict_list.push_back(entry);
 }
 
 emote_frame *get_emote_frames(const xmlNode *node)
@@ -2527,11 +2531,17 @@ emote_frame *get_emote_frames(const xmlNode *node)
             if (!head)
             {
                 frames = head = new emote_frame;
+                frames->next = nullptr;
+                emote_frames.push_back(frames);
+                emote_frame_idxs[frames] = emote_frames.size() - 1;
             }
             else
             {
                 frames->next = new emote_frame;
                 frames = frames->next;
+                frames->next = nullptr;
+                emote_frames.push_back(frames);
+                emote_frame_idxs[frames] = emote_frames.size() - 1;
             }
 
             std::istringstream ss(value(item));
@@ -2541,7 +2551,7 @@ emote_frame *get_emote_frames(const xmlNode *node)
             {
                 if (!getline(ss, sid, '|'))
                     break;
-                frames->ids[k++] = atoi(sid.c_str());
+                frames->ids[k] = atoi(sid.c_str());
             }
             frames->nframes = k;
         }
@@ -2649,7 +2659,6 @@ void calc_actor_types(int sex, int race, int *buf, int *len)
     }
 }
 
-
 void set_emote_anim(emote_data *emote, emote_frame *frames,
                     int sex, int race, int held, int idle)
 {
@@ -2661,8 +2670,8 @@ void set_emote_anim(emote_data *emote, emote_frame *frames,
     calc_actor_types(sex, race, buf, &len);
     for (i = 0; i < len; i++)
     {
-        if(held < 0)
-            emote->anims[buf[i]][idle][1-h]  =frames;
+        if (held < 0)
+            emote->anims[buf[i]][idle][1-h] = frames;
         emote->anims[buf[i]][idle][h] = frames;
     }
 }
@@ -2712,11 +2721,11 @@ int parse_emote_def(emote_data *emote, const xmlNode *node)
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"name") == 0)
         {
-            get_string_value(emote->name, sizeof(emote->name), item);
+            emote->name = char_ptr_of(value(item));
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"desc") == 0)
         {
-            get_string_value(emote->desc, sizeof(emote->desc), item);
+            emote->desc = char_ptr_of(value(item));
         }
         else if (xmlStrcasecmp(item->name, (xmlChar*)"default") == 0)
         {
@@ -3220,7 +3229,7 @@ std::ostream& write_attached_actor_types(std::ostream& os, int nr_actor_defs)
         }
         os << "\t\t},\n\t},\n";
     }
-    os << "};\n";
+    os << "};\n\n";
 
     return os;
 }
@@ -3365,6 +3374,97 @@ std::ostream& write_sound_regs(std::ostream& os)
 }
 #endif
 
+std::ostream& operator<<(std::ostream& os, const emote_frame& frame)
+{
+    os << "\t{\n"
+        << "\t\t.nframes = " << frame.nframes << ",\n"
+        << "\t\t.ids = { ";
+    if (frame.nframes > 0)
+    {
+        os << frame.ids[0];
+        for (int i = 1; i < frame.nframes; ++i)
+            os << ", " << frame.ids[i];
+    }
+    os << " },\n";
+    if (frame.next)
+        os << "\t\t.next = emote_frames + " << emote_frame_idxs.at(frame.next) << '\n';
+    else
+        os << "\t\t.next = NULL\n";
+    return os << "\t},\n";
+}
+
+std::ostream& write_emote_frames(std::ostream& os)
+{
+    os << "static emote_frame emote_frames[" << emote_frames.size() << "] = {\n";
+    for (auto data: emote_frames)
+        os << *data;
+    return os << "};\n\n";
+}
+
+std::ostream& operator<<(std::ostream& os, const emote_data& data)
+{
+    const char* name = data.name ? data.name : "";
+    const char* desc = data.desc ? data.desc : "";
+    os << "\t{\n"
+        << "\t\t.id = " << data.id << ",\n"
+        << "\t\t.barehanded = " << int(data.barehanded) << ",\n"
+        << "\t\t.timeout = " << data.timeout << ",\n"
+        << "\t\t.anims = {\n";
+    for (int type = 0; type < EMOTE_ACTOR_TYPES; ++type)
+    {
+        os << "\t\t\t{\n";
+        for (int pos = 0; pos < 4; ++pos)
+        {
+            os << "\t\t\t\t{ ";
+            if (data.anims[type][pos][0])
+                os << "emote_frames + " << emote_frame_idxs.at(data.anims[type][pos][0]);
+            else
+                os << "NULL";
+            if (data.anims[type][pos][1])
+                os << ", emote_frames + " << emote_frame_idxs.at(data.anims[type][pos][1]);
+            else
+                os << ", NULL";
+            os << " },\n";
+        }
+        os << "\t\t\t},\n";
+    }
+    os << "\t\t},\n"
+        << "\t\t.name = \"" << name << "\",\n"
+        << "\t\t.desc = \"" << desc << "\"\n"
+        << "\t},\n";
+    return os;
+}
+
+std::ostream& write_emote_data(std::ostream& os)
+{
+    os << "static emote_data emote_data_list[" << emotes.size() << "] = {\n";
+    for (auto data: emotes)
+        os << *data;
+    os << "};\n"
+        << "static const int nr_emote_data = " << emotes.size() << ";\n\n";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const emote_dict& dict)
+{
+    os << "\t{ .command = \"" << dict.command << "\", ";
+    if (dict.emote)
+        os << ".emote = emote_data_list + " << emotes_idxs[dict.emote] << " },\n";
+    else
+        os << ".emote = NULL },\n";
+    return os;
+}
+
+std::ostream& write_emote_dicts(std::ostream& os)
+{
+    os << "static emote_dict emote_dicts[" << emote_dict_list.size() << "] = {\n";
+    for (auto dict: emote_dict_list)
+        os << *dict;
+    os << "};\n"
+        << "static const int nr_emote_dicts = " << emote_dict_list.size() << ";\n\n";
+    return os;
+}
+
 int get_nr_actor_defs()
 {
     for (int nr_actor_defs = MAX_ACTOR_DEFS; nr_actor_defs > 0; --nr_actor_defs)
@@ -3399,6 +3499,9 @@ void write_c_file(std::ostream& os)
     write_skeleton_names(os);
     write_actor_types(os, nr_actor_defs);
     write_attached_actor_types(os, nr_actor_defs);
+    write_emote_frames(os);
+    write_emote_data(os);
+    write_emote_dicts(os);
 }
 
 void cleanup()

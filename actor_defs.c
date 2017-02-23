@@ -70,6 +70,9 @@ typedef struct
 
 #include "actor_defs_inc.c"
 
+hash_table *emotes = NULL;
+hash_table *emote_cmds = NULL;
+
 static void actor_check_int(actor_types *act, const char *section, const char *type, int value)
 {
     if (value < 0)
@@ -509,6 +512,21 @@ void init_actor_defs()
 #endif
                             reg->duration);
     }
+
+    // All right, actor defs proper are done at this point. Now onto the emotes...
+
+    emotes = create_hash_table(2*EMOTE_CMDS_HASH, hash_fn_int, cmp_fn_int, NULL);
+    emote_cmds = create_hash_table(EMOTE_CMDS_HASH, hash_fn_str, cmp_fn_str, NULL);
+    for (int i = 0; i < nr_emote_data; ++i)
+    {
+        emote_data *data = emote_data_list + i;
+        hash_add(emotes, (void*)(NULL + data->id), (void*)data);
+    }
+    for (int i = 0; i < nr_emote_dicts; ++i)
+    {
+        emote_dict *dict = emote_dicts + i;
+        hash_add(emote_cmds, (void*)dict->command, (void*)dict);
+    }
 }
 
 void free_actor_defs()
@@ -519,14 +537,8 @@ void free_actor_defs()
         if (actors_defs[i].hardware_model)
             clear_buffers(actors_defs + i);
         CalCoreModel_Delete(actors_defs[i].coremodel);
-    }
-}
-
-void free_emotes()
-{
-    int i;
-    for (i = 0; i < nr_actor_defs; i++)
         destroy_hash_table(actors_defs[i].emote_frames);
+    }
     destroy_hash_table(emote_cmds);
     destroy_hash_table(emotes);
 }
