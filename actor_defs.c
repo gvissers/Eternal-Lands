@@ -247,17 +247,21 @@ void init_actor_defs()
         }
         if (!act->head || !*act->head[0].model_name)
         {
+            // Old style actor, load the single mesh
             act->shirt[0].mesh_index = cal_load_mesh(act, act->file_name, NULL,
                                                      act->mesh_scale);
-            continue;
+            actor_check_int(act, "shirt", "mesh", act->shirt[0].mesh_index);
         }
-        for (j = 0; j < 10; ++j)
+        else
         {
-            body_part *part = act->head + j;
-            if (*part->model_name)
+            for (j = 0; j < 10; ++j)
             {
-                part->mesh_index = cal_load_mesh(act, part->model_name, "head", act->mesh_scale);
-                actor_check_int(act, "head", "mesh", part->mesh_index);
+                body_part *part = act->head + j;
+                if (*part->model_name)
+                {
+                    part->mesh_index = cal_load_mesh(act, part->model_name, "head", act->mesh_scale);
+                    actor_check_int(act, "head", "mesh", part->mesh_index);
+                }
             }
         }
         if (act->shield)
@@ -344,7 +348,7 @@ void init_actor_defs()
                 }
             }
         }
-        if (act->shirt)
+        if (act->shirt && act->head && *act->head[0].model_name)
         {
             for (j = 0; j < 100; ++j)
             {
