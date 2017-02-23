@@ -228,6 +228,7 @@ struct attached_frames_reg
 #endif
     int duration;
     int act_idx;
+    int att_act_idx;
     int held_act_idx;
     int frame_idx;
 
@@ -235,16 +236,18 @@ struct attached_frames_reg
 #ifdef NEW_SOUND
                         const std::string& sound, const std::string& sound_scale,
 #endif
-                        int duration, int act_idx, int held_act_idx, int frame_idx):
+                        int duration, int act_idx, int att_act_idx,
+                        int held_act_idx, int frame_idx):
         fname(fname),
 #ifdef NEW_SOUND
         sound(sound), sound_scale(sound_scale),
 #endif
-        duration(duration), act_idx(act_idx), held_act_idx(held_act_idx),
-        frame_idx(frame_idx) {}
+        duration(duration), act_idx(act_idx), att_act_idx(att_act_idx),
+        held_act_idx(held_act_idx), frame_idx(frame_idx) {}
 };
 
 std::vector<attached_frames_reg> attached_frames_regs;
+bool attached_pair_used[MAX_ACTOR_DEFS][MAX_ACTOR_DEFS];
 
 #ifdef NEW_SOUND
 struct sound_reg
@@ -1871,12 +1874,13 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
     return ok;
 }
 
-int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
+int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
 {
     const xmlNode *item;
     int ok = 1;
-    attached_actors_types *att = attached_actors_defs + act->actor_type;
-    actor_types *held_act = NULL;
+    int act_idx1 = act - actors_defs;
+    int held_act_idx;
+    attached_actors_types *att = attached_actors_defs + act_idx1;
 
     if (!cfg || !cfg->children)
         return 0;
@@ -1887,19 +1891,22 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
         {
             if (xmlStrcasecmp(item->name, (xmlChar*)"holder") == 0)
             {
-                att->actor_type[actor_type].is_holder = get_bool_value(item);
-                if (att->actor_type[actor_type].is_holder)
-                    held_act = actors_defs + actor_type;
+                att->actor_type[act_idx2].is_holder = get_bool_value(item);
+                if (att->actor_type[act_idx2].is_holder)
+                    held_act_idx = act_idx2;
                 else
-                    held_act = act;
+                    held_act_idx = act_idx1;
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"parent_bone") == 0)
             {
-                parent_regs.emplace_back(value(item), act - actors_defs, actor_type);
+                parent_regs.emplace_back(value(item), act_idx1, act_idx2);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"local_bone") == 0)
             {
-                local_regs.emplace_back(value(item), act - actors_defs, actor_type);
+                local_regs.emplace_back(value(item), act_idx1, act_idx2);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"held_shift") == 0)
             {
@@ -1910,15 +1917,18 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                     {
                         if (xmlStrcasecmp(attr->name, (xmlChar*)"x") == 0)
                         {
-                            att->actor_type[actor_type].shift[0] = atof((char*)attr->children->content);
+                            att->actor_type[act_idx2].shift[0] = atof((char*)attr->children->content);
+                            attached_pair_used[act_idx1][act_idx2] = 1;
                         }
                         else if (xmlStrcasecmp(attr->name, (xmlChar*)"y") == 0)
                         {
-                            att->actor_type[actor_type].shift[1] = atof((char*)attr->children->content);
+                            att->actor_type[act_idx2].shift[1] = atof((char*)attr->children->content);
+                            attached_pair_used[act_idx1][act_idx2] = 1;
                         }
                         else if (xmlStrcasecmp(attr->name, (xmlChar*)"z") == 0)
                         {
-                            att->actor_type[actor_type].shift[2] = atof((char*)attr->children->content);
+                            att->actor_type[act_idx2].shift[2] = atof((char*)attr->children->content);
+                            attached_pair_used[act_idx1][act_idx2] = 1;
                         }
                         else
                         {
@@ -1937,9 +1947,11 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                                                   property(item, "sound_scale"),
 #endif
                                                   get_int_property(item, "duration"),
-                                                  actor_type,
-                                                  held_act - actors_defs,
+                                                  act_idx1,
+                                                  act_idx2,
+                                                  held_act_idx,
                                                   cal_attached_walk_frame);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_held_run") == 0)
             {
@@ -1949,9 +1961,11 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                                                   property(item, "sound_scale"),
 #endif
                                                   get_int_property(item, "duration"),
-                                                  actor_type,
-                                                  held_act - actors_defs,
+                                                  act_idx1,
+                                                  act_idx2,
+                                                  held_act_idx,
                                                   cal_attached_run_frame);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_held_idle") == 0)
             {
@@ -1961,9 +1975,11 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                                                   property(item, "sound_scale"),
 #endif
                                                   get_int_property(item, "duration"),
-                                                  actor_type,
-                                                  held_act - actors_defs,
+                                                  act_idx1,
+                                                  act_idx2,
+                                                  held_act_idx,
                                                   cal_attached_idle_frame);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_held_pain") == 0)
             {
@@ -1973,9 +1989,11 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                                                   property(item, "sound_scale"),
 #endif
                                                   get_int_property(item, "duration"),
-                                                  actor_type,
-                                                  held_act - actors_defs,
+                                                  act_idx1,
+                                                  act_idx2,
+                                                  held_act_idx,
                                                   cal_attached_pain_frame);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_held_armed_pain") == 0)
             {
@@ -1985,9 +2003,11 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
                                                   property(item, "sound_scale"),
 #endif
                                                   get_int_property(item, "duration"),
-                                                  actor_type,
-                                                  held_act - actors_defs,
+                                                  act_idx1,
+                                                  act_idx2,
+                                                  held_act_idx,
                                                   cal_attached_pain_armed_frame);
+                attached_pair_used[act_idx1][act_idx2] = 1;
             }
             else
             {
@@ -1997,7 +2017,7 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int actor_type)
         }
         else if (item->type == XML_ENTITY_REF_NODE)
         {
-            ok &= parse_actor_attachment(act, item->children, actor_type);
+            ok &= parse_actor_attachment(act, item->children, act_idx2);
         }
     }
 
@@ -2259,7 +2279,6 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
 int parse_actor_script(const xmlNode *cfg)
 {
     int ok, act_idx, i;
-    int j;
     actor_types *act;
 
     if (!cfg || !cfg->children)
@@ -2309,17 +2328,6 @@ int parse_actor_script(const xmlNode *cfg)
 #ifdef NEW_SOUND
     act->battlecry.sound = -1;
 #endif // NEW_SOUND
-
-    for (i = 0; i < MAX_ACTOR_DEFS; ++i)
-    {
-        for (j = 0; j < NUM_ATTACHED_ACTOR_FRAMES; j++)
-        {
-            attached_actors_defs[act_idx].actor_type[i].cal_frames[j].anim_index = -1;
-#ifdef NEW_SOUND
-            attached_actors_defs[act_idx].actor_type[i].cal_frames[j].sound = -1;
-#endif // NEW_SOUND
-        }
-    }
 
     act->step_duration = DEFAULT_STEP_DURATION; // default value
 
@@ -2768,8 +2776,51 @@ std::ostream& write_actor_types(std::ostream& os, int nr_actor_defs)
     for (int i = 0; i < nr_actor_defs; ++i)
         os << actors_defs[i];
     os << "};\n"
-        << "attached_actors_types attached_actors_defs[" << nr_actor_defs << "];\n"
-        << "const int nr_actor_defs = " << nr_actor_defs << ";\n\n";
+         << "const int nr_actor_defs = " << nr_actor_defs << ";\n\n";
+    return os;
+}
+
+std::ostream& write_attached_actor_types(std::ostream& os, int nr_actor_defs)
+{
+    int size = NUM_ATTACHED_ACTOR_FRAMES;
+    for (int i = 0; i < nr_actor_defs; ++i)
+    {
+        for (int j = 0; j < nr_actor_defs; ++j)
+        {
+            if (attached_pair_used[i][j])
+                size += NUM_ATTACHED_ACTOR_FRAMES;
+        }
+    }
+
+    os << "static struct cal_anim attached_actor_frames[" << size << "];\n"
+        << "static const int nr_attached_actor_frames = " << size << ";\n\n"
+        << "attached_actors_types attached_actors_defs[" << nr_actor_defs << "] = {\n";
+
+    int off = 0;
+    for (int i; i < nr_actor_defs; ++i)
+    {
+        os << "\t{\n\t\t.actor_type = {\n";
+        for (int j = 0; j < nr_actor_defs; ++j)
+        {
+            if (!attached_pair_used[i][j])
+            {
+                os << "\t\t\t{ .cal_frames = attached_actor_frames },\n";
+            }
+            else
+            {
+                const attachment_props& props = attached_actors_defs[i].actor_type[j];
+                off += NUM_ATTACHED_ACTOR_FRAMES;
+                os << "\t\t\t{\n"
+                    << "\t\t\t\t.cal_frames = attached_actor_frames + " << off << ",\n"
+                    << "\t\t\t\t.is_holder = " << props.is_holder << ",\n"
+                    << "\t\t\t\t.shift = { " << props.shift[0]
+                    << ", " << props.shift[1] << ", " << props.shift[2] << " }\n"
+                    << "\t\t\t},\n";
+            }
+        }
+        os << "\t\t},\n\t},\n";
+    }
+    os << "};\n";
 
     return os;
 }
@@ -2876,6 +2927,7 @@ std::ostream& operator<<(std::ostream& os, const attached_frames_reg& reg)
 #endif
         << "\t\t.duration = " << reg.duration << ",\n"
         << "\t\t.act_idx = " << reg.act_idx << ",\n"
+        << "\t\t.att_act_idx = " << reg.act_idx << ",\n"
         << "\t\t.held_act_idx = " << reg.held_act_idx << ",\n"
         << "\t\t.frame_idx = " << reg.frame_idx << "\n"
         << "\t},\n";
@@ -2945,6 +2997,7 @@ void write_c_file(std::ostream& os)
 #endif
     write_skeleton_names(os);
     write_actor_types(os, nr_actor_defs);
+    write_attached_actor_types(os, nr_actor_defs);
 }
 
 void cleanup()

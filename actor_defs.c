@@ -53,6 +53,7 @@ typedef struct
 #endif
     int duration;
     int act_idx;
+    int att_act_idx;
     int held_act_idx;
     int frame_idx;
 } attached_frames_reg;
@@ -210,8 +211,6 @@ struct cal_anim cal_load_idle(actor_types *act, const char *str)
 void init_actor_defs()
 {
     int i, j, k;
-
-memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
 
 #ifdef	NEW_TEXTURES
     set_invert_v_coord();
@@ -496,7 +495,7 @@ memset(attached_actors_defs, 0, sizeof (attached_actors_defs));
     {
         const attached_frames_reg *reg = attached_frames_regs + i;
         attached_actors_types *att = attached_actors_defs + reg->act_idx;
-        att->actor_type[reg->act_idx].cal_frames[reg->frame_idx]
+        att->actor_type[reg->att_act_idx].cal_frames[reg->frame_idx]
             = cal_load_anim(actors_defs + reg->held_act_idx, reg->fname,
 #ifdef NEW_SOUND
                             reg->sound, reg->sound_scale,

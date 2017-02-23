@@ -173,7 +173,11 @@ typedef struct
 	int parent_bone_id; /*!< The bone to use on the actor to which it is attached */
 	int local_bone_id;  /*!< The bone to use on the actor that is attached */
 	float shift[3];     /*!< The shift to apply to the actor that is held */
+#ifdef XML_COMPILED
+	struct cal_anim* cal_frames;
+#else
 	struct cal_anim cal_frames[NUM_ATTACHED_ACTOR_FRAMES];
+#endif
 } attachment_props;
 
 /*!
