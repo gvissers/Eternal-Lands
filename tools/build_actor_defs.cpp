@@ -2458,6 +2458,15 @@ static int init_actor_defs(const char* dir)
     return read_actor_defs(dir, "actor_defs.xml");
 }
 
+std::ostream& write_actor_part_sizes(std::ostream& os)
+{
+    os << "static const int actor_part_sizes[ACTOR_NUM_PARTS] = {\n\t"
+        << actor_part_sizes[0];
+    for (int i = 1; i < ACTOR_NUM_PARTS; ++i)
+        os << ", " << actor_part_sizes[i];
+    return os << "\n};\n\n";
+}
+
 std::ostream& operator<<(std::ostream& os, const body_part& part)
 {
     const char* model_name = part.model_name ? part.model_name : "";
@@ -2979,6 +2988,7 @@ void write_c_file(std::ostream& os)
 {
     int nr_actor_defs = get_nr_actor_defs();
 
+    write_actor_part_sizes(os);
     write_actor_body(os);
     write_actor_shields(os);
     write_actor_weapons(os);

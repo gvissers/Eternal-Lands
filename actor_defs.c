@@ -254,7 +254,7 @@ void init_actor_defs()
         }
         else
         {
-            for (j = 0; j < 10; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_HEAD_SIZE]; ++j)
             {
                 body_part *part = act->head + j;
                 if (*part->model_name)
@@ -266,7 +266,7 @@ void init_actor_defs()
         }
         if (act->shield)
         {
-            for (j = 0; j < 40; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_SHIELD_SIZE]; ++j)
             {
                 shield_part *part = act->shield + j;
                 if (*part->model_name)
@@ -278,7 +278,7 @@ void init_actor_defs()
         }
         if (act->cape)
         {
-            for (j = 0; j < 50; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_CAPE_SIZE]; ++j)
             {
                 body_part *part = act->cape + j;
                 if (*part->model_name)
@@ -290,7 +290,7 @@ void init_actor_defs()
         }
         if (act->helmet)
         {
-            for (j = 0; j < 100; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_HELMET_SIZE]; ++j)
             {
                 body_part *part = act->helmet + j;
                 if (*part->model_name)
@@ -302,7 +302,7 @@ void init_actor_defs()
         }
         if (act->neck)
         {
-            for (j = 0; j < 20; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_NECK_SIZE]; ++j)
             {
                 body_part *part = act->neck + j;
                 if (*part->model_name)
@@ -314,7 +314,7 @@ void init_actor_defs()
         }
         if (act->weapon)
         {
-            for (j = 0; j < 100; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_WEAPON_SIZE]; ++j)
             {
                 weapon_part *part = act->weapon + j;
                 if (*part->model_name)
@@ -350,7 +350,7 @@ void init_actor_defs()
         }
         if (act->shirt && act->head && *act->head[0].model_name)
         {
-            for (j = 0; j < 100; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_SHIRT_SIZE]; ++j)
             {
                 shirt_part *part = act->shirt + j;
                 if (*part->model_name)
@@ -362,7 +362,7 @@ void init_actor_defs()
         }
         if (act->boots)
         {
-            for (j = 0; j < 40; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_BOOTS_SIZE]; ++j)
             {
                 body_part *part = act->boots + j;
                 if (*part->model_name)
@@ -374,7 +374,7 @@ void init_actor_defs()
         }
         if (act->legs)
         {
-            for (j = 0; j < 60; ++j)
+            for (j = 0; j < actor_part_sizes[ACTOR_LEGS_SIZE]; ++j)
             {
                 body_part *part = act->legs + j;
                 if (*part->skin_name)
