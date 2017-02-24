@@ -134,7 +134,7 @@ actor_defs_inc.c: tools
 	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
 
 tools:
-	$(MAKE) -C $@
+	@$(MAKE) -C $@ -f Makefile.linux
 
 release:
 	@$(MAKE) -f Makefile.linux 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)'

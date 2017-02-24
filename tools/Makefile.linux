@@ -1,0 +1,26 @@
+-include ../make.conf
+
+CFLAGS = -DLINUX $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
+	-g -Wall -W $(shell sdl-config --cflags) $(shell xml2-config --cflags)
+CXXFLAGS = -DLINUX $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
+	-g -Wall -W $(shell sdl-config --cflags) $(shell xml2-config --cflags)
+LDFLAGS = $(shell xml2-config --libs)
+
+OBJS = build_actor_defs.o
+DEP_FILES=$(foreach OBJ, $(OBJS), .deps/$(OBJ).P)
+
+DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
+
+$(OBJS): %.o: %.cpp Makefile.linux ../make.conf
+	@echo "  CXX  $@"
+	@if $(CXX) $(CXXFLAGS) -MT '$@' -MD -MP -MF '.deps/$@.pp' -c $< -o $@; then \
+		mv ".deps/$@.pp" ".deps/$@.P"; \
+	else rm -f ".deps/$@.pp"; exit 1; \
+	fi
+
+all: build_actor_defs
+
+build_actor_defs: $(OBJS)
+	$(CXX) -o$@ $^ $(LDFLAGS)
+
+-include $(DEP_FILES)
