@@ -1,6 +1,8 @@
+#ifndef XML_COMPILED
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 
