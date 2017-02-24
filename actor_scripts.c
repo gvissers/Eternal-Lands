@@ -709,7 +709,7 @@ int parse_actor_legs (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 {
 	const xmlNode *item;
 	int ok, col_idx;
-	legs_part *legs;
+	body_part *legs;
 
 	if (cfg == NULL || cfg->children == NULL) return 0;
 
@@ -725,7 +725,7 @@ int parse_actor_legs (actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
 	if (act->legs == NULL) {
 		int i;
-		act->legs = (legs_part*)calloc(actor_part_sizes[ACTOR_LEGS_SIZE], sizeof(legs_part));
+		act->legs = calloc(actor_part_sizes[ACTOR_LEGS_SIZE], sizeof(body_part));
 		for (i = actor_part_sizes[ACTOR_LEGS_SIZE]; i--;) act->legs[i].mesh_index= -1;
 	}
 
@@ -1823,7 +1823,7 @@ int parse_actor_boots (actor_types *act, const xmlNode *cfg, const xmlNode *defa
 {
 	const xmlNode *item;
 	int ok, col_idx;
-	boots_part *boots;
+	body_part *boots;
 
 	if (cfg == NULL || cfg->children == NULL) return 0;
 
@@ -1839,7 +1839,7 @@ int parse_actor_boots (actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
 	if (act->boots == NULL) {
 		int i;
-		act->boots = (boots_part*)calloc(actor_part_sizes[ACTOR_BOOTS_SIZE], sizeof(boots_part));
+		act->boots = calloc(actor_part_sizes[ACTOR_BOOTS_SIZE], sizeof(body_part));
 		for (i = actor_part_sizes[ACTOR_BOOTS_SIZE]; i--;) act->boots[i].mesh_index= -1;
 	}
 
@@ -2489,7 +2489,7 @@ void init_actor_defs()
 {
 	// initialize the whole thing to zero
 	memset (actors_defs, 0, MAX_ACTOR_DEFS * sizeof(actor_types));
-	memset (attached_actors_defs, 0, sizeof (attached_actors_defs));
+	memset (attached_actors_defs, 0, MAX_ACTOR_DEFS * sizeof(attached_actors_types));
 #ifdef	NEW_TEXTURES
 	set_invert_v_coord();
 #endif	/* NEW_TEXTURES */
