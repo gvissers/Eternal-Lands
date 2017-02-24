@@ -271,15 +271,6 @@ std::vector<emote_frame*> emote_frames;
 std::unordered_map<const emote_frame*, int> emote_frame_idxs;
 std::vector<emote_dict*> emote_dict_list;
 
-static void my_tolower(char *src)
-{
-    if (src)
-    {
-        for ( ; *src; ++src)
-            *src = tolower(*src);
-    }
-}
-
 static const char* glow_mode_name(int mode)
 {
     static const char* names[] = {
@@ -511,14 +502,10 @@ int parse_actor_shirt(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
 int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    int ok, col_idx;
-    skin_part *skin;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx= int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0)
         col_idx = skin_color_dict.at(lc_property(cfg, "color"));
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_SKIN_SIZE])
@@ -533,48 +520,48 @@ int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
         all_skins_used += actor_part_sizes[ACTOR_SKIN_SIZE];
     }
 
-    skin = act->skin + col_idx;
-    ok = 1;
-    for (item = cfg->children; item; item = item->next)
+    skin_part *skin = act->skin + col_idx;
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
-        if (item->type == XML_ELEMENT_NODE)
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"hands") == 0)
         {
-            if (xmlStrcasecmp(item->name, (xmlChar*)"hands") == 0)
-            {
-                skin->hands_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"head") == 0)
-            {
-                skin->head_name= char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
-            {
-                skin->body_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
-            {
-                skin->arms_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"legs") == 0)
-            {
-                skin->legs_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"feet") == 0)
-            {
-                skin->feet_name = char_ptr_of(value(item));
-            }
-            else
-            {
-                std::cerr << "unknown skin property \"" << item->name << "\"\n";
-                ok = 0;
-            }
+            skin->hands_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"head") == 0)
+        {
+            skin->head_name= char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"torso") == 0)
+        {
+            skin->body_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"arms") == 0)
+        {
+            skin->arms_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"legs") == 0)
+        {
+            skin->legs_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"feet") == 0)
+        {
+            skin->feet_name = char_ptr_of(value(item));
+        }
+        else
+        {
+            std::cerr << "unknown skin property \"" << item->name << "\"\n";
+            ok = 0;
         }
     }
 
     // check for default entries, if found, use them to fill in missing data
     if (defaults)
     {
-        const xmlNode *default_node= get_default_node(cfg, defaults);
+        const xmlNode *default_node = get_default_node(cfg, defaults);
         if (default_node)
         {
             if (!skin->hands_name || *skin->hands_name == '\0')
@@ -593,14 +580,10 @@ int parse_actor_skin(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 
 int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    int ok, col_idx;
-    body_part *legs;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx= int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_LEGS_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -609,46 +592,45 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 
     if (!act->legs)
     {
-        int i;
         act->legs = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_LEGS_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_LEGS_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_LEGS_SIZE]; ++i)
             act->legs[i].mesh_index= -1;
     }
 
-    legs = act->legs + col_idx;
-    ok = 1;
-    for (item = cfg->children; item; item = item->next)
+    body_part *legs = act->legs + col_idx;
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
-        if (item->type == XML_ELEMENT_NODE)
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
         {
-            if (xmlStrcasecmp(item->name, (xmlChar*)"skin") == 0)
-            {
-                legs->skin_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
-            {
-                legs->model_name = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"legsmask") == 0)
-            {
-                legs->skin_mask = char_ptr_of(value(item));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
-            {
-                int mode = glow_mode_dict.at(lc_value(item));
-                legs->glow = mode < 0 ? GLOW_NONE : mode;
-            }
-            else
-            {
-                std::cerr << "unknown legs property \"" << item->name << "\"\n";
-                ok = 0;
-            }
+            legs->skin_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"mesh") == 0)
+        {
+            legs->model_name = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"legsmask") == 0)
+        {
+            legs->skin_mask = char_ptr_of(value(item));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"glow") == 0)
+        {
+            int mode = glow_mode_dict.at(lc_value(item));
+            legs->glow = mode < 0 ? GLOW_NONE : mode;
+        }
+        else
+        {
+            std::cerr << "unknown legs property \"" << item->name << "\"\n";
+            ok = 0;
         }
     }
 
     // check for default entries, if found, use them to fill in missing data
-    if(defaults)
+    if (defaults)
     {
         const xmlNode *default_node = get_default_node(cfg, defaults);
         if (default_node)
@@ -670,12 +652,11 @@ int parse_actor_legs(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 static int parse_actor_body_part(actor_types *act, body_part *part, const xmlNode *cfg,
                                  const char *part_name, const xmlNode *default_node)
 {
-    const xmlNode *item;
+    if (!cfg)
+        return 0;
+
     int ok = 1;
-
-    if (!cfg) return 0;
-
-    for (item=cfg; item; item=item->next)
+    for (const xmlNode *item = cfg; item; item = item->next)
     {
         if (item->type != XML_ELEMENT_NODE)
             continue;
@@ -728,13 +709,10 @@ static int parse_actor_body_part(actor_types *act, body_part *part, const xmlNod
 
 int parse_actor_helmet(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *default_node = get_default_node(cfg, defaults);
-    int type_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_HELMET_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -743,26 +721,23 @@ int parse_actor_helmet(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
     if (!act->helmet)
     {
-        int i;
         act->helmet = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_HELMET_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_HELMET_SIZE]; ++i)
-            act->helmet[i].mesh_index= -1;
+        for (int i = 0; i < actor_part_sizes[ACTOR_HELMET_SIZE]; ++i)
+            act->helmet[i].mesh_index = -1;
     }
 
+    const xmlNode *default_node = get_default_node(cfg, defaults);
     return parse_actor_body_part(act, act->helmet + type_idx, cfg->children,
                                  "helmet", default_node);
 }
 
 int parse_actor_neck(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *default_node = get_default_node(cfg, defaults);
-    int type_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_NECK_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -771,26 +746,23 @@ int parse_actor_neck(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 
     if (!act->neck)
     {
-        int i;
         act->neck = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_NECK_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_NECK_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_NECK_SIZE]; ++i)
             act->neck[i].mesh_index= -1;
     }
 
+    const xmlNode *default_node = get_default_node(cfg, defaults);
     return parse_actor_body_part(act, act->neck + type_idx, cfg->children,
                                  "neck", default_node);
 }
 
 int parse_actor_cape(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *default_node = get_default_node(cfg, defaults);
-    int type_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_CAPE_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -799,26 +771,23 @@ int parse_actor_cape(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 
     if (!act->cape)
     {
-        int i;
         act->cape = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_CAPE_SIZE];
-        for (i = actor_part_sizes[ACTOR_CAPE_SIZE]; i--;)
+        for (int i = 0; i < actor_part_sizes[ACTOR_CAPE_SIZE]; ++i)
             act->cape[i].mesh_index= -1;
     }
 
+    const xmlNode *default_node = get_default_node(cfg, defaults);
     return parse_actor_body_part(act, act->cape + type_idx, cfg->children,
                                  "cape", default_node);
 }
 
 int parse_actor_head(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *default_node= get_default_node(cfg, defaults);
-    int type_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if(type_idx < 0)
         type_idx = head_number_dict.at(lc_property(cfg, "number"));
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_HEAD_SIZE])
@@ -829,25 +798,23 @@ int parse_actor_head(actor_types *act, const xmlNode *cfg, const xmlNode *defaul
 
     if (!act->head)
     {
-        int i;
         act->head = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_HEAD_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_HEAD_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_HEAD_SIZE]; ++i)
             act->head[i].mesh_index= -1;
     }
 
+    const xmlNode *default_node= get_default_node(cfg, defaults);
     return parse_actor_body_part(act, act->head + type_idx, cfg->children,
                                  "head", default_node);
 }
 
 int parse_actor_hair(actor_types *act, const xmlNode *cfg)
 {
-    int col_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_HAIR_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -867,12 +834,10 @@ int parse_actor_hair(actor_types *act, const xmlNode *cfg)
 
 int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
 {
-    int col_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_EYES_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -890,10 +855,9 @@ int parse_actor_eyes(actor_types *act, const xmlNode *cfg)
     return 1;
 }
 
-static int cal_get_idle_group(actor_types *act, const char *name)
+int cal_get_idle_group(actor_types *act, const char *name)
 {
     int idx;
-
     for (idx = 0; idx < act->group_count; ++idx)
     {
         if (!strcmp(name, act->idle_group[idx].name))
@@ -906,7 +870,7 @@ static int cal_get_idle_group(actor_types *act, const char *name)
     return idx;
 }
 
-static void parse_idle_group(actor_types *act, const char *str)
+void parse_idle_group(actor_types *act, const char *str)
 {
     char gname[255];
     char fname[255];
@@ -947,313 +911,313 @@ static int get_frames_reg_index(const std::string& fname,
 
 int parse_actor_frames(actor_types *act, const xmlNode *cfg)
 {
-    const xmlNode *item;
-    int ok = 1;
-
     if (!cfg)
         return 0;
 
-    for (item = cfg; item; item = item->next)
+    int ok = 1;
+    for (const xmlNode *item = cfg; item; item = item->next)
     {
-        if (item->type == XML_ELEMENT_NODE)
-        {
-            int index = -1;
-            if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_IDLE_GROUP") == 0)
-            {
-                std::string str = value(item);
-                parse_idle_group(act, str.c_str());
-                index = -2;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_walk") == 0)
-            {
-                index = cal_actor_walk_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_run") == 0)
-            {
-                index = cal_actor_run_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_turn_left") == 0)
-            {
-                index = cal_actor_turn_left_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_turn_right") == 0)
-            {
-                index = cal_actor_turn_right_frame;
-            } else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_die1") == 0)
-            {
-                index = cal_actor_die1_frame;
-            } else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_die2") == 0)
-            {
-                index = cal_actor_die2_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pain1") == 0)
-            {
-                index = cal_actor_pain1_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pain2") == 0)
-            {
-                index = cal_actor_pain2_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pick") == 0)
-            {
-                index = cal_actor_pick_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_drop") == 0)
-            {
-                index = cal_actor_drop_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle") == 0)
-            {
-                index = cal_actor_idle1_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle2") == 0)
-            {
-                index = cal_actor_idle2_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle_sit") == 0)
-            {
-                index = cal_actor_idle_sit_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_harvest") == 0)
-            {
-                index = cal_actor_harvest_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_cast") == 0)
-            {
-                index = cal_actor_attack_cast_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_sit_down") == 0)
-            {
-                index = cal_actor_sit_down_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_stand_up") == 0)
-            {
-                index = cal_actor_stand_up_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat") == 0)
-            {
-                index = cal_actor_in_combat_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat") == 0)
-            {
-                index = cal_actor_out_combat_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle") == 0)
-            {
-                index = cal_actor_combat_idle_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_1") == 0)
-            {
-                index = cal_actor_attack_up_1_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_2") == 0)
-            {
-                index = cal_actor_attack_up_2_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_3") == 0)
-            {
-                index = cal_actor_attack_up_3_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_4") == 0)
-            {
-                index = cal_actor_attack_up_4_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_5") == 0)
-            {
-                index = cal_actor_attack_up_5_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_6") == 0)
-            {
-                index = cal_actor_attack_up_6_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_7") == 0)
-            {
-                index = cal_actor_attack_up_7_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_8") == 0)
-            {
-                index = cal_actor_attack_up_8_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_9") == 0)
-            {
-                index = cal_actor_attack_up_9_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_10") == 0)
-            {
-                index = cal_actor_attack_up_10_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_1") == 0)
-            {
-                index = cal_actor_attack_down_1_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_2") == 0)
-            {
-                index = cal_actor_attack_down_2_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_3") == 0)
-            {
-                index = cal_actor_attack_down_3_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_4") == 0)
-            {
-                index = cal_actor_attack_down_4_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_5") == 0)
-            {
-                index = cal_actor_attack_down_5_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_6") == 0)
-            {
-                index = cal_actor_attack_down_6_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_7") == 0)
-            {
-                index = cal_actor_attack_down_7_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_8") == 0)
-            {
-                index = cal_actor_attack_down_8_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_9") == 0)
-            {
-                index = cal_actor_attack_down_9_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_10") == 0)
-            {
-                index = cal_actor_attack_down_10_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat_held") == 0)
-            {
-                index = cal_actor_in_combat_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat_held") == 0)
-            {
-                index = cal_actor_out_combat_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle_held") == 0)
-            {
-                index = cal_actor_combat_idle_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat_held_unarmed") == 0)
-            {
-                index = cal_actor_in_combat_held_unarmed_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat_held_unarmed") == 0)
-            {
-                index = cal_actor_out_combat_held_unarmed_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle_held_unarmed") == 0)
-            {
-                index = cal_actor_combat_idle_held_unarmed_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_1_held") == 0)
-            {
-                index = cal_actor_attack_up_1_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_2_held") == 0)
-            {
-                index = cal_actor_attack_up_2_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_3_held") == 0)
-            {
-                index = cal_actor_attack_up_3_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_4_held") == 0)
-            {
-                index = cal_actor_attack_up_4_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_5_held") == 0)
-            {
-                index = cal_actor_attack_up_5_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_6_held") == 0)
-            {
-                index = cal_actor_attack_up_6_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_7_held") == 0)
-            {
-                index = cal_actor_attack_up_7_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_8_held") == 0)
-            {
-                index = cal_actor_attack_up_8_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_9_held") == 0)
-            {
-                index = cal_actor_attack_up_9_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_10_held") == 0)
-            {
-                index = cal_actor_attack_up_10_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_1_held") == 0)
-            {
-                index = cal_actor_attack_down_1_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_2_held") == 0)
-            {
-                index = cal_actor_attack_down_2_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_3_held") == 0)
-            {
-                index = cal_actor_attack_down_3_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_4_held") == 0)
-            {
-                index = cal_actor_attack_down_4_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_5_held") == 0)
-            {
-                index = cal_actor_attack_down_5_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_6_held") == 0)
-            {
-                index = cal_actor_attack_down_6_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_7_held") == 0)
-            {
-                index = cal_actor_attack_down_7_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_8_held") == 0)
-            {
-                index = cal_actor_attack_down_8_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_9_held") == 0)
-            {
-                index = cal_actor_attack_down_9_held_frame;
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_10_held") == 0)
-            {
-                index = cal_actor_attack_down_10_held_frame;
-            }
-            else if (!strncasecmp("CAL_emote", (const char*) item->name, 9))
-            {
-                emote_regs.emplace_back(value(item),
-#ifdef NEW_SOUND
-                                        property(item, "sound"),
-                                        property(item, "sound_scale"),
-#endif
-                                        int_property(item, "duration"),
-                                        act - actors_defs,
-                                        int_property(item, "index"));
-                continue;
-            }
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
 
-            if (index >= 0)
-            {
-                act->cal_frames[index].anim_index
-                    = get_frames_reg_index(value(item),
+        int index = -1;
+        if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_IDLE_GROUP") == 0)
+        {
+            std::string str = value(item);
+            parse_idle_group(act, str.c_str());
+            index = -2;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_walk") == 0)
+        {
+            index = cal_actor_walk_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_run") == 0)
+        {
+            index = cal_actor_run_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_turn_left") == 0)
+        {
+            index = cal_actor_turn_left_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_turn_right") == 0)
+        {
+            index = cal_actor_turn_right_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_die1") == 0)
+        {
+            index = cal_actor_die1_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_die2") == 0)
+        {
+            index = cal_actor_die2_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pain1") == 0)
+        {
+            index = cal_actor_pain1_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pain2") == 0)
+        {
+            index = cal_actor_pain2_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_pick") == 0)
+        {
+            index = cal_actor_pick_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_drop") == 0)
+        {
+            index = cal_actor_drop_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle") == 0)
+        {
+            index = cal_actor_idle1_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle2") == 0)
+        {
+            index = cal_actor_idle2_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_idle_sit") == 0)
+        {
+            index = cal_actor_idle_sit_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_harvest") == 0)
+        {
+            index = cal_actor_harvest_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_cast") == 0)
+        {
+            index = cal_actor_attack_cast_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_sit_down") == 0)
+        {
+            index = cal_actor_sit_down_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_stand_up") == 0)
+        {
+            index = cal_actor_stand_up_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat") == 0)
+        {
+            index = cal_actor_in_combat_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat") == 0)
+        {
+            index = cal_actor_out_combat_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle") == 0)
+        {
+            index = cal_actor_combat_idle_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_1") == 0)
+        {
+            index = cal_actor_attack_up_1_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_2") == 0)
+        {
+            index = cal_actor_attack_up_2_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_3") == 0)
+        {
+            index = cal_actor_attack_up_3_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_4") == 0)
+        {
+            index = cal_actor_attack_up_4_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_5") == 0)
+        {
+            index = cal_actor_attack_up_5_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_6") == 0)
+        {
+            index = cal_actor_attack_up_6_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_7") == 0)
+        {
+            index = cal_actor_attack_up_7_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_8") == 0)
+        {
+            index = cal_actor_attack_up_8_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_9") == 0)
+        {
+            index = cal_actor_attack_up_9_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_10") == 0)
+        {
+            index = cal_actor_attack_up_10_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_1") == 0)
+        {
+            index = cal_actor_attack_down_1_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_2") == 0)
+        {
+            index = cal_actor_attack_down_2_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_3") == 0)
+        {
+            index = cal_actor_attack_down_3_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_4") == 0)
+        {
+            index = cal_actor_attack_down_4_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_5") == 0)
+        {
+            index = cal_actor_attack_down_5_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_6") == 0)
+        {
+            index = cal_actor_attack_down_6_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_7") == 0)
+        {
+            index = cal_actor_attack_down_7_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_8") == 0)
+        {
+            index = cal_actor_attack_down_8_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_9") == 0)
+        {
+            index = cal_actor_attack_down_9_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_10") == 0)
+        {
+            index = cal_actor_attack_down_10_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat_held") == 0)
+        {
+            index = cal_actor_in_combat_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat_held") == 0)
+        {
+            index = cal_actor_out_combat_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle_held") == 0)
+        {
+            index = cal_actor_combat_idle_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_in_combat_held_unarmed") == 0)
+        {
+            index = cal_actor_in_combat_held_unarmed_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_out_combat_held_unarmed") == 0)
+        {
+            index = cal_actor_out_combat_held_unarmed_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_combat_idle_held_unarmed") == 0)
+        {
+            index = cal_actor_combat_idle_held_unarmed_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_1_held") == 0)
+        {
+            index = cal_actor_attack_up_1_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_2_held") == 0)
+        {
+            index = cal_actor_attack_up_2_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_3_held") == 0)
+        {
+            index = cal_actor_attack_up_3_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_4_held") == 0)
+        {
+            index = cal_actor_attack_up_4_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_5_held") == 0)
+        {
+            index = cal_actor_attack_up_5_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_6_held") == 0)
+        {
+            index = cal_actor_attack_up_6_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_7_held") == 0)
+        {
+            index = cal_actor_attack_up_7_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_8_held") == 0)
+        {
+            index = cal_actor_attack_up_8_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_9_held") == 0)
+        {
+            index = cal_actor_attack_up_9_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_up_10_held") == 0)
+        {
+            index = cal_actor_attack_up_10_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_1_held") == 0)
+        {
+            index = cal_actor_attack_down_1_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_2_held") == 0)
+        {
+            index = cal_actor_attack_down_2_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_3_held") == 0)
+        {
+            index = cal_actor_attack_down_3_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_4_held") == 0)
+        {
+            index = cal_actor_attack_down_4_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_5_held") == 0)
+        {
+            index = cal_actor_attack_down_5_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_6_held") == 0)
+        {
+            index = cal_actor_attack_down_6_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_7_held") == 0)
+        {
+            index = cal_actor_attack_down_7_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_8_held") == 0)
+        {
+            index = cal_actor_attack_down_8_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_9_held") == 0)
+        {
+            index = cal_actor_attack_down_9_held_frame;
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"CAL_attack_down_10_held") == 0)
+        {
+            index = cal_actor_attack_down_10_held_frame;
+        }
+        else if (!strncasecmp("CAL_emote", (const char*) item->name, 9))
+        {
+            emote_regs.emplace_back(value(item),
 #ifdef NEW_SOUND
-                                           property(item, "sound"),
-                                           property(item, "sound_scale"),
+                                    property(item, "sound"),
+                                    property(item, "sound_scale"),
+#endif
+                                    int_property(item, "duration"),
+                                    act - actors_defs,
+                                    int_property(item, "index"));
+            continue;
+        }
+
+        if (index >= 0)
+        {
+            act->cal_frames[index].anim_index
+                = get_frames_reg_index(value(item),
+#ifdef NEW_SOUND
+                                       property(item, "sound"),
+                                       property(item, "sound_scale"),
 #endif // NEW_SOUND
-                                           int_property(item, "duration"));
-            }
-            else if (index != -2)
-            {
-                std::cerr << "unknown frame property \"" << item->name << "\"\n";
-                ok = 0;
-            }
+                                       int_property(item, "duration"));
+        }
+        else if (index != -2)
+        {
+            std::cerr << "unknown frame property \"" << item->name << "\"\n";
+            ok = 0;
         }
     }
 
@@ -1262,14 +1226,10 @@ int parse_actor_frames(actor_types *act, const xmlNode *cfg)
 
 int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    int ok, col_idx;
-    body_part *boots;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    col_idx = int_property(cfg, "id");
+    int col_idx = int_property(cfg, "id");
     if (col_idx < 0 || col_idx >= actor_part_sizes[ACTOR_BOOTS_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1278,16 +1238,15 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 
     if (!act->boots)
     {
-        int i;
         act->boots = all_body + all_body_used;
         all_body_used += actor_part_sizes[ACTOR_BOOTS_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_BOOTS_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_BOOTS_SIZE]; ++i)
             act->boots[i].mesh_index= -1;
     }
 
-    boots = act->boots + col_idx;
-    ok = 1;
-    for (item = cfg->children; item; item = item->next)
+    body_part *boots = act->boots + col_idx;
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
         if (item->type == XML_ELEMENT_NODE)
         {
@@ -1340,13 +1299,11 @@ int parse_actor_boots(actor_types *act, const xmlNode *cfg, const xmlNode *defau
 int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *cfg,
                             const xmlNode *default_node)
 {
-    const xmlNode *item;
-    int ok = 1;
-
     if (!cfg)
         return 0;
 
-    for (item=cfg; item; item=item->next)
+    int ok = 1;
+    for (const xmlNode *item = cfg; item; item = item->next)
     {
         if (item->type != XML_ELEMENT_NODE)
             continue;
@@ -1394,13 +1351,10 @@ int parse_actor_shield_part(actor_types *act, shield_part *part, const xmlNode *
 
 int parse_actor_shield(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *default_node = get_default_node(cfg, defaults);
-    int type_idx;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_SHIELD_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1409,16 +1363,16 @@ int parse_actor_shield(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
     if (!act->shield)
     {
-        int i;
         act->shield = all_shields + all_shields_used;
         all_shields_used += actor_part_sizes[ACTOR_SHIELD_SIZE];
-        for (i = actor_part_sizes[ACTOR_SHIELD_SIZE]; i--;)
+        for (int i = 0; i < actor_part_sizes[ACTOR_SHIELD_SIZE]; ++i)
         {
             act->shield[i].mesh_index = -1;
             act->shield[i].missile_type = -1;
         }
     }
 
+    const xmlNode *default_node = get_default_node(cfg, defaults);
     return parse_actor_shield_part(act, act->shield + type_idx, cfg->children,
                                    default_node);
 }
@@ -1443,135 +1397,131 @@ static int get_sound_reg_index(const std::string& sound,
 static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
                                      const xmlNode *cfg, const xmlNode *defaults)
 {
-    const xmlNode *item;
-    char name[256];
-    int ok, index;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    ok = 1;
-    for (item = cfg->children; item; item = item->next)
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
         if (item->type == XML_ELEMENT_NODE)
         {
-            strncpy(name, (const char*)item->name, sizeof(name));
-            my_tolower(name);
+            std::string name = reinterpret_cast<const char*>(item->name);
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
-            if (!strcmp(name, "mesh"))
+            if (name == "mesh")
             {
                 weapon->model_name = char_ptr_of(value(item));
             }
-            else if (!strcmp(name, "skin"))
+            else if (name == "skin")
             {
                 weapon->skin_name = char_ptr_of(value(item));
             }
-            else if (!strcmp(name, "skinmask"))
+            else if (name == "skinmask")
             {
                 weapon->skin_mask = char_ptr_of(value(item));
             }
-            else if (!strcmp(name, "glow"))
+            else if (name == "glow")
             {
                 int mode = glow_mode_dict.at(lc_value(item));
                 weapon->glow = mode < 0 ? GLOW_NONE : mode;
 #ifdef NEW_SOUND
             }
-            else if (!strcmp(name, "snd_attack_up1"))
+            else if (name == "snd_attack_up1")
             {
                 weapon->cal_frames[cal_weapon_attack_up_1_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up2"))
+            else if (name == "snd_attack_up2")
             {
                 weapon->cal_frames[cal_weapon_attack_up_2_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up3"))
+            else if (name == "snd_attack_up3")
             {
                 weapon->cal_frames[cal_weapon_attack_up_3_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up4"))
+            else if (name == "snd_attack_up4")
             {
                 weapon->cal_frames[cal_weapon_attack_up_4_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up5"))
+            else if (name == "snd_attack_up5")
             {
                 weapon->cal_frames[cal_weapon_attack_up_5_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up6"))
+            else if (name == "snd_attack_up6")
             {
                 weapon->cal_frames[cal_weapon_attack_up_6_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up7"))
+            else if (name == "snd_attack_up7")
             {
                 weapon->cal_frames[cal_weapon_attack_up_7_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up8"))
+            else if (name == "snd_attack_up8")
             {
                 weapon->cal_frames[cal_weapon_attack_up_8_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up9"))
+            else if (name == "snd_attack_up9")
             {
                 weapon->cal_frames[cal_weapon_attack_up_9_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_up10"))
+            else if (name == "snd_attack_up10")
             {
                 weapon->cal_frames[cal_weapon_attack_up_10_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down1"))
+            else if (name == "snd_attack_down1")
             {
                 weapon->cal_frames[cal_weapon_attack_down_1_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down2"))
+            else if (name == "snd_attack_down2")
             {
                 weapon->cal_frames[cal_weapon_attack_down_2_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down3"))
+            else if (name == "snd_attack_down3")
             {
                 weapon->cal_frames[cal_weapon_attack_down_3_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down4"))
+            else if (name == "snd_attack_down4")
             {
                 weapon->cal_frames[cal_weapon_attack_down_4_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down5"))
+            else if (name == "snd_attack_down5")
             {
                 weapon->cal_frames[cal_weapon_attack_down_5_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down6"))
+            else if (name == "snd_attack_down6")
             {
                 weapon->cal_frames[cal_weapon_attack_down_6_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down7"))
+            else if (name == "snd_attack_down7")
             {
                 weapon->cal_frames[cal_weapon_attack_down_7_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down8"))
+            else if (name == "snd_attack_down8")
             {
                 weapon->cal_frames[cal_weapon_attack_down_8_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down9"))
+            else if (name == "snd_attack_down9")
             {
                 weapon->cal_frames[cal_weapon_attack_down_9_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
             }
-            else if (!strcmp(name, "snd_attack_down10"))
+            else if (name == "snd_attack_down10")
             {
                 weapon->cal_frames[cal_weapon_attack_down_10_frame].sound
                     = get_sound_reg_index(value(item), property(item, "sound_scale"));
@@ -1579,204 +1529,204 @@ static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
             }
             else
             {
-                index = -1;
-                if (!strcmp(name, "cal_attack_up1"))
+                int index = -1;
+                if (name == "cal_attack_up1")
                 {
                     index = cal_weapon_attack_up_1_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up2"))
+                else if (name == "cal_attack_up2")
                 {
                     index = cal_weapon_attack_up_2_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up3"))
+                else if (name == "cal_attack_up3")
                 {
                     index = cal_weapon_attack_up_3_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up4"))
+                else if (name == "cal_attack_up4")
                 {
                     index = cal_weapon_attack_up_4_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up5"))
+                else if (name == "cal_attack_up5")
                 {
                     index = cal_weapon_attack_up_5_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up6"))
+                else if (name == "cal_attack_up6")
                 {
                     index = cal_weapon_attack_up_6_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up7"))
+                else if (name == "cal_attack_up7")
                 {
                     index = cal_weapon_attack_up_7_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up8"))
+                else if (name == "cal_attack_up8")
                 {
                     index = cal_weapon_attack_up_8_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up9"))
+                else if (name == "cal_attack_up9")
                 {
                     index = cal_weapon_attack_up_9_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up10"))
+                else if (name == "cal_attack_up10")
                 {
                     index = cal_weapon_attack_up_10_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down1"))
+                else if (name == "cal_attack_down1")
                 {
                     index = cal_weapon_attack_down_1_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down2"))
+                else if (name == "cal_attack_down2")
                 {
                     index = cal_weapon_attack_down_2_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down3"))
+                else if (name == "cal_attack_down3")
                 {
                     index = cal_weapon_attack_down_3_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down4"))
+                else if (name == "cal_attack_down4")
                 {
                     index = cal_weapon_attack_down_4_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down5"))
+                else if (name == "cal_attack_down5")
                 {
                     index = cal_weapon_attack_down_5_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down6"))
+                else if (name == "cal_attack_down6")
                 {
                     index = cal_weapon_attack_down_6_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down7"))
+                else if (name == "cal_attack_down7")
                 {
                     index = cal_weapon_attack_down_7_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down8"))
+                else if (name == "cal_attack_down8")
                 {
                     index = cal_weapon_attack_down_8_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down9"))
+                else if (name == "cal_attack_down9")
                 {
                     index = cal_weapon_attack_down_9_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down10"))
+                else if (name == "cal_attack_down10")
                 {
                     index = cal_weapon_attack_down_10_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up1_held"))
+                else if (name == "cal_attack_up1_held")
                 {
                     index = cal_weapon_attack_up_1_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up2_held"))
+                else if (name == "cal_attack_up2_held")
                 {
                     index = cal_weapon_attack_up_2_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up3_held"))
+                else if (name == "cal_attack_up3_held")
                 {
                     index = cal_weapon_attack_up_3_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up4_held"))
+                else if (name == "cal_attack_up4_held")
                 {
                     index = cal_weapon_attack_up_4_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up5_held"))
+                else if (name == "cal_attack_up5_held")
                 {
                     index = cal_weapon_attack_up_5_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up6_held"))
+                else if (name == "cal_attack_up6_held")
                 {
                     index = cal_weapon_attack_up_6_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up7_held"))
+                else if (name == "cal_attack_up7_held")
                 {
                     index = cal_weapon_attack_up_7_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up8_held"))
+                else if (name == "cal_attack_up8_held")
                 {
                     index = cal_weapon_attack_up_8_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up9_held"))
+                else if (name == "cal_attack_up9_held")
                 {
                     index = cal_weapon_attack_up_9_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_up10_held"))
+                else if (name == "cal_attack_up10_held")
                 {
                     index = cal_weapon_attack_up_10_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down1_held"))
+                else if (name == "cal_attack_down1_held")
                 {
                     index = cal_weapon_attack_down_1_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down2_held"))
+                else if (name == "cal_attack_down2_held")
                 {
                     index = cal_weapon_attack_down_2_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down3_held"))
+                else if (name == "cal_attack_down3_held")
                 {
                     index = cal_weapon_attack_down_3_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down4_held"))
+                else if (name == "cal_attack_down4_held")
                 {
                     index = cal_weapon_attack_down_4_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down5_held"))
+                else if (name == "cal_attack_down5_held")
                 {
                     index = cal_weapon_attack_down_5_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down6_held"))
+                else if (name == "cal_attack_down6_held")
                 {
                     index = cal_weapon_attack_down_6_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down7_held"))
+                else if (name == "cal_attack_down7_held")
                 {
                     index = cal_weapon_attack_down_7_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down8_held"))
+                else if (name == "cal_attack_down8_held")
                 {
                     index = cal_weapon_attack_down_8_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down9_held"))
+                else if (name == "cal_attack_down9_held")
                 {
                     index = cal_weapon_attack_down_9_held_frame;
                 }
-                else if (!strcmp(name, "cal_attack_down10_held"))
+                else if (name == "cal_attack_down10_held")
                 {
                     index = cal_weapon_attack_down_10_held_frame;
                 }
-                else if (!strcmp(name, "cal_range_fire"))
+                else if (name == "cal_range_fire")
                 {
                     index = cal_weapon_range_fire_frame;
                 }
-                else if (!strcmp(name, "cal_range_fire_out"))
+                else if (name == "cal_range_fire_out")
                 {
                     index = cal_weapon_range_fire_out_frame;
                 }
-                else if (!strcmp(name, "cal_range_idle"))
+                else if (name == "cal_range_idle")
                 {
                     index = cal_weapon_range_idle_frame;
                 }
-                else if (!strcmp(name, "cal_range_in"))
+                else if (name == "cal_range_in")
                 {
                     index = cal_weapon_range_in_frame;
                 }
-                else if (!strcmp(name, "cal_range_out"))
+                else if (name == "cal_range_out")
                 {
                     index = cal_weapon_range_out_frame;
                 }
-                else if (!strcmp(name, "cal_range_fire_held"))
+                else if (name == "cal_range_fire_held")
                 {
                     index = cal_weapon_range_fire_held_frame;
                 }
-                else if (!strcmp(name, "cal_range_fire_out_held"))
+                else if (name == "cal_range_fire_out_held")
                 {
                     index = cal_weapon_range_fire_out_held_frame;
                 }
-                else if (!strcmp(name, "cal_range_idle_held"))
+                else if (name == "cal_range_idle_held")
                 {
                     index = cal_weapon_range_idle_held_frame;
                 }
-                else if (!strcmp(name, "cal_range_in_held"))
+                else if (name == "cal_range_in_held")
                 {
                     index = cal_weapon_range_in_held_frame;
                 }
-                else if (!strcmp(name, "cal_range_out_held"))
+                else if (name == "cal_range_out_held")
                 {
                     index = cal_weapon_range_out_held_frame;
                 }
@@ -1809,13 +1759,10 @@ static int parse_actor_weapon_detail(actor_types *act, weapon_part *weapon,
 
 int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defaults)
 {
-    int ok, type_idx;
-    weapon_part *weapon;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    type_idx = int_property(cfg, "id");
+    int type_idx = int_property(cfg, "id");
     if (type_idx < 0 || type_idx >= actor_part_sizes[ACTOR_WEAPON_SIZE])
     {
         std::cerr << "Unable to find id/property node " << cfg->name << '\n';
@@ -1824,13 +1771,12 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
     if (!act->weapon)
     {
-        int i, j;
         act->weapon = all_weapons + all_weapons_used;
         all_weapons_used += actor_part_sizes[ACTOR_WEAPON_SIZE];
-        for (i = 0; i < actor_part_sizes[ACTOR_WEAPON_SIZE]; ++i)
+        for (int i = 0; i < actor_part_sizes[ACTOR_WEAPON_SIZE]; ++i)
         {
             act->weapon[i].mesh_index = -1;
-            for (j = 0; j < NUM_WEAPON_FRAMES; j++)
+            for (int j = 0; j < NUM_WEAPON_FRAMES; j++)
             {
                 act->weapon[i].cal_frames[j].anim_index = -1;
 #ifdef NEW_SOUND
@@ -1840,8 +1786,8 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
         }
     }
 
-    weapon = act->weapon + type_idx;
-    ok = parse_actor_weapon_detail(act, weapon, cfg, defaults);
+    weapon_part *weapon = act->weapon + type_idx;
+    int ok = parse_actor_weapon_detail(act, weapon, cfg, defaults);
     weapon->turn_horse = int_property(cfg, "turn_horse");
     weapon->unarmed = (int_property(cfg, "unarmed") <= 0) ? 0 : 1;
 
@@ -1878,8 +1824,6 @@ int parse_actor_weapon(actor_types *act, const xmlNode *cfg, const xmlNode *defa
 
 int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
 {
-    const xmlNode *item;
-    int ok = 1;
     int act_idx1 = act - actors_defs;
     int held_act_idx;
     attached_actors_types *att = attached_actors_defs + act_idx1;
@@ -1887,7 +1831,8 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
     if (!cfg || !cfg->children)
         return 0;
 
-    for (item = cfg->children; item; item = item->next)
+    int ok = 1;
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
         if (item->type == XML_ELEMENT_NODE)
         {
@@ -2029,98 +1974,96 @@ int parse_actor_attachment(actor_types *act, const xmlNode *cfg, int act_idx2)
 #ifdef NEW_SOUND
 int parse_actor_sounds(actor_types *act, const xmlNode *cfg)
 {
-    const xmlNode *item;
-    int ok;
+    if (!cfg)
+        return 0;
 
-    if (!cfg) return 0;
-
-    ok = 1;
-    for (item = cfg; item; item = item->next)
+    int ok = 1;
+    for (const xmlNode *item = cfg; item; item = item->next)
     {
-        if (item->type == XML_ELEMENT_NODE)
+        if (item->type != XML_ELEMENT_NODE)
+            continue;
+
+        if (xmlStrcasecmp(item->name, (xmlChar*)"walk") == 0)
         {
-            if (xmlStrcasecmp(item->name, (xmlChar*)"walk") == 0)
-            {
-                act->cal_frames[cal_actor_walk_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"run") == 0)
-            {
-                act->cal_frames[cal_actor_run_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"die1") == 0)
-            {
-                act->cal_frames[cal_actor_die1_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"die2") == 0)
-            {
-                act->cal_frames[cal_actor_die2_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"pain1") == 0)
-            {
-                act->cal_frames[cal_actor_pain1_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"pain2") == 0)
-            {
-                act->cal_frames[cal_actor_pain2_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"pick") == 0)
-            {
-                act->cal_frames[cal_actor_pick_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"drop") == 0)
-            {
-                act->cal_frames[cal_actor_drop_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"harvest") == 0)
-            {
-                act->cal_frames[cal_actor_harvest_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_cast") == 0)
-            {
-                act->cal_frames[cal_actor_attack_cast_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_ranged") == 0)
-            {
-                act->cal_frames[cal_actor_attack_ranged_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"sit_down") == 0)
-            {
-                act->cal_frames[cal_actor_sit_down_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"stand_up") == 0)
-            {
-                act->cal_frames[cal_actor_stand_up_frame].sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            // These sounds are only found in the <sounds> block as they aren't tied to an animation
-            }
-            else if (xmlStrcasecmp(item->name, (xmlChar*)"battlecry") == 0)
-            {
-                act->battlecry.sound
-                    = get_sound_reg_index(value(item), property(item, "sound_scale"));
-            }
-            else
-            {
-                std::cerr << "Unknown sound \"" << item->name << "\"\n";
-                ok = 0;
-            }
+            act->cal_frames[cal_actor_walk_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"run") == 0)
+        {
+            act->cal_frames[cal_actor_run_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"die1") == 0)
+        {
+            act->cal_frames[cal_actor_die1_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"die2") == 0)
+        {
+            act->cal_frames[cal_actor_die2_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"pain1") == 0)
+        {
+            act->cal_frames[cal_actor_pain1_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"pain2") == 0)
+        {
+            act->cal_frames[cal_actor_pain2_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"pick") == 0)
+        {
+            act->cal_frames[cal_actor_pick_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"drop") == 0)
+        {
+            act->cal_frames[cal_actor_drop_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"harvest") == 0)
+        {
+            act->cal_frames[cal_actor_harvest_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_cast") == 0)
+        {
+            act->cal_frames[cal_actor_attack_cast_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"attack_ranged") == 0)
+        {
+            act->cal_frames[cal_actor_attack_ranged_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"sit_down") == 0)
+        {
+            act->cal_frames[cal_actor_sit_down_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"stand_up") == 0)
+        {
+            act->cal_frames[cal_actor_stand_up_frame].sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        // These sounds are only found in the <sounds> block as they aren't tied to an animation
+        }
+        else if (xmlStrcasecmp(item->name, (xmlChar*)"battlecry") == 0)
+        {
+            act->battlecry.sound
+                = get_sound_reg_index(value(item), property(item, "sound_scale"));
+        }
+        else
+        {
+            std::cerr << "Unknown sound \"" << item->name << "\"\n";
+            ok = 0;
         }
     }
 
     return ok;
 }
-#endif	//NEW_SOUND
+#endif // NEW_SOUND
 
 static int get_skeleton_index(const std::string& name)
 {
@@ -2134,124 +2077,121 @@ static int get_skeleton_index(const std::string& name)
 int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
                       const xmlNode *defaults)
 {
-    char name[256];
-    const xmlNode *item;
     int ok= 1;
-
-    for (item=cfg->children; item; item=item->next)
+    for (const xmlNode *item = cfg->children; item; item = item->next)
     {
         if (item->type == XML_ELEMENT_NODE)
         {
-            strncpy(name, (const char*)item->name, sizeof(name));
-            my_tolower(name);
+            std::string name = reinterpret_cast<const char*>(item->name);
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
-            if (!strcmp(name, "ghost"))
+            if (name == "ghost")
             {
                 act->ghost = bool_value(item);
             }
-            else if (!strcmp(name, "skin"))
+            else if (name == "skin")
             {
                 act->skin_name = char_ptr_of(value(item));
             }
-            else if (!strcmp(name, "mesh"))
+            else if (name == "mesh")
             {
                 act->file_name = char_ptr_of(value(item));
             }
-            else if (!strcmp(name, "actor_scale"))
+            else if (name == "actor_scale")
             {
                 act->actor_scale = float_value(item);
             }
-            else if (!strcmp(name, "scale"))
+            else if (name == "scale")
             {
                 act->scale = float_value(item);
             }
-            else if (!strcmp(name, "mesh_scale"))
+            else if (name == "mesh_scale")
             {
                 act->mesh_scale = float_value(item);
             }
-            else if (!strcmp(name, "bone_scale"))
+            else if (name == "bone_scale")
             {
                 act->skel_scale = float_value(item);
             }
-            else if (!strcmp(name, "skeleton"))
+            else if (name == "skeleton")
             {
                 act->skeleton_type = get_skeleton_index(value(item));
             }
-            else if (!strcmp(name, "walk_speed"))
+            else if (name == "walk_speed")
             { // unused
                 act->walk_speed= float_value(item);
             }
-            else if (!strcmp(name, "run_speed"))
+            else if (name == "run_speed")
             { // unused
                 act->run_speed = float_value(item);
             }
-            else if (!strcmp(name, "step_duration"))
+            else if (name == "step_duration")
             {
                 act->step_duration = int_value(item);
             }
-            else if (!strcmp(name, "defaults"))
+            else if (name == "defaults")
             {
                 defaults = item;
             }
-            else if (!strcmp(name, "frames"))
+            else if (name == "frames")
             {
                 ok &= parse_actor_frames(act, item->children);
             }
-            else if (!strcmp(name, "shirt"))
+            else if (name == "shirt")
             {
                 ok &= parse_actor_shirt(act, item, defaults);
             }
-            else if (!strcmp(name, "hskin"))
+            else if (name == "hskin")
             {
                 ok &= parse_actor_skin(act, item, defaults);
             }
-            else if (!strcmp(name, "hair"))
+            else if (name == "hair")
             {
                 ok &= parse_actor_hair(act, item);
             }
-            else if (!strcmp(name, "eyes"))
+            else if (name == "eyes")
             {
                 ok &= parse_actor_eyes(act, item);
             }
-            else if (!strcmp(name, "boots"))
+            else if (name == "boots")
             {
                 ok &= parse_actor_boots(act, item, defaults);
             }
-            else if (!strcmp(name, "legs"))
+            else if (name == "legs")
             {
                 ok &= parse_actor_legs(act, item, defaults);
             }
-            else if (!strcmp(name, "cape"))
+            else if (name == "cape")
             {
                 ok &= parse_actor_cape(act, item, defaults);
             }
-            else if (!strcmp(name, "head"))
+            else if (name == "head")
             {
                 ok &= parse_actor_head(act, item, defaults);
             }
-            else if (!strcmp(name, "shield"))
+            else if (name == "shield")
             {
                 ok &= parse_actor_shield(act, item, defaults);
             }
-            else if (!strcmp(name, "weapon"))
+            else if (name == "weapon")
             {
                 ok &= parse_actor_weapon(act, item, defaults);
             }
-            else if (!strcmp(name, "helmet"))
+            else if (name == "helmet")
             {
                 ok &= parse_actor_helmet(act, item, defaults);
             }
-            else if (!strcmp(name, "neck"))
+            else if (name == "neck")
             {
                 ok &= parse_actor_neck(act, item, defaults);
             }
 #ifdef NEW_SOUND
-            else if (!strcmp(name, "sounds"))
+            else if (name == "sounds")
             {
                 ok &= parse_actor_sounds(act, item->children);
             }
 #endif	//NEW_SOUND
-            else if (!strcmp(name, "actor_attachment"))
+            else if (name == "actor_attachment")
             {
                 int id = int_property(item, "id");
                 if (id < 0 || id >= MAX_ACTOR_DEFS)
@@ -2275,18 +2215,16 @@ int parse_actor_nodes(actor_types *act, const xmlNode *cfg,
             ok &= parse_actor_nodes(act, item->children, defaults);
         }
     }
+
     return ok;
 }
 
 int parse_actor_script(const xmlNode *cfg)
 {
-    int ok, act_idx, i;
-    actor_types *act;
-
     if (!cfg || !cfg->children)
         return 0;
 
-    act_idx = int_property(cfg, "id");
+    int act_idx = int_property(cfg, "id");
     if (act_idx < 0 || act_idx >= MAX_ACTOR_DEFS)
     {
         std::cerr << "Data Error in " << property(cfg, "type")
@@ -2294,7 +2232,7 @@ int parse_actor_script(const xmlNode *cfg)
         return 0;
     }
 
-    act = actors_defs + act_idx;
+    actor_types *act = actors_defs + act_idx;
     // watch for loading an actor more then once
     if (act->actor_type > 0 || act->actor_name)
     {
@@ -2302,7 +2240,7 @@ int parse_actor_script(const xmlNode *cfg)
             << '(' << act_idx << "): Already loaded " << act->actor_name
             << '(' << act->actor_type << ")\n";
     }
-    act->actor_type= act_idx;	// memorize the ID & name to help in debugging
+    act->actor_type = act_idx;	// memorize the ID & name to help in debugging
     act->actor_name = char_ptr_of(property(cfg, "type"));
     actor_check_string(act, "actor", "name", act->actor_name);
 
@@ -2314,13 +2252,12 @@ int parse_actor_script(const xmlNode *cfg)
     act->mesh_scale = 1.0;
     act->skel_scale = 1.0;
     act->group_count = 0;
-    for (i = 0; i < 16; ++i)
+    for (int i = 0; i < 16; ++i)
     {
         act->idle_group[i].name = NULL;
         act->idle_group[i].count= 0;
     }
-
-    for (i = 0; i < NUM_ACTOR_FRAMES; i++)
+    for (int i = 0; i < NUM_ACTOR_FRAMES; i++)
     {
         act->cal_frames[i].anim_index = -1;
 #ifdef NEW_SOUND
@@ -2330,10 +2267,9 @@ int parse_actor_script(const xmlNode *cfg)
 #ifdef NEW_SOUND
     act->battlecry.sound = -1;
 #endif // NEW_SOUND
-
     act->step_duration = DEFAULT_STEP_DURATION; // default value
 
-    ok = parse_actor_nodes(act, cfg, NULL);
+    int ok = parse_actor_nodes(act, cfg, NULL);
 
     // TODO: add error checking for missing actor information
 
@@ -2349,10 +2285,8 @@ int parse_actor_script(const xmlNode *cfg)
 
 int parse_actor_defs(const xmlNode *node)
 {
-    const xmlNode *def;
     int ok = 1;
-
-    for (def = node->children; def; def = def->next)
+    for (const xmlNode *def = node->children; def; def = def->next)
     {
         if (def->type == XML_ELEMENT_NODE)
         {
@@ -2375,7 +2309,7 @@ int parse_actor_defs(const xmlNode *node)
     return ok;
 }
 
-static int read_actor_defs(const std::string& dir, const std::string& index)
+int read_actor_defs(const std::string& dir, const std::string& index)
 {
     std::string fname = dir + '/' + index;
     xmlDoc *doc = xmlReadFile(fname.c_str(), NULL, XML_PARSE_NOENT);
@@ -2417,7 +2351,7 @@ static int read_actor_defs(const std::string& dir, const std::string& index)
     return ok;
 }
 
-static int init_actor_defs(const std::string& dir)
+int init_actor_defs(const std::string& dir)
 {
     int nr_body = actor_part_sizes[ACTOR_HEAD_SIZE]
                 + actor_part_sizes[ACTOR_CAPE_SIZE]
@@ -2454,36 +2388,6 @@ static int init_actor_defs(const std::string& dir)
 
     return read_actor_defs(dir, "actor_defs.xml");
 }
-
-// XXX
-// void free_emote_data(void *data)
-// {
-// 	emote_data *emote = data;
-// 	emote_frame *head, *frame, *tf;
-// 	int i, j, k;
-// 	if (!emote)
-// 		return;
-//
-// 	for (i = 0; i < EMOTE_ACTOR_TYPES; i++)
-// 	{
-// 		for (j = 0; j < 4; j++)
-// 		{
-// 			for (k = 0; k < 2; k++)
-// 			{
-// 				head = emote->anims[i][j][k];
-// 				if (!head)
-// 					continue;
-//
-// 				flag_emote_frames(emote, head);
-//
-// 				for (frame = head, tf = head->next; tf; frame = tf, tf = tf->next)
-// 					free(frame);
-// 				free(frame);
-// 			}
-// 		}
-// 	}
-// 	free(emote);
-// }
 
 void init_emote(emote_data *emote)
 {
@@ -2601,24 +2505,24 @@ void get_emote_props(const xmlNode *item, int *sex, int *race, int *held)
 }
 
 //ugliest mapping functions ever :/
-static int emote_actor_type(int actor_type)
+int emote_actor_type(int actor_type)
 {
-	switch(actor_type)
+    switch(actor_type)
     {
-		case human_female: return 0;
-		case human_male: return 1;
-		case elf_female: return 2;
-		case elf_male: return 3;
-		case dwarf_female: return 4;
-		case dwarf_male: return 5;
-		case orchan_female: return 6;
-		case orchan_male: return 7;
-		case gnome_female: return 8;
-		case gnome_male: return 9;
-		case draegoni_female: return 10;
-		case draegoni_male: return 11;
-		default: return 12; //all other mobs
-	}
+        case human_female: return 0;
+        case human_male: return 1;
+        case elf_female: return 2;
+        case elf_male: return 3;
+        case dwarf_female: return 4;
+        case dwarf_male: return 5;
+        case orchan_female: return 6;
+        case orchan_male: return 7;
+        case gnome_female: return 8;
+        case gnome_male: return 9;
+        case draegoni_female: return 10;
+        case draegoni_male: return 11;
+        default: return 12; //all other mobs
+    }
 }
 
 // 0=f 1=m <0=any, race 0=human, 1=elf, 2=dwarf, 3=orchan, 4=gnome, 5=draegoni, 6=monster
