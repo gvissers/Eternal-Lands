@@ -10,9 +10,16 @@
 #include "../rules.h"
 
 #ifdef EL_BIG_ENDIAN
+#include <byteswap.h>
+inline uint32_t write_le(std::ostream& os, uint32_t x)
+{
+	uint32_t y = bswap_32(x);
+    os.write(reinterpret_cast<const char*>(&y), 4);
+    return 4;
+}
 #else
 template<typename T>
-inline int write_le(std::ostream& os, T x)
+inline uint32_t write_le(std::ostream& os, T x)
 {
     os.write(reinterpret_cast<const char*>(&x), sizeof(T));
     return sizeof(T);
@@ -22,7 +29,7 @@ inline int write_le(std::ostream& os, T x)
 namespace
 {
 
-static iconv_t conv_desc;
+iconv_t conv_desc;
 
 int glob_err(const char* epath, int eerrno)
 {

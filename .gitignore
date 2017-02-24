@@ -6,3 +6,4 @@ git_version
 map_editor/mapedit.x86.linux.bin
 actor_defs_inc.c
 tools/build_actor_defs
+tools/build_rules
