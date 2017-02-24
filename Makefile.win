@@ -145,6 +145,12 @@ $(COBJS): %.o : %.c
 $(CXXOBJS): %.o : %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+actor_defs_inc.c: tools
+	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
+
+tools:
+	@$(MAKE) -C $@ -f Makefile.win
+
 release:
 	$(MAKE) -f Makefile.win 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)'
 
@@ -153,6 +159,7 @@ static:
 
 clean:
 	rm -f $(OBJS) $(EXE) .depend
+	@$(MAKE) -C tools -f Makefile.win $@
 
 docs:
 	cd docs && doxygen Doxyfile

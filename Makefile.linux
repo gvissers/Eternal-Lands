@@ -144,6 +144,7 @@ static:
 
 clean:
 	rm -f $(OBJS) $(EXE)
+	@$(MAKE) -C tools -f Makefile.linux $@
 
 docs:
 	cd docs && doxygen Doxyfile

@@ -1,6 +1,7 @@
 -include ../make.conf
 
-CXXFLAGS = -DLINUX $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
+CXXFLAGS = -DWINDOWS -DWINVER=0x500 -mwindows \
+	$(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
 	-g -Wall -W $(shell sdl-config --cflags) $(shell xml2-config --cflags)
 LDFLAGS = $(shell xml2-config --libs)
 
