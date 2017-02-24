@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+typedef enum
+{
+    RULE_TITLE,
+    RULE_RULE,
+    RULE_INFO
+} rule_type;
+
 /*!
  * holds the data for up to 40 rules.
  */
@@ -25,7 +32,7 @@ struct rules_struct {
 		int short_len; /*!< the length of short_desc */
 		char * long_desc; /*!< the complete description for this rule */
 		int long_len; /*!< the length of long_desc */
-		int type; /*!< the type of the rule */
+		rule_type type; /*!< the type of the rule */
 	} rule[40];
 };
 

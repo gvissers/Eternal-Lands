@@ -30,11 +30,11 @@
 #include "openingwin.h"
 #include "tabs.h"
 #include "translate.h"
+#ifdef XML_COMPILED
+#include "io/elfilewrapper.h"
+#else
 #include "xml.h"
-
-#define TITLE 	0
-#define RULE	1
-#define INFO 	2
+#endif
 
 #define INTERFACE_GAME 0
 #define INTERFACE_LOG_IN 1
@@ -85,6 +85,7 @@ rule_string * get_interface_rules(int chars_per_line);
 int draw_rules(rule_string * rules_ptr, int x_in, int y_in, int lenx, int leny, float text_size, const float rgb[8][3]);
 int rules_root_scroll_handler();
 
+#ifndef XML_COMPILED
 void add_rule(char * short_desc, char * long_desc, int type)
 {
 	int no=rules.no++;
@@ -120,11 +121,11 @@ int parse_rules(xmlNode * root)
 		if(cur->type == XML_ELEMENT_NODE){
 			if(cur->children){
 				if(!xmlStrcasecmp(cur->name, (xmlChar*)"title")) {
-					add_rule((char*)cur->children->content, NULL, TITLE);
+					add_rule((char*)cur->children->content, NULL, RULE_TITLE);
 				} else if(!xmlStrcasecmp(cur->name, (xmlChar*)"rule")) {
-					add_rule(get_id_str(cur->children, (xmlChar*)"short"), get_id_str(cur->children, (xmlChar*)"long"), RULE);
+					add_rule(get_id_str(cur->children, (xmlChar*)"short"), get_id_str(cur->children, (xmlChar*)"long"), RULE_RULE);
 				} else if(!xmlStrcasecmp(cur->name, (xmlChar*)"info")) {
-					add_rule(get_id_str(cur->children, (xmlChar*)"short"), get_id_str(cur->children, (xmlChar*)"long"), INFO);
+					add_rule(get_id_str(cur->children, (xmlChar*)"short"), get_id_str(cur->children, (xmlChar*)"long"), RULE_INFO);
 				}
 			}
 		}
@@ -132,9 +133,93 @@ int parse_rules(xmlNode * root)
 
 	return 1;
 }
+#endif
 
 int read_rules()
 {
+#ifdef XML_COMPILED
+	el_file_ptr fin;
+	Uint32 nr_languages, off, nr_rules;
+
+	fin = el_open_anywhere("rules.bin");
+	if (!fin)
+	{
+		LOG_ERROR(read_rules_str);
+		return 0;
+	}
+
+	el_read(fin, 4, &nr_languages);
+	nr_languages = SDL_SwapLE32(nr_languages);
+
+	// Find the offset in the file for the desired language
+	for (Uint32 i = 0; i < nr_languages; ++i)
+	{
+		char lang_name[9] = {0};
+		Uint32 lang_off;
+
+		el_read(fin, 8, lang_name);
+		el_read(fin, 4, &lang_off);
+		lang_off = SDL_SwapLE32(lang_off);
+		if (!strcmp(lang_name, lang))
+		{
+			off = lang_off;
+			break;
+		}
+		else if (!strcmp(lang_name, "en"))
+		{
+			off = lang_off;
+		}
+	}
+	if (off == 0)
+	{
+		// Language not found, and neither was English.
+		LOG_ERROR(parse_rules_str);
+		el_close(fin);
+		return 0;
+	}
+
+	// Offset found, now read the rules
+	el_seek(fin, off, SEEK_SET);
+	el_read(fin, 4, &nr_rules);
+	rules.no = SDL_SwapLE32(nr_rules);
+	for (int i = 0; i < rules.no; ++i)
+	{
+		struct rule_struct *rule = rules.rule + i;
+		Uint32 type, len;
+
+		el_read(fin, 4, &type);
+		rule->type = SDL_SwapLE32(type);
+
+		el_read(fin, 4, &len);
+		rule->short_len = SDL_SwapLE32(len);
+		rule->short_desc = calloc(rule->short_len+1, 1);
+		if (!rule->short_desc)
+		{
+			LOG_ERROR(parse_rules_str);
+			el_close(fin);
+			return 0;
+		}
+		el_read(fin, rule->short_len, rule->short_desc);
+		if (rule->short_len%4)
+			el_seek(fin, 4 - rule->short_len%4, SEEK_CUR);
+
+		el_read(fin, 4, &len);
+		rule->long_len = SDL_SwapLE32(len);
+		rule->long_desc = calloc(rule->long_len+1, 1);
+		if (!rule->long_desc)
+		{
+			LOG_ERROR(parse_rules_str);
+			el_close(fin);
+			return 0;
+		}
+		el_read(fin, rule->long_len, rule->long_desc);
+		if (rule->long_len%4)
+			el_seek(fin, 4 - rule->long_len%4, SEEK_CUR);
+	}
+
+	el_close(fin);
+	return 1;
+#else
 	char file_name[120];
 	xmlDoc * doc;
 	xmlNode * root;
@@ -157,6 +242,7 @@ int read_rules()
 	xmlFreeDoc(doc);
 
 	return (rules.no>0);
+#endif
 }
 
 /*Rules window interface*/
@@ -381,7 +467,7 @@ void highlight_rule (int type, const Uint8 *rule, int no)
 			r=0;
 
 			for(j=0;display_rules[j].type!=-1;j++){
-				if(display_rules[j].type==RULE)r++;
+				if(display_rules[j].type==RULE_RULE)r++;
 				if(r==cur_rule) break;
 			}
 
@@ -393,7 +479,7 @@ void highlight_rule (int type, const Uint8 *rule, int no)
 		}
 
 		for(i=0;display_rules[i].type!=-1;i++)
-			if(display_rules[i].type == RULE && display_rules[i].highlight) {
+			if(display_rules[i].type == RULE_RULE && display_rules[i].highlight) {
 				set_rule_offset = i;	//Get the first highlighted entry
 				recalc_virt_win_len = 1;
 				return;
@@ -449,15 +535,15 @@ void calc_virt_win_len(rule_string * rules_ptr, int win_heigth, float text_size)
 
 		switch(rules_ptr[i].type)
 		{
-			case TITLE:
+			case RULE_TITLE:
 				zoom=text_size;//*1.5f;
 				ydiff=30*zoom;
 				break;
-			case RULE:
+			case RULE_RULE:
 				zoom=text_size;
 				ydiff=20*zoom;
 				break;
-			case INFO:
+			case RULE_INFO:
         		zoom=text_size;
         		virt_win_len+=10*zoom;
         		ydiff=20*zoom;
@@ -533,14 +619,14 @@ int draw_rules(rule_string * rules_ptr, int x_in, int y_in, int lenx, int leny, 
 				read_all_rules = reached_end = 1;
 				rules_ptr[i].y_start=2*leny;//Minor trick
 				return i;
-			case TITLE:
+			case RULE_TITLE:
 				glColor3f(rgb[0][0],rgb[0][1],rgb[0][2]);
 				zoom=text_size;//*1.5f;
 				ydiff=30*zoom;
 				xdiff=0;
 				x=x_in+((lenx-x_in)>>1)-(strlen(rules_ptr[i].short_str[0])>>1)*11*zoom;
 				break;
-			case RULE:
+			case RULE_RULE:
 				if(rules_ptr[i].highlight) glColor3f(rgb[1][0],rgb[1][1],rgb[1][2]);
 				else if(rules_ptr[i].mouseover) glColor3f(rgb[2][0],rgb[2][1],rgb[2][2]);
 				else glColor3f(rgb[3][0],rgb[3][1],rgb[3][2]);
@@ -551,7 +637,7 @@ int draw_rules(rule_string * rules_ptr, int x_in, int y_in, int lenx, int leny, 
 				x=x_in+20;
 				ydiff=20*zoom;
 				break;
-			case INFO:
+			case RULE_INFO:
 				if(rules_ptr[i].mouseover) glColor3f(rgb[4][0],rgb[4][1],rgb[4][2]);
 				else glColor3f(rgb[5][0],rgb[5][1],rgb[5][2]);
 				zoom=text_size;
