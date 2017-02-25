@@ -4,12 +4,12 @@ CXXFLAGS = -DLINUX $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
 	-g -Wall -W $(shell sdl-config --cflags) $(shell xml2-config --cflags)
 LDFLAGS = $(shell xml2-config --libs)
 
-OBJS = build_actor_defs.o build_rules.o
+OBJS = build_actor_defs.o build_rules.o build_weather.o xml.o
 DEP_FILES=$(foreach OBJ, $(OBJS), .deps/$(OBJ).P)
 
 DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
 
-EXES = build_actor_defs build_rules
+EXES = build_actor_defs build_rules build_weather
 
 all: $(EXES)
 
@@ -20,11 +20,15 @@ $(OBJS): %.o: %.cpp Makefile.linux ../make.conf
 	else rm -f ".deps/$@.pp"; exit 1; \
 	fi
 
-build_actor_defs: build_actor_defs.o
+build_actor_defs: build_actor_defs.o xml.o
 	@echo "  LINK $@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 build_rules: build_rules.o
+	@echo "  LINK $@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+build_weather: build_weather.o xml.o
 	@echo "  LINK $@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 

@@ -9,11 +9,11 @@
 #include <vector>
 
 #include <GL/gl.h>
-#include <libxml/parser.h>
 #include <SDL/SDL_types.h>
 
 #include "../actor_def_types.h"
 #include "../client_serv.h"
+#include "xml.h"
 
 #ifdef EXT_ACTOR_DICT
 static int actor_part_sizes[ACTOR_NUM_PARTS];
@@ -53,82 +53,6 @@ const int actor_part_sizes[ACTOR_NUM_PARTS] = {
 #endif /* EXT_ACTOR_DICT */
 
 static std::unordered_set<std::string> string_table;
-
-std::string value(const xmlNode *node)
-{
-    if (!node->children)
-        return std::string();
-    return std::string(reinterpret_cast<const char*>(node->children->content));
-}
-
-std::string lc_value(const xmlNode *node)
-{
-    std::string res = value(node);
-    std::transform(res.begin(), res.end(), res.begin(), ::tolower);
-    return res;
-}
-
-bool bool_value(const xmlNode *node, bool def=false)
-{
-    std::string sval = lc_value(node);
-    if (sval.empty())
-        return def;
-    return sval == "yes" || sval == "true" || sval == "1";
-}
-
-int int_value(const xmlNode *node, int def=0)
-{
-    std::string sval = value(node);
-    if (sval.empty())
-        return def;
-    return std::stoi(sval);
-}
-
-int float_value(const xmlNode *node, float def=0.0f)
-{
-    std::string sval = value(node);
-    if (sval.empty())
-        return def;
-    return std::stof(sval);
-}
-
-std::string item_value(const xmlNode *item, const char *name)
-{
-    for (const xmlNode *node = item->children; node; node = node->next)
-    {
-        if (node->type == XML_ELEMENT_NODE
-            && xmlStrcasecmp(node->name, reinterpret_cast<const xmlChar*>(name)) == 0)
-        {
-            return value(node);
-        }
-    }
-    return std::string();
-}
-
-std::string property(const xmlNode *node, const char *prop)
-{
-    for (const xmlAttr *attr = node->properties; attr; attr = attr->next)
-    {
-        if (attr->type == XML_ATTRIBUTE_NODE && !xmlStrcasecmp(attr->name, (xmlChar *)prop))
-            return std::string(reinterpret_cast<const char*>(attr->children->content));
-    }
-    return std::string();
-}
-
-std::string lc_property(const xmlNode *node, const char *prop)
-{
-    std::string res = property(node, prop);
-    std::transform(res.begin(), res.end(), res.begin(), ::tolower);
-    return res;
-}
-
-int int_property(const xmlNode *node, const char *prop, int def=-1)
-{
-    std::string sval = property(node, prop);
-    if (sval.empty())
-        return def;
-    return std::stoi(sval);
-}
 
 const char* char_ptr_of(const std::string& str)
 {
@@ -3446,7 +3370,7 @@ int main(int argc, const char *argv[])
     if (!err)
     {
         std::ofstream os(argv[2]);
-        if (os.good())
+        if (os)
         {
             write_c_file(os);
             os.close();

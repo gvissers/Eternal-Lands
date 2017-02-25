@@ -133,6 +133,9 @@ $(CXXOBJS): %.o: %.cpp Makefile.linux make.conf
 actor_defs_inc.c: tools
 	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
 
+weather_inc.c: tools
+	tools/build_weather $(XML_COMPILED_DATA_DIR) $@
+
 tools:
 	@$(MAKE) -C $@ -f Makefile.linux
 

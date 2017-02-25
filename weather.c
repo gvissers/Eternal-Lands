@@ -34,7 +34,9 @@ int wind_direction = 0;	//wind direction, based on server's setting and local ra
 /* N E W   W E A T H E R *****************************************************/
 
 #define MAX_RAIN_DROPS 10000
-#define MAX_LIGHTNING_DEFS 20
+#ifndef XML_COMPILED
+#define MAX_LIGHTwNING_DEFS 20
+#endif
 #define MAX_THUNDERS 20
 
 #define LIGHTNING_LIGHT_RADIUS 20.0
@@ -82,15 +84,19 @@ typedef struct {
 	float coords[4]; // left bottom right top
 } lightning_def;
 
-weather_drop weather_drops[MAX_WEATHER_TYPES][MAX_RAIN_DROPS];
-int weather_drops_count[MAX_WEATHER_TYPES];
-
+#ifdef XML_COMPILED
+#include "weather_inc.c"
+#else
 weather_def weather_defs[MAX_WEATHER_TYPES];
+lightning_def lightnings_defs[MAX_LIGHTNING_DEFS];
+float weather_ratios[MAX_WEATHER_TYPES];
+int weather_drops_count[MAX_WEATHER_TYPES];
+weather_drop weather_drops[MAX_WEATHER_TYPES][MAX_RAIN_DROPS];
+int lightnings_defs_count = 0;
+int nr_weather_defs = MAX_WEATHER_TYPES;
+#endif
 
 weather_area weather_areas[MAX_WEATHER_AREAS];
-
-lightning_def lightnings_defs[MAX_LIGHTNING_DEFS];
-int lightnings_defs_count = 0;
 
 thunder thunders[MAX_THUNDERS];
 int thunders_count = 0;
@@ -102,8 +108,6 @@ float lightning_sky_position[4] = {0.0, 0.0, 0.0, 1.0};
 float lightning_color[4] = {0.9, 0.85, 1.0, 1.0};
 float lightning_ambient_color[4] = {0.50, 0.45, 0.55, 1.0};
 int lightning_falling = 0;
-
-float weather_ratios[MAX_WEATHER_TYPES];
 
 float current_weather_density;
 
@@ -129,13 +133,40 @@ static __inline__ float next_random_number()
 	return random_table[last_random_number];
 }
 
+#ifndef XML_COMPILED
 int weather_read_defs(const char *file_name);
+#endif
 
 void weather_init()
 {
 	int i;
-
-	for (i = 0; i < MAX_WEATHER_TYPES; ++i)
+#ifdef XML_COMPILED
+	for (i = 0; i < lightnings_defs_count; ++i)
+	{
+		int idx = lightnings_defs[i].texture;
+		if (idx >= 0)
+		{
+#ifdef NEW_TEXTURES
+			lightnings_defs[i].texture = load_texture_cached(texture_names[idx], tt_mesh);
+#else // NEW_TEXTURES
+			lightnings_defs[i].texture = load_texture_cache(texture_names[idx], 0);
+#endif // NEW_TEXTURES
+		}
+	}
+	for (i = 0; i < nr_weather_defs; ++i)
+	{
+		int idx = weather_defs[i].texture;
+		if (idx >= 0)
+		{
+#ifdef NEW_TEXTURES
+			weather_defs[i].texture = load_texture_cached(texture_names[idx], tt_mesh);
+#else // NEW_TEXTURES
+			weather_defs[i].texture = load_texture_cache(texture_names[idx], 0);
+#endif // NEW_TEXTURES
+		}
+	}
+#else // XML_COMPILED
+	for (i = 0; i < nr_weather_defs; ++i)
 	{
 		weather_ratios[i] = 0.0;
 		weather_drops_count[i] = 0;
@@ -150,6 +181,9 @@ void weather_init()
 		weather_defs[i].wind_effect = 0.0;
 		weather_defs[i].texture = -1;
 	}
+	weather_read_defs("./weather.xml");
+#endif // XML_COMPILED
+
 	weather_ratios[0] = 1.0;
 
 	for (i = 0; i < MAX_WEATHER_AREAS; ++i)
@@ -161,21 +195,19 @@ void weather_init()
 	for (i = 0; i < RANDOM_TABLE_SIZE; ++i)
 		random_table[i] = (float)rand() / (float)RAND_MAX;
 
-    // init the particles texture coordinates
-    for (i = 0; i < MAX_RAIN_DROPS; ++i)
-    {
-        const int j = i*20;
-        weather_particles_coords[j   ] = 0.0f;
-        weather_particles_coords[j+1 ] = 0.0f;
-        weather_particles_coords[j+5 ] = 1.0f;
-        weather_particles_coords[j+6 ] = 0.0f;
-        weather_particles_coords[j+10] = 1.0f;
-        weather_particles_coords[j+11] = 1.0f;
-        weather_particles_coords[j+15] = 0.0f;
-        weather_particles_coords[j+16] = 1.0f;
-    }
-
-	weather_read_defs("./weather.xml");
+	// init the particles texture coordinates
+	for (i = 0; i < MAX_RAIN_DROPS; ++i)
+	{
+		const int j = i*20;
+		weather_particles_coords[j   ] = 0.0f;
+		weather_particles_coords[j+1 ] = 0.0f;
+		weather_particles_coords[j+5 ] = 1.0f;
+		weather_particles_coords[j+6 ] = 0.0f;
+		weather_particles_coords[j+10] = 1.0f;
+		weather_particles_coords[j+11] = 1.0f;
+		weather_particles_coords[j+15] = 0.0f;
+		weather_particles_coords[j+16] = 1.0f;
+	}
 }
 
 void weather_clear()
@@ -185,7 +217,7 @@ void weather_clear()
 	lightning_stop = 0;
 	lightning_falling = 0;
 	weather_ratios[0] = 1.0;
-	for(i = 1; i < MAX_WEATHER_TYPES; ++i)
+	for(i = 1; i < nr_weather_defs; ++i)
 	{
 		weather_ratios[i] = 0.0;
 		weather_drops_count[i] = 0;
@@ -225,7 +257,7 @@ void weather_get_from_server(const Uint8* data)
 	} else if(data[0] == weather_effect_leaves){
 		//EC_TAG
 		return;
-	} else if(data[0] > MAX_WEATHER_TYPES){
+	} else if(data[0] > nr_weather_defs){
 #ifdef DEBUG
 		LOG_TO_CONSOLE(c_red1, "Server sent an unknown weather type");
 #endif // DEBUG
@@ -247,13 +279,13 @@ void weather_get_from_server(const Uint8* data)
 */
 }
 
-void weather_compute_ratios(float ratios[MAX_WEATHER_TYPES], float x, float y)
+void weather_compute_ratios(float ratios[], float x, float y)
 {
 	int i;
 	float sum = 0.0;
 
 	// we reset all the values
-	for (i = 0; i < MAX_WEATHER_TYPES; ++i)
+	for (i = 0; i < nr_weather_defs; ++i)
 		ratios[i] = 0.0;
 
 	// we compute the intensity for each type of weather according to the areas
@@ -269,7 +301,7 @@ void weather_compute_ratios(float ratios[MAX_WEATHER_TYPES], float x, float y)
 		}
 
 	// we compute the sum of all the intensities
-	for (i = 1; i < MAX_WEATHER_TYPES; ++i)
+	for (i = 1; i < nr_weather_defs; ++i)
 		sum += ratios[i];
 
 	if (sum < 1.0)
@@ -280,18 +312,18 @@ void weather_compute_ratios(float ratios[MAX_WEATHER_TYPES], float x, float y)
 	{
 		// we normalize the intensities if needed
 		ratios[0] = 0.0;
-		for (i = 1; i < MAX_WEATHER_TYPES; ++i)
+		for (i = 1; i < nr_weather_defs; ++i)
 			ratios[i] /= sum;
 	}
 }
 
-void weather_get_color_from_ratios(float color[4], float ratios[MAX_WEATHER_TYPES])
+void weather_get_color_from_ratios(float color[4], float ratios[])
 {
 	int i, j;
 	for(i = 0; i < 4; ++i)
 	{
 		color[i] = 0.0;
-		for(j = 0; j < MAX_WEATHER_TYPES; ++j)
+		for(j = 0; j < nr_weather_defs; ++j)
 		{
 			color[i] += weather_defs[j].color[i] * ratios[j];
 		}
@@ -461,7 +493,7 @@ void weather_update()
 	weather_get_color_from_ratios(weather_color, weather_ratios);
 
 	// we update the weather types
-	for (i = 1; i < MAX_WEATHER_TYPES; ++i)
+	for (i = 1; i < nr_weather_defs; ++i)
 		update_weather_type(i, -camera_x, -camera_y, 0.0, ticks);
 
 	last_update = cur_time;
@@ -521,7 +553,8 @@ void weather_render()
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisable(GL_TEXTURE_2D);
 
-	for (type = 1; type < MAX_WEATHER_TYPES; ++type)
+	for (type = 1; type < nr_weather_defs; ++type)
+	{
 		if (!weather_defs[type].use_sprites && weather_drops_count[type] > 0)
 		{
 			glLineWidth(weather_defs[type].size);
@@ -538,6 +571,7 @@ void weather_render()
 				glDrawArrays(GL_LINES, i, nb);
 			}
 		}
+	}
 
 	glLineWidth(1.0);
 	glEnable(GL_TEXTURE_2D);
@@ -547,7 +581,8 @@ void weather_render()
 	// we then render the other precipitations as sprites
     glTexCoordPointer(2, GL_FLOAT, 5*sizeof(float), weather_particles_coords);
     glVertexPointer(3, GL_FLOAT, 5*sizeof(float), weather_particles_coords+2);
-	for (type = 2; type < MAX_WEATHER_TYPES; ++type)
+	for (type = 2; type < nr_weather_defs; ++type)
+	{
 		if (weather_defs[type].use_sprites && weather_drops_count[type] > 0)
 		{
 			delta1[0] = weather_defs[type].size*(modelview[0]+modelview[1]);
@@ -587,6 +622,7 @@ void weather_render()
 #endif	/* NEW_TEXTURES */
             glDrawArrays(GL_QUADS, 0, weather_drops_count[type]);
 		}
+	}
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -607,11 +643,11 @@ float weather_get_intensity()
 	return (1.0 - weather_ratios[0]);
 }
 
-float weather_get_density_from_ratios(float ratios[MAX_WEATHER_TYPES])
+float weather_get_density_from_ratios(float ratios[])
 {
 	float density = 0.0;
 	int i;
-	for(i = 0; i < MAX_WEATHER_TYPES; ++i)
+	for(i = 0; i < nr_weather_defs; ++i)
 		density += weather_defs[i].density * ratios[i];
 	return density;
 }
@@ -800,6 +836,7 @@ float weather_adjust_gain(float in_gain, int in_cookie)
 }
 #endif // NEW_SOUND
 
+#ifndef XML_COMPILED
 int weather_parse_effect(xmlNode *node)
 {
 	xmlNode *item;
@@ -982,15 +1019,4 @@ int weather_read_defs(const char *file_name)
 	xmlFreeDoc(doc);
 	return ok;
 }
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // XML_COMPILED
