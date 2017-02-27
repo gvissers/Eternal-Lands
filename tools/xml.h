@@ -7,8 +7,11 @@
 std::string value(const xmlNode *node);
 std::string value(const xmlAttr *attr);
 std::string lc_value(const xmlNode *node);
+std::string lc_value(const xmlAttr *attr);
 bool bool_value(const xmlNode *node, bool def=false);
+bool bool_value(const xmlAttr *attr, bool def=false);
 int int_value(const xmlNode *node, int def=0);
+int int_value(const xmlAttr *attr, int def=0);
 int float_value(const xmlNode *node, float def=0.0f);
 int float_value(const xmlAttr *attr, float def=0.0f);
 std::string item_value(const xmlNode *item, const char *name);

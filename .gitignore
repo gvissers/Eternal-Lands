@@ -10,5 +10,6 @@ tools/build_actor_defs
 tools/build_extensions
 tools/build_mines
 tools/build_rules
+tools/build_sky
 tools/build_spells
 tools/build_weather

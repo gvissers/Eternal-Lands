@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -20,7 +19,57 @@
 #include "textures.h"
 #include "vmath.h"
 #include "weather.h"
+#ifndef XML_COMPILED
 #include "xml.h"
+#endif // XML_COMPILED
+
+#ifdef XML_COMPILED
+typedef struct
+{
+	int t;
+	float r, g, b, a;
+} time_color;
+typedef struct
+{
+	int off;
+	int count;
+} color_changes;
+typedef struct
+{
+	color_changes clouds;
+	color_changes clouds_detail;
+	color_changes clouds_sunny;
+	color_changes clouds_detail_sunny;
+	color_changes clouds_rainy;
+	color_changes clouds_detail_rainy;
+	color_changes sky1;
+	color_changes sky2;
+	color_changes sky3;
+	color_changes sky4;
+	color_changes sky5;
+	color_changes sky1_sunny;
+	color_changes sky2_sunny;
+	color_changes sky3_sunny;
+	color_changes sky4_sunny;
+	color_changes sky5_sunny;
+	color_changes sun;
+	color_changes fog;
+	color_changes fog_sunny;
+	color_changes fog_rainy;
+	color_changes light_ambient;
+	color_changes light_diffuse;
+	color_changes light_ambient_rainy;
+	color_changes light_diffuse_rainy;
+	int no_clouds;
+	int no_sun;
+	int no_moons;
+	int no_stars;
+	int clouds_tex;
+	int clouds_detail_tex;
+	int freeze_time;
+} map_sky_defs;
+#include "sky_inc.c"
+#endif // XML_COMPILED
 
 float skybox_clouds[360][4];
 float skybox_clouds_detail[360][4];
@@ -2061,6 +2110,8 @@ void underworld_sky()
 	last_cloud_time = cur_time;
 }
 
+#ifndef XML_COMPILED
+
 #define XML_BOOL(s) (!xmlStrcasecmp((s), (xmlChar*)"yes") ||\
 					 !xmlStrcasecmp((s), (xmlChar*)"true") ||\
 					 !xmlStrcasecmp((s), (xmlChar*)"1"))
@@ -2384,6 +2435,7 @@ int skybox_read_defs(const char *file_name, const char *map_name)
 	xmlFreeDoc(doc);
 	return ok;
 }
+#endif // XML_COMPILED
 
 int skybox_build_gradients(float container[360][4])
 {
@@ -2419,8 +2471,25 @@ int skybox_build_gradients(float container[360][4])
 	return 1;
 }
 
+#ifdef XML_COMPILED
+void set_color_changes(const color_changes cs, float container[360][4])
+{
+	for (int i = cs.off; i < cs.off + cs.count; ++i)
+	{
+		const time_color* tc = time_colors + i;
+		container[tc->t][0] = tc->r;
+		container[tc->t][1] = tc->g;
+		container[tc->t][2] = tc->b;
+		container[tc->t][3] = tc->a;
+	}
+}
+#endif // XML_COMPILED
+
 void skybox_init_defs(const char *map_name)
 {
+#ifdef XML_COMPILED
+	const map_sky_defs *defs;
+#endif // XML_COMPILED
     static char last_map[256] = "\0";
 	int t;
 	int i;
@@ -2480,6 +2549,88 @@ void skybox_init_defs(const char *map_name)
 		skybox_light_diffuse_rainy[t][3] = -1.0;
 	}
 
+	if (map_name)
+	{
+		int pos = strlen(map_name)-1;
+		while (pos >= 0 && map_name[pos] != '/') --pos;
+		strcpy(last_map, map_name+pos+1);
+	}
+
+#ifdef XML_COMPILED
+	defs = 0;
+	for (i = 0; i < nr_sky_defs; ++i)
+	{
+		if (!strcasecmp(sky_def_map_names[i], last_map))
+		{
+			defs = sky_defs + i;
+			break;
+		}
+		else if (!*sky_def_map_names[i])
+		{
+			defs = sky_defs + i;
+		}
+	}
+
+	set_color_changes(defs->clouds, skybox_clouds);
+	set_color_changes(defs->clouds_detail, skybox_clouds_detail);
+	set_color_changes(defs->clouds_sunny, skybox_clouds_sunny);
+	set_color_changes(defs->clouds_detail_sunny, skybox_clouds_detail_sunny);
+	set_color_changes(defs->clouds_rainy, skybox_clouds_rainy);
+	set_color_changes(defs->clouds_detail_rainy, skybox_clouds_detail_rainy);
+	set_color_changes(defs->sky1, skybox_sky1);
+	set_color_changes(defs->sky2, skybox_sky2);
+	set_color_changes(defs->sky3, skybox_sky3);
+	set_color_changes(defs->sky4, skybox_sky4);
+	set_color_changes(defs->sky5, skybox_sky5);
+	set_color_changes(defs->sky1_sunny, skybox_sky1_sunny);
+	set_color_changes(defs->sky2_sunny, skybox_sky2_sunny);
+	set_color_changes(defs->sky3_sunny, skybox_sky3_sunny);
+	set_color_changes(defs->sky4_sunny, skybox_sky4_sunny);
+	set_color_changes(defs->sky5_sunny, skybox_sky5_sunny);
+	set_color_changes(defs->sun, skybox_sun);
+	set_color_changes(defs->fog, skybox_fog);
+	set_color_changes(defs->fog_sunny, skybox_fog_sunny);
+	set_color_changes(defs->fog_rainy, skybox_fog_rainy);
+	set_color_changes(defs->light_ambient, skybox_light_ambient);
+	set_color_changes(defs->light_diffuse, skybox_light_diffuse);
+	set_color_changes(defs->light_ambient_rainy, skybox_light_ambient_rainy);
+	set_color_changes(defs->light_diffuse_rainy, skybox_light_diffuse_rainy);
+	skybox_no_clouds = defs->no_clouds;
+	skybox_no_sun = defs->no_sun;
+	skybox_no_moons = defs->no_moons;
+	skybox_no_stars = defs->no_stars;
+	skybox_clouds_tex = skybox_clouds_detail_tex = -1;
+	if (defs->clouds_tex >= 0)
+	{
+#ifdef NEW_TEXTURES
+		skybox_clouds_tex = load_texture_cached(texture_names[defs->clouds_tex], tt_mesh);
+#else // NEW_TEXTURES
+		skybox_clouds_tex = load_texture_cache((texture_names[defs->clouds_tex], 0);
+#endif // NEW_TEXTURES
+	}
+	if (defs->clouds_detail_tex >= 0)
+	{
+#ifdef NEW_TEXTURES
+		skybox_clouds_detail_tex
+			= load_texture_cached(texture_names[defs->clouds_detail_tex], tt_mesh);
+#else // NEW_TEXTURES
+		skybox_clouds_tex
+			= load_texture_cache((texture_names[defs->clouds_detail_tex], 0);
+#endif // NEW_TEXTURES
+	}
+	if (defs->freeze_time >= 0)
+	{
+		freeze_time = 1;
+		game_minute = defs->freeze_time;
+		game_second = 0;
+	}
+	else
+	{
+		freeze_time = 0;
+		game_minute = real_game_minute;
+		game_second = real_game_second;
+	}
+#else // XML_COMPILED
 	skybox_no_clouds = 1;
 	skybox_no_sun = 1;
 	skybox_no_moons = 1;
@@ -2490,15 +2641,9 @@ void skybox_init_defs(const char *map_name)
 	game_minute = real_game_minute;
 	game_second = real_game_second;
 
-    if (map_name) {
-        int pos = strlen(map_name)-1;
-        while (pos >= 0 && map_name[pos] != '/') --pos;
-        strcpy(last_map, map_name+pos+1);
-    }
-
-    //printf("Loading sky defs for map '%s'\n", last_map);
 	if (!skybox_read_defs("skybox/skybox_defs.xml", last_map))
 		LOG_ERROR("Error while loading the skybox definitions.");
+#endif // XML_COMPILED
 
 	if (!skybox_build_gradients(skybox_clouds))
 		LOG_ERROR("no color key defined for 'clouds' element!");

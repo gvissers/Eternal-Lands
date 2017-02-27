@@ -22,6 +22,13 @@ std::string lc_value(const xmlNode *node)
     return res;
 }
 
+std::string lc_value(const xmlAttr *attr)
+{
+    std::string res = value(attr);
+    std::transform(res.begin(), res.end(), res.begin(), ::tolower);
+    return res;
+}
+
 bool bool_value(const xmlNode *node, bool def)
 {
     std::string sval = lc_value(node);
@@ -30,9 +37,25 @@ bool bool_value(const xmlNode *node, bool def)
     return sval == "yes" || sval == "true" || sval == "1";
 }
 
+bool bool_value(const xmlAttr *attr, bool def)
+{
+    std::string sval = lc_value(attr);
+    if (sval.empty())
+        return def;
+    return sval == "yes" || sval == "true" || sval == "1";
+}
+
 int int_value(const xmlNode *node, int def)
 {
     std::string sval = value(node);
+    if (sval.empty())
+        return def;
+    return std::stoi(sval);
+}
+
+int int_value(const xmlAttr *attr, int def)
+{
+    std::string sval = value(attr);
     if (sval.empty())
         return def;
     return std::stoi(sval);

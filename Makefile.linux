@@ -139,6 +139,9 @@ extensions_inc.cpp: tools
 mines_inc.c: tools
 	tools/build_mines $(XML_COMPILED_DATA_DIR) $@
 
+sky_inc.c: tools
+	tools/build_sky $(XML_COMPILED_DATA_DIR) $@
+
 spells_inc.c: tools
 	tools/build_spells $(XML_COMPILED_DATA_DIR) $@
 

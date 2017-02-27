@@ -10,8 +10,8 @@ DEP_FILES=$(foreach OBJ, $(OBJS), .deps/$(OBJ).P)
 
 DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
 
-EXES = build_actor_defs build_extensions build_mines build_rules build_spells \
-	build_weather
+EXES = build_actor_defs build_extensions build_mines build_rules build_sky \
+	build_spells build_weather
 
 all: $(EXES)
 
@@ -35,6 +35,10 @@ build_mines: build_mines.o xml.o
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 build_spells: build_spells.o xml.o
+	@echo "  LINK $@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+build_sky: build_sky.o xml.o
 	@echo "  LINK $@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
