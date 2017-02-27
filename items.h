@@ -62,7 +62,7 @@ typedef enum {
 /*! @} */
 
 /*!
- * \name The quantities are located within this struct 
+ * \name The quantities are located within this struct
 */
 struct quantities {
 	int selected;
@@ -122,7 +122,7 @@ extern int items_auto_get_all;
 extern int items_list_on_left;
 
 extern int item_uid_enabled;
-extern const Uint16 unset_item_uid;
+static const Uint16 unset_item_uid = (Uint16)-1;
 
 #ifdef NEW_SOUND
 void update_item_sound(int interval);
@@ -271,7 +271,7 @@ void update_cooldown ();
  * \ingroup item
  * \brief   Sets the displayed string for the items, manufacture and trade windows.
  *
- *      The items, manufacture and trade windows all display the same string, 
+ *      The items, manufacture and trade windows all display the same string,
  * 		normally set in multiplayer.c.  This function can also set the string.
  *		Each window independantly wraps the string to fit it's window.
  *

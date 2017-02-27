@@ -25,7 +25,9 @@
 #include "errors.h"
 #include "io/elpathwrapper.h"
 #include "sound.h"
+#ifndef XML_COMPILED
 #include "xml.h"
+#endif
 
 #define SIGILS_NO 64
 #define	NUM_SIGILS_LINE	12	// how many sigils per line displayed
@@ -53,20 +55,28 @@
 typedef struct
 {
 	int sigil_img;
+#ifdef XML_COMPILED
+	const char* name;
+	const char* description;
+#else // XML_COMPILED
 	char name[32];
 	char description[64];
+#endif // XML_COMPILED
 	int have_sigil;
 }sigil_def;
 
-sigil_def sigils_list[SIGILS_NO];
 int sigils_text;
 int sigils_we_have;
 
-
 typedef struct {
 	int id;//The spell server id
+#ifdef XML_COMPILED
+	const char* name;//The spell name
+	const char* desc;//The spell description
+#else // XML_COMPILED
 	char name[60];//The spell name
 	char desc[120];//The spell description
+#endif // XML_COMPILED
 	int image;//image_id
 	int sigils[6];//index of required sigils in sigils_list
 	int mana;//required mana
@@ -79,8 +89,6 @@ typedef struct {
 	int uncastable; //0 if castable, otherwise if something missing
 } spell_info;
 
-spell_info spells_list[SPELLS_NO];
-int num_spells=0;
 Uint8 spell_text[256];
 unsigned char spell_help[256];
 Sint8 on_cast[6];
@@ -94,13 +102,25 @@ int show_poison_count = 0; // elconfig variable
 static int poison_drop_counter = 0;
 
 typedef struct {
+#ifdef XML_COMPILED
+	const unsigned char* desc;
+#else // XML_COMPILED
 	unsigned char desc[120];
+#endif // XML_COMPILED
 	int spells;
 	int spells_id[SPELLS_NO];
 	int x,y;
 } group_def;
-int num_groups=0;
-group_def groups_list[GROUPS_NO];
+
+#ifdef XML_COMPILED
+#include "spells_inc.c"
+#else // XML_COMPILED
+static sigil_def sigils_list[SIGILS_NO];
+static spell_info spells_list[SPELLS_NO];
+static int num_spells = 0;
+static group_def groups_list[GROUPS_NO];
+static int num_groups=0;
+#endif // XML_COMPILED
 
 typedef struct
 {
@@ -172,7 +192,7 @@ static void duration_debug(int buff, int duration, const char*message)
 	else if (buff == 6)
 		buff_name = "Evasion";
 	else
-		for (i=0; i<SPELLS_NO; i++)
+		for (i=0; i<num_spells; i++)
 			if (spells_list[i].buff == buff)
 			{
 				buff_name = spells_list[i].name;
@@ -301,7 +321,9 @@ int cast_handler();
 int prepare_for_cast();
 void draw_spell_icon(int id,int x_start, int y_start, int gridsize, int alpha, int grayed);
 void set_spell_help_text(int spell);
-void init_sigils();
+#ifndef XML_COMPILED
+static void init_sigils();
+#endif // XML_COMPILED
 
 size_t cm_quickspells_id = CM_INIT_VALUE;
 void cm_update_quickspells(void);
@@ -312,6 +334,7 @@ void repeat_spell(){
 		my_tcp_send(my_socket, last_spell_str, last_spell_len);
 }
 
+#ifndef XML_COMPILED
 //returns a node with tagname, starts searching from the_node
 xmlNode *get_XML_node(xmlNode *the_node, char *tagname){
 	xmlNode *node=the_node;
@@ -322,7 +345,6 @@ xmlNode *get_XML_node(xmlNode *the_node, char *tagname){
 	}
 	return node;
 }
-
 
 attrib_16 *get_skill_address(const char *skillname)
 {
@@ -341,6 +363,7 @@ attrib_16 *get_skill_address(const char *skillname)
 	if(strcmp(skillname,(char*)attributes.harvesting_skill.shortname)==0) return &your_info.harvesting_skill;
 	return NULL;
 }
+#endif // XML_COMPILED
 
 int put_on_cast(){
 	if(we_have_spell>=0){
@@ -361,11 +384,14 @@ int put_on_cast(){
 
 int init_spells ()
 {
-	int i,j;
+	int i;
+	int ok = 1;
+#ifndef XML_COMPILED
+	int j;
 	xmlNode *root;
 	xmlDoc *doc;
-	int ok = 1;
-	char *fname="./spells.xml";
+	const char *fname="./spells.xml";
+#endif // XML_COMPILED
 
 	buff_duration_colour_id = elglGetColourId("buff.duration.background");
 
@@ -375,6 +401,7 @@ int init_spells ()
 #else	/* NEW_TEXTURES */
 	sigils_text = load_texture_cache ("./textures/sigils.bmp", 0);
 #endif	/* NEW_TEXTURES */
+#ifndef XML_COMPILED
 	for (i = 0; i < SIGILS_NO; i++)
 		sigils_list[i].have_sigil = 0;
 	for (i = 0; i < SPELLS_NO; i++){
@@ -393,9 +420,10 @@ int init_spells ()
 		groups_list[i].spells = 0;
 		for(j=0;j<SPELLS_NO;j++) groups_list[i].spells_id[j]=-1;
 	}
-
+#endif // XML_COMPILED
 
 	spell_text[0]=spell_help[0]=0;
+#ifndef XML_COMPILED
 	i = 0;
 	//parse xml
 	doc = xmlReadFile(fname, NULL, 0);
@@ -618,6 +646,7 @@ int init_spells ()
 	}
 
 	xmlFreeDoc (doc);
+#endif // XML_COMPILED
 
 	//init arrays
 	for (i = 0; i < 6; i++)
@@ -637,10 +666,12 @@ int init_spells ()
 #endif // NEW_SOUND
 	}
 
+#ifndef XML_COMPILED
 	if (!ok) //xml failed, init sigils manually
 	{
 		init_sigils();
 	}
+#endif // XML_COMPILED
 
 	init_ok = ok;
 
@@ -1579,7 +1610,7 @@ static void spell_cast(const Uint8 id)
 
 	spell = 0xFFFFFFFF;
 
-	for (i = 0; i < SPELLS_NO; i++)
+	for (i = 0; i < num_spells; i++)
 	{
 		if (spells_list[i].id == id)
 		{
@@ -1740,7 +1771,7 @@ static mqbdata* build_quickspell_data(const Uint32 spell_id)
 
 	index = 0xFFFFFFFF;
 
-	for (i = 0; i < SPELLS_NO; i++)
+	for (i = 0; i < num_spells; i++)
 	{
 		if (spells_list[i].id == spell_id)
 		{
@@ -2258,7 +2289,7 @@ void display_sigils_menu()
 		if (item_info_available()) {
 			int i, j;
 			// check item ids/uid all give unique items
-			for (i = 0; i < SPELLS_NO; i++)
+			for (i = 0; i < num_spells; i++)
 				for(j=0;j<4;j++)
 					if (spells_list[i].reagents_id[j] >= 0)
 						if (get_item_count(spells_list[i].reagents_uid[j], spells_list[i].reagents_id[j]) != 1)
@@ -2347,8 +2378,8 @@ void display_sigils_menu()
 	switch_handler((init_ok) ? (sigil_win):(sigils_win));
 }
 
-
-void init_sigils(){
+#ifndef XML_COMPILED
+static void init_sigils(){
 	int i;
 
 	i=0;
@@ -2510,4 +2541,4 @@ void init_sigils(){
 	sigils_list[i].have_sigil=1;
 
 }
-
+#endif // XML_COMPILED

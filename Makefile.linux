@@ -136,6 +136,9 @@ actor_defs_inc.c: tools
 weather_inc.c: tools
 	tools/build_weather $(XML_COMPILED_DATA_DIR) $@
 
+spells_inc.c: tools
+	tools/build_spells $(XML_COMPILED_DATA_DIR) $@
+
 tools:
 	@$(MAKE) -C $@ -f Makefile.linux
 

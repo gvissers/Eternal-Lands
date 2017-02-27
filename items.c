@@ -76,7 +76,6 @@ int manual_size_items_window = 0;
 int items_mod_click_any_cursor = 1;
 
 int item_uid_enabled = 0;
-const Uint16 unset_item_uid = (Uint16)-1;
 
 #define NUMBUT 4
 #define XLENBUT 29
@@ -141,9 +140,9 @@ void gray_out(int x_start, int y_start, int gridsize){
 		glVertex3i(x_start,y_start,0);
 		glVertex3i(x_start+gridsize,y_start,0);
 		glVertex3i(x_start+gridsize,y_start+gridsize,0);
-		glVertex3i(x_start,y_start+gridsize,0);				
+		glVertex3i(x_start,y_start+gridsize,0);
 	glEnd();
-	glDisable(GL_BLEND);	
+	glDisable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
 	glColor3f(1.0f, 1.0f, 1.0f);
 }
@@ -194,7 +193,7 @@ int get_mouse_pos_in_grid(int mx, int my, int columns, int rows, int left, int t
 void reset_quantity (int pos)
 {
 	int val;
-					
+
 	switch(pos)
 	{
 		case 0:
@@ -244,12 +243,12 @@ void drag_item(int item, int storage, int mini)
 
 	int quantity=item_quantity;
 	char str[20];
-	
+
 	if(storage) {
 		if (item < 0 || item >= STORAGE_ITEMS_SIZE)
 			// oops
 			return;
-		
+
 		cur_item=storage_items[item].image_id;
 		if(!storage_items[item].quantity) {
 			use_item = storage_item_dragged=-1;
@@ -261,7 +260,7 @@ void drag_item(int item, int storage, int mini)
 		if (item < 0 || item >= ITEM_NUM_ITEMS)
 			// oops
 			return;
-		
+
 		cur_item=item_list[item].image_id;
 		if(!item_list[item].quantity) {
 			use_item = item_dragged=-1;
@@ -296,7 +295,7 @@ void drag_item(int item, int storage, int mini)
 	else
 		draw_2d_thing(u_start,v_start,u_end,v_end,mouse_x-25,mouse_y-25,mouse_x+24,mouse_y+24);
 	glEnd();
-	
+
 	if(!mini && quantity!=-1){
 		safe_snprintf(str,sizeof(str),"%i",quantity);
 		draw_string_small(mouse_x-25, mouse_y+10, (unsigned char*)str, 1);
@@ -319,15 +318,15 @@ void get_your_items (const Uint8 *data)
 	//data[7] -> pos
 	//data[8] -> flags
 	//data[9] -> id
-	
-	
+
+
 	total_items=data[0];
-	
+
 	//clear the items first
 	for(i=0;i<ITEM_NUM_ITEMS;i++){
 		item_list[i].quantity=0;
 	}
-	
+
 	for(i=0;i<total_items;i++){
 		pos=data[i*len+1+6];
 		// try not to wipe out cooldown information if no real change
@@ -361,7 +360,7 @@ void get_your_items (const Uint8 *data)
 void check_for_item_sound(int pos)
 {
 	int i, snd = -1;
-	
+
 #ifdef _EXTRA_SOUND_DEBUG
 //	printf("Used item: %d, Image ID: %d, Action: %d\n", pos, item_list[pos].image_id, item_list[pos].action);
 #endif // _EXTRA_SOUND_DEBUG
@@ -409,18 +408,18 @@ void update_item_sound(int interval)
 				item_list[i].action_time = 0;
 			}
 		}
-	}	
+	}
 }
 #endif // NEW_SOUND
 
 void remove_item_from_inventory(int pos)
 {
 	item_list[pos].quantity=0;
-	
+
 #ifdef NEW_SOUND
 	check_for_item_sound(pos);
 #endif // NEW_SOUND
-	
+
 	build_manufacture_list();
 	check_castability();
 }
@@ -460,11 +459,11 @@ void get_new_inventory_item (const Uint8 *data)
 	item_list[pos].is_reagent=((flags&ITEM_REAGENT)>0);
 	item_list[pos].use_with_inventory=((flags&ITEM_INVENTORY_USABLE)>0);
 	item_list[pos].is_stackable=((flags&ITEM_STACKABLE)>0);
-	
+
 #ifdef NEW_SOUND
 	check_for_item_sound(pos);
 #endif // NEW_SOUND
-	
+
 	build_manufacture_list();
 	check_castability();
 }
@@ -489,7 +488,7 @@ void draw_item(int id, int x_start, int y_start, int gridsize){
 
 	//get the texture this item belongs to
 	this_texture=get_items_texture(id/25);
-		
+
 #ifdef	NEW_TEXTURES
 	bind_texture(this_texture);
 #else	/* NEW_TEXTURES */
@@ -512,7 +511,7 @@ int display_items_handler(window_info *win)
 
 	glEnable(GL_TEXTURE_2D);
 
-	/* 
+	/*
 	* Labrat: I never realised that a store all patch had been posted to Berlios by Awn in February '07
 	* Thanks to Awn for his earlier efforts (but this is not a derivative of his earlier work)
 	*
@@ -629,7 +628,7 @@ int display_items_handler(window_info *win)
 				glDisable(GL_BLEND);
 				glEnable(GL_TEXTURE_2D);
 			}
-			
+
 			if(!item_is_weared){
 				safe_snprintf(str, sizeof(str), "%i", item_list[i].quantity);
 				if ((mouseover_item_pos == i) && enlarge_text())
@@ -659,24 +658,24 @@ int display_items_handler(window_info *win)
 
 	//now, draw the inventory text, if any.
 	if (last_items_string_id != inventory_item_string_id)
-	{		
+	{
 		put_small_text_in_box((unsigned char*)inventory_item_string, strlen(inventory_item_string), win->len_x-10, items_string);
 		last_items_string_id = inventory_item_string_id;
 	}
 	draw_string_small(4, win->len_y - (use_small_items_window?105:85), (unsigned char*)items_string, 4);
-	
+
 	// Render the grid *after* the images. It seems impossible to code
-	// it such that images are rendered exactly within the boxes on all 
+	// it such that images are rendered exactly within the boxes on all
 	// cards
 	glDisable(GL_TEXTURE_2D);
 	glColor3f(0.77f,0.57f,0.39f);
 
 	//draw the grids
 	rendergrid(6, 6, 0, 0, items_grid_size, items_grid_size);
-	
+
 	glColor3f(0.57f,0.67f,0.49f);
 	rendergrid(2, 4, wear_items_x_offset, wear_items_y_offset, 33, 33);
-	
+
 	// draw the button boxes
 	glColor3f(0.77f,0.57f,0.39f);
 	for (i=0; i<NUMBUT; i++) {
@@ -687,7 +686,7 @@ int display_items_handler(window_info *win)
 			glVertex3i(win->len_x-3, wear_items_y_offset+but_y_off[i]+YLENBUT,0);
 		glEnd();
 	}
-	
+
 	// highlight a button with the mouse over
 	if (mouse_over_but != -1)
 	{
@@ -703,9 +702,9 @@ int display_items_handler(window_info *win)
 	//now, draw the quantity boxes
 	glColor3f(0.3f,0.5f,1.0f);
 	rendergrid(ITEM_EDIT_QUANT, 1, quantity_x_offset, quantity_y_offset, quantity_width, 20);
-	
+
 	glEnable(GL_TEXTURE_2D);
-	
+
 	// display help text for button if mouse over one
 	if ((mouse_over_but != -1) && show_help_text) {
 		char *helpstr[NUMBUT] = { stoall_help_str, getall_help_str, ((disable_double_click) ?drpall_help_str :dcdrpall_help_str), mixoneall_help_str, itmlst_help_str };
@@ -726,7 +725,7 @@ int display_items_handler(window_info *win)
 	}
 
 	mouse_over_but = -1;
-	
+
 #ifdef OPENGL_TRACE
 CHECK_GL_ERRORS();
 #endif //OPENGL_TRACE
@@ -769,7 +768,7 @@ int move_item(int item_pos_to_mov, int destination_pos)
 			else
 				set_shown_string(c_red2, items_stack_str);
 			/*  This still leaves one possibility for the dreaded server accusation.
-				If we have no free inventory slots, one or more stackable items 
+				If we have no free inventory slots, one or more stackable items
 				unequipped, and a single, different equipped item with the same id as
 				the aforementioned stack.  When we try to unequip the single item, the
 				client tries to place it on that stack. This may mean we have to
@@ -803,7 +802,7 @@ static void equip_item(int item_pos_to_equip, int destination_pos)
 
 
 int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
-{	
+{
 	Uint8 str[100];
 	int right_click = flags & ELW_RIGHT_MOUSE;
 	int ctrl_on = flags & ELW_CTRL;
@@ -829,7 +828,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 			item_action_mode=ACTION_WALK;
 			return 1;
 		}
-		
+
 		if(mx>=wear_items_x_offset && mx<wear_items_x_offset+66 && my>=wear_items_y_offset && my<wear_items_y_offset+133) {
 			switch(item_action_mode){
 				case ACTION_WALK:
@@ -862,7 +861,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 			return 1;
 		}
 	}
-	
+
 	if(item_action_mode==ACTION_USE_WITEM)	action_mode=ACTION_USE_WITEM;
 
 	//see if we changed the quantity
@@ -879,14 +878,14 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 				}
 				edit_quantity=-1;
 			}
-			
+
 			item_quantity=quantities.quantity[pos].val;
 			quantities.selected=pos;
 		} else if(right_click){
 			//Edit the given quantity
 			edit_quantity=pos;
 		}
-		
+
 		return 1;
 	}
 
@@ -896,12 +895,12 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 		quantities.selected=edit_quantity;
 		edit_quantity=-1;
 	}
-	
+
 	//see if we clicked on any item in the main category
 	else if(mx>0 && mx < 6*items_grid_size &&
 				my>0 && my < 6*items_grid_size) {
 		int pos=get_mouse_pos_in_grid(mx, my, 6, 6, 0, 0, items_grid_size, items_grid_size);
-		
+
 #ifdef NEW_SOUND
 		if(pos>-1) {
 			item_list[pos].action = ITEM_NO_ACTION;
@@ -928,7 +927,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 				}
 				item_dragged=-1;
 			}
-		
+
 		}
 		else if(storage_item_dragged!=-1){
 			str[0]=WITHDRAW_ITEM;
@@ -944,7 +943,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 				str[1]=item_list[pos].pos;
 				if(item_list[pos].is_stackable)
 					*((Uint32 *)(str+2))=SDL_SwapLE32(item_list[pos].quantity);
-				else 
+				else
 					*((Uint32 *)(str+2))=SDL_SwapLE32(36);//Drop all
 				my_tcp_send(my_socket, str, 6);
 				do_drop_item_sound();
@@ -999,7 +998,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 				do_drag_item_sound();
 			}
 		}
-	} 
+	}
 
 	// Get All button
 	else if(over_button(win, mx, my)==BUT_GET){
@@ -1071,7 +1070,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 	else if(mx>wear_items_x_offset && mx<wear_items_x_offset+2*33 &&
 				my>wear_items_y_offset && my<wear_items_y_offset+4*33){
 		int pos=36+get_mouse_pos_in_grid(mx, my, 2, 4, wear_items_x_offset, wear_items_y_offset, 32, 32);
-		
+
 		if(pos<36) {
 		} else if(item_list[pos].quantity){
 			if(item_action_mode == ACTION_LOOK) {
@@ -1108,7 +1107,7 @@ int click_items_handler(window_info *win, int mx, int my, Uint32 flags)
 			return 1;
 		}
 	}
-	
+
 	return 1;
 }
 
@@ -1122,11 +1121,11 @@ void set_description_help(int pos)
 
 int mouseover_items_handler(window_info *win, int mx, int my) {
 	int pos;
-	
+
 	// check and record if mouse if over a button
 	if ((mouse_over_but = over_button(win, mx, my)) != -1)
 		return 0; // keep standard cursor
-	
+
 	if(mx>0&&mx<6*items_grid_size&&my>0&&my<6*items_grid_size){
 		pos=get_mouse_pos_in_grid(mx, my, 6, 6, 0, 0, items_grid_size, items_grid_size);
 
@@ -1147,7 +1146,7 @@ int mouseover_items_handler(window_info *win, int mx, int my) {
 				elwin_mouse=CURSOR_PICK;
 			}
 			mouseover_item_pos = pos;
-			
+
 			return 1;
 		}
 	} else if(mx>wear_items_x_offset && mx<wear_items_x_offset+2*33 &&
@@ -1174,7 +1173,7 @@ int mouseover_items_handler(window_info *win, int mx, int my) {
 	} else if (show_help_text && *inventory_item_string && (my > (win->len_y - (use_small_items_window?105:85)))) {
 		item_help_str = (disable_double_click)?click_clear_str :double_click_clear_str;
 	}
-	
+
 	return 0;
 }
 
@@ -1208,7 +1207,7 @@ int keypress_items_handler(window_info * win, int x, int y, Uint32 key, Uint32 k
 			str[*len]=keysym;
 			(*len)++;
 			str[*len]=0;
-			
+
 			*val=atoi(str);
 			return 1;
 		}
@@ -1261,7 +1260,7 @@ int show_items_handler(window_info * win)
 		win->len_y=6*items_grid_size+110;
 		quantity_width=51;
 	}
-	
+
 	win->len_x=6*items_grid_size+110;
 	quantity_y_offset=win->len_y-21;
 	quantity_x_offset=1;
@@ -1303,7 +1302,7 @@ void display_items_menu()
 		}
 		if (!manual_size_items_window)
 			use_small_items_window = ((window_height<=600) || (window_width<=800));
-		
+
 		items_win= create_window(win_inventory, our_root_win, 0, items_menu_x, items_menu_y, items_menu_x_len, items_menu_y_len, ELW_WIN_DEFAULT);
 
 		set_window_handler(items_win, ELW_HANDLER_DISPLAY, &display_items_handler );
@@ -1311,22 +1310,22 @@ void display_items_menu()
 		set_window_handler(items_win, ELW_HANDLER_MOUSEOVER, &mouseover_items_handler );
 		set_window_handler(items_win, ELW_HANDLER_KEYPRESS, &keypress_items_handler );
 		set_window_handler(items_win, ELW_HANDLER_SHOW, &show_items_handler );
-		
+
 		cm_add(windows_list.window[items_win].cm_id, cm_items_menu_str, context_items_handler);
 		cm_bool_line(windows_list.window[items_win].cm_id, ELW_CM_MENU_LEN+1, &use_small_items_window, NULL);
 		cm_bool_line(windows_list.window[items_win].cm_id, ELW_CM_MENU_LEN+2, &manual_size_items_window, NULL);
 		cm_bool_line(windows_list.window[items_win].cm_id, ELW_CM_MENU_LEN+3, &item_window_on_drop, "item_window_on_drop");
 		cm_bool_line(windows_list.window[items_win].cm_id, ELW_CM_MENU_LEN+4, &allow_equip_swap, NULL);
 		cm_bool_line(windows_list.window[items_win].cm_id, ELW_CM_MENU_LEN+5, &items_mod_click_any_cursor, NULL);
-				
+
 		cm_stoall_but = cm_create(inv_keeprow_str, NULL);
 		cm_bool_line(cm_stoall_but, 0, &items_stoall_nofirstrow, NULL);
 		cm_bool_line(cm_stoall_but, 1, &items_stoall_nolastrow, NULL);
-		
+
 		cm_dropall_but = cm_create(inv_keeprow_str, NULL);
 		cm_bool_line(cm_dropall_but, 0, &items_dropall_nofirstrow, NULL);
 		cm_bool_line(cm_dropall_but, 1, &items_dropall_nolastrow, NULL);
-		
+
 		cm_mix_but = cm_create(mix_all_str, NULL);
 		cm_bool_line(cm_mix_but, 0, &items_mix_but_all, NULL);
 
@@ -1348,7 +1347,7 @@ void get_items_cooldown (const Uint8 *data, int len)
 {
 	int iitem, nitems, ibyte, pos;
 	Uint8 cooldown, max_cooldown;
-	
+
 	// reset old cooldown values
 	for (iitem = 0; iitem < ITEM_NUM_ITEMS; iitem++)
 	{
@@ -1358,7 +1357,7 @@ void get_items_cooldown (const Uint8 *data, int len)
 
 	nitems = len / 5;
 	if (nitems <= 0) return;
-	
+
 	ibyte = 0;
 	for (iitem = 0; iitem < nitems; iitem++)
 	{
@@ -1366,7 +1365,7 @@ void get_items_cooldown (const Uint8 *data, int len)
 		max_cooldown = SDL_SwapLE16 (*((Uint16*)(&data[ibyte+1])));
 		cooldown = SDL_SwapLE16 (*((Uint16*)(&data[ibyte+3])));
 		ibyte += 5;
-		
+
 		item_list[pos].cooldown_rate = 1000 * (Uint32)max_cooldown;
 		item_list[pos].cooldown_time = cur_time + 1000 * (Uint32)cooldown;
 	}
