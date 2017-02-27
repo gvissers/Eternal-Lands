@@ -4,6 +4,9 @@
 
 #include "xml.h"
 
+namespace
+{
+
 struct mine_types
 {
     int id;
@@ -41,7 +44,7 @@ int parse_mine_defs(const xmlNode *node)
 
 int load_mines_config(const std::string& fname)
 {
-    xmlDoc *doc = xmlReadFile(fname.c_str(), NULL, 0);
+    xmlDoc *doc = xmlReadFile(fname.c_str(), nullptr, 0);
     if (!doc)
     {
         std::cerr << "Unable to open file " << fname << '\n';
@@ -83,6 +86,8 @@ std::ostream& write_mines(std::ostream& os)
     return os;
 }
 
+} // namespace
+
 int main(int argc, const char*argv[])
 {
     if (argc != 3)
@@ -105,5 +110,4 @@ int main(int argc, const char*argv[])
     os.close();
 
     return 0;
-
 }

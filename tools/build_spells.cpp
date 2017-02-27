@@ -10,6 +10,9 @@
 #define SIGILS_NO 64
 #define SPELLS_NO 32
 
+namespace
+{
+
 struct sigil_def
 {
     int sigil_img;
@@ -74,7 +77,7 @@ const xmlNode *get_XML_node(const xmlNode *start, const char *tagname)
 
 int init_spells(const std::string& fname)
 {
-    xmlDoc *doc = xmlReadFile(fname.c_str(), NULL, 0);
+    xmlDoc *doc = xmlReadFile(fname.c_str(), nullptr, 0);
     if (!doc)
     {
         std::cerr << "Unable to read spells definition file " << fname
@@ -241,7 +244,7 @@ const char* get_skill_address(const std::string& skillname)
         return "&your_info.overall_skill";
     if (skillname == "har")
         return "&your_info.harvesting_skill";
-    return NULL;
+    return nullptr;
 }
 
 std::ostream& operator<<(std::ostream& os, const spell_info& info)
@@ -332,6 +335,8 @@ std::ostream& write_groups(std::ostream& os)
         << "static const int num_groups = " << groups_list.size() << ";\n\n";
     return os;
 }
+
+} // namespace
 
 int main(int argc, const char* argv[])
 {

@@ -133,6 +133,9 @@ $(CXXOBJS): %.o: %.cpp Makefile.linux make.conf
 actor_defs_inc.c: tools
 	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
 
+extensions_inc.cpp: tools
+	tools/build_extensions $(XML_COMPILED_DATA_DIR) $@
+
 mines_inc.c: tools
 	tools/build_mines $(XML_COMPILED_DATA_DIR) $@
 

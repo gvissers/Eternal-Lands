@@ -1,7 +1,9 @@
 #include <algorithm>
 #include <cassert>
 #include "asc.h"
+#ifndef XML_COMPILED
 #include "xml/xmlhelper.hpp"
+#endif // XML_COMPILED
 #include "platform.h"
 #include "multiplayer.h"
 #include "client_serv.h"
@@ -10,9 +12,12 @@
 #include "sendvideoinfo.h"
 #include "io/elfilewrapper.h"
 
-namespace eternal_lands
-{
+#ifdef XML_COMPILED
+#include "extensions_inc.cpp"
+#endif
 
+namespace
+{
 	const int vendor_names_count = 5;
 
 	const char* vendor_names[vendor_names_count] =
@@ -27,9 +32,10 @@ namespace eternal_lands
 		"1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.0", "2.1"
 	};
 
-	typedef	char bit_set_96[12];
+	const int bit_set_96_size = 12;
+	typedef	char bit_set_96[bit_set_96_size];
 
-	static inline void set_bit(bit_set_96 bits, int bit)
+	inline void set_bit(bit_set_96 bits, int bit)
 	{
 		int n, i;
 
@@ -40,7 +46,7 @@ namespace eternal_lands
 		bits[n] |= 1 << i;
 	}
 
-	static inline int get_first_set_bit(int value)
+	inline int get_first_set_bit(int value)
 	{
 		int i;
 
@@ -54,7 +60,8 @@ namespace eternal_lands
 		return i;
 	}
 
-	static inline void parse_extention(const xmlNodePtr extension_element, std::string extensions, bit_set_96 bits)
+#ifndef XML_COMPILED
+	inline void parse_extention(const xmlNodePtr extension_element, std::string extensions, bit_set_96 bits)
 	{
 		xmlNodePtr cur_node;
 		std::string name;
@@ -80,7 +87,7 @@ namespace eternal_lands
 		}
 	}
 
-	static inline void parse_extentions(const xmlNodePtr extensions_element,
+	inline void parse_extentions(const xmlNodePtr extensions_element,
 		const char* extensions, bit_set_96 bits)
 	{
 		xmlNodePtr cur_node;
@@ -93,8 +100,9 @@ namespace eternal_lands
 			parse_extention(cur_node, extensions, bits);
 		}
 	}
+#endif // XML_COMPILED
 
-	static inline int get_version_idx()
+	inline int get_version_idx()
 	{
 		std::string str;
 		int i;
@@ -112,7 +120,7 @@ namespace eternal_lands
 		return 0xFF;
 	}
 
-	static inline int get_vendor_idx()
+	inline int get_vendor_idx()
 	{
 		std::string str;
 		int i;
@@ -132,67 +140,79 @@ namespace eternal_lands
 		return 0xFF;
 	}
 
-	extern "C" void send_video_info()
+	void do_send_video_info(const bit_set_96 caps)
 	{
 		Uint8 data[33];
-		bit_set_96 caps;
-		xmlNodePtr root_element;
-		xmlDoc *document;
 		GLint i;
 
-		if (video_info_sent == 0)
+		data[0] = SEND_VIDEO_INFO;
+		data[1] = get_vendor_idx();
+		data[2] = get_version_idx();
+
+		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &i);
+		data[3] = get_first_set_bit(i);
+
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &i);
+		data[4] = i;
+
+		glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
+		data[5] = i % 256;
+		data[6] = i / 256;
+
+		glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &i);
+		data[7] = i % 256;
+		data[8] = i / 256;
+
+		std::copy(caps, caps+bit_set_96_size, data+9);
+		if (my_tcp_send(my_socket, data, sizeof(data)) < static_cast<int>(sizeof(data)))
 		{
-			memset(caps, 0, sizeof(caps));
-
-			if ((document = xmlReadFile("extentions.xml", 0, 0)) != NULL)
-			{
-				/*Get the root element node */
-				root_element = xmlDocGetRootElement(document);
-
-				if (root_element != 0)
-				{
-					try
-					{
-						parse_extentions(root_element,
-							reinterpret_cast<const char *>
-							(glGetString(GL_EXTENSIONS)), caps);
-					}
-					CATCH_AND_LOG_EXCEPTIONS
-
-					data[0] = SEND_VIDEO_INFO;
-					data[1] = get_vendor_idx();
-					data[2] = get_version_idx();
-
-					glGetIntegerv(GL_MAX_TEXTURE_SIZE, &i);
-					data[3] = get_first_set_bit(i);
-
-					glGetIntegerv(GL_MAX_TEXTURE_UNITS, &i);
-					data[4] = i;
-
-					glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &i);
-					data[5] = i % 256;
-					data[6] = i / 256;
-			
-					glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &i);
-					data[7] = i % 256;
-					data[8] = i / 256;
-
-					memcpy(&data[9], caps, sizeof(caps));
-					if (my_tcp_send(my_socket, data, sizeof(data)) <
-						static_cast<int>(sizeof(data)))
-					{
-						LOG_ERROR("Error sending video info");
-					}
-					else
-					{
-						video_info_sent = 1;
-					}
-					my_tcp_flush(my_socket);
-				}
-			}
-			xmlFree(document);
+			LOG_ERROR("Error sending video info");
 		}
+		else
+		{
+			video_info_sent = 1;
+		}
+		my_tcp_flush(my_socket);
 	}
 
+} // namespace
+
+#include <iomanip>
+extern "C" void send_video_info()
+{
+	if (video_info_sent == 0)
+	{
+		std::string extensions = reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
+		bit_set_96 caps;
+		std::fill(caps, caps+bit_set_96_size, 0);
+
+#ifdef XML_COMPILED
+		for (int i = 0; i < nr_extension_names; ++i)
+		{
+			if (extensions.find(extension_names[i]) != extensions.npos)
+				set_bit(caps, i);
+		}
+		do_send_video_info(caps);
+#else // XML_COMPILED
+		xmlDoc *document = xmlReadFile("extentions.xml", NULL, 0);
+		if (document)
+		{
+			/*Get the root element node */
+			xmlNodePtr root_element = xmlDocGetRootElement(document);
+
+			if (root_element != 0)
+			{
+				try
+				{
+					parse_extentions(root_element, extensions, caps);
+				}
+				CATCH_AND_LOG_EXCEPTIONS
+
+				do_send_video_info(caps);
+			}
+		}
+		xmlFree(document);
+#endif // XML_COMPILED
+	}
 }
 
