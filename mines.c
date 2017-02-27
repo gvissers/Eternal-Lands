@@ -13,21 +13,32 @@
 #endif // NEW_SOUND
 #include "tiles.h"
 #include "eye_candy_wrapper.h"
+#ifndef XML_COMPILED
 #include "xml.h"
-
-#define MAX_MINE_DEFS 30
+#endif // XML_COMPILED
 
 typedef struct
 {
 	int id;
+#ifdef XML_COMPILED
+    const char* file;
+#else // XML_COMPILED
 	char file[50];
+#endif // XML_COMPILED
 } mine_types;
 
-mine_types mine_defs[MAX_MINE_DEFS];
-mine mine_list[NUM_MINES];
-int num_mine_defs = 0;
+#ifdef XML_COMPILED
+#include "mines_inc.c"
+#else // XML_COMPILED
+#define MAX_MINE_DEFS 30
 
-static char * get_mine_e3d(int mine_type)
+static mine_types mine_defs[MAX_MINE_DEFS];
+static int num_mine_defs = 0;
+#endif
+
+mine mine_list[NUM_MINES];
+
+static const char* get_mine_e3d(int mine_type)
 {
 	int i;
 	// Search the array for the required mine type
@@ -163,6 +174,7 @@ void remove_all_mines()
 	}
 }
 
+#ifndef XML_COMPILED
 int parse_mine_defs(xmlNode *node)
 {
 	xmlNode *def;
@@ -232,4 +244,4 @@ void load_mines_config()
 
 	xmlFreeDoc(doc);
 }
-
+#endif // XML_COMPILED
