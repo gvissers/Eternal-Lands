@@ -36,6 +36,12 @@ XML_COMPILED_COBJ = actor_defs.o
 #FSAA_COBJ = fsaa/fsaa_glx.o fsaa/fsaa.o
 FSAA_COBJ = fsaa/fsaa_dummy.o fsaa/fsaa.o
 
+ifeq (,$(findstring XML_COMPILED, $(FEATURES)))
+NON_XML_COMPILED_CXXOBJ = xml/xmlhelper.o
+else
+NON_XML_COMPILED_CXXOBJ =
+endif
+
 COBJS=2d_objects.o 3d_objects.o \
 	actor_scripts.o actors.o alphamap.o asc.o astrology.o \
 	bbox_tree.o books.o buddy.o buffs.o bags.o \
@@ -69,7 +75,7 @@ CXXOBJS=achievements.o actor_init.o cal3d_wrapper.o command_queue.o \
 	context_menu.o elloggingwrapper.o engine/logging.o exceptions/extendedexception.o \
 	hud_indicators.o hud_timer.o icon_window.o io/cal3d_io_wrapper.o item_info.o item_lists.o named_colours.o \
 	optimizer.o quest_log.o select.o sendvideoinfo.o trade_log.o user_menus.o \
-	xml/xmlhelper.o eye_candy_wrapper.o \
+	eye_candy_wrapper.o \
 	eye_candy/eye_candy.o eye_candy/math_cache.o eye_candy/effect_lamp.o \
 	eye_candy/effect_candle.o \
 	eye_candy/effect_campfire.o eye_candy/effect_fountain.o \
@@ -83,6 +89,7 @@ CXXOBJS=achievements.o actor_init.o cal3d_wrapper.o command_queue.o \
 	eye_candy/effect_mines.o eye_candy/effect_missile.o \
 	eye_candy/orbital_mover.o eye_candy/kepler_orbit.o	\
 	eye_candy/effect_staff.o \
+	$(NON_XML_COMPILED_CXXOBJ) \
 	$(foreach FEATURE, $(FEATURES), $($(FEATURE)_CXXOBJ))
 
 OBJS=$(COBJS) $(CXXOBJS)
