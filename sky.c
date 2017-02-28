@@ -68,7 +68,7 @@ typedef struct
 	int clouds_detail_tex;
 	int freeze_time;
 } map_sky_defs;
-#include "sky_inc.c"
+#include "sky.inc.c"
 #endif // XML_COMPILED
 
 float skybox_clouds[360][4];

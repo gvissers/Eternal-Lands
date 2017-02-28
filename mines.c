@@ -28,7 +28,7 @@ typedef struct
 } mine_types;
 
 #ifdef XML_COMPILED
-#include "mines_inc.c"
+#include "mines.inc.c"
 #else // XML_COMPILED
 #define MAX_MINE_DEFS 30
 

@@ -116,40 +116,34 @@ $(EXE): $(OBJS)
 
 DEPS_MAGIC := $(shell mkdir .deps .deps/io .deps/shader .deps/eye_candy .deps/exceptions .deps/xz .deps/xml .deps/fsaa .deps/engine > /dev/null 2>&1 || :)
 
-$(COBJS): %.o: %.c Makefile.linux make.conf
+$(COBJS): %.o: %.c Makefile.linux make.conf | build_includes
 	@echo "  CC   $@"
 	@if $(CC) $(CFLAGS) -MT '$@' -MD -MP -MF '.deps/$@.pp' -c $< -o $@; then \
 		mv ".deps/$@.pp" ".deps/$@.P"; \
 	else rm -f ".deps/$@.pp"; exit 1; \
 	fi
 
-$(CXXOBJS): %.o: %.cpp Makefile.linux make.conf
+$(CXXOBJS): %.o: %.cpp Makefile.linux make.conf | build_includes
 	@echo "  CXX  $@"
 	@if $(CXX) $(CXXFLAGS) -MT '$@' -MD -MP -MF '.deps/$@.pp' -c $< -o $@; then \
 		mv ".deps/$@.pp" ".deps/$@.P"; \
 	else rm -f ".deps/$@.pp"; exit 1; \
 	fi
 
-actor_defs_inc.c: tools
-	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) $@
-
-extensions_inc.cpp: tools
-	tools/build_extensions $(XML_COMPILED_DATA_DIR) $@
-
-mines_inc.c: tools
-	tools/build_mines $(XML_COMPILED_DATA_DIR) $@
-
-sky_inc.c: tools
-	tools/build_sky $(XML_COMPILED_DATA_DIR) $@
-
-spells_inc.c: tools
-	tools/build_spells $(XML_COMPILED_DATA_DIR) $@
-
-weather_inc.c: tools
-	tools/build_weather $(XML_COMPILED_DATA_DIR) $@
+ifeq (,$(findstring XML_COMPILED, $(FEATURES)))
+build_includes:
+else
+build_includes: tools
+	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) actor_defs.inc.c
+	tools/build_extensions $(XML_COMPILED_DATA_DIR) extensions.inc.cpp
+	tools/build_mines $(XML_COMPILED_DATA_DIR) mines.inc.c
+	tools/build_sky $(XML_COMPILED_DATA_DIR) sky.inc.c
+	tools/build_spells $(XML_COMPILED_DATA_DIR) spells.inc.c
+	tools/build_weather $(XML_COMPILED_DATA_DIR) weather.inc.c
 
 tools:
 	@$(MAKE) -C $@ -f Makefile.linux
+endif
 
 release:
 	@$(MAKE) -f Makefile.linux 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)'
@@ -158,7 +152,7 @@ static:
 	@$(MAKE) -f Makefile.linux 'CFLAGS=$(_CFLAGS)' 'CXXFLAGS=$(_CXXFLAGS)' 'LDFLAGS=$(_LDFLAGS)' 'OBJS=$(OBJS) $(STATICLIBS)'
 
 clean:
-	rm -f $(OBJS) $(EXE)
+	rm -f $(OBJS) $(EXE) *.inc.c
 	@$(MAKE) -C tools -f Makefile.linux $@
 
 docs:

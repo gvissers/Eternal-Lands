@@ -13,7 +13,7 @@
 #include "io/elfilewrapper.h"
 
 #ifdef XML_COMPILED
-#include "extensions_inc.cpp"
+#include "extensions.inc.cpp"
 #endif
 
 namespace

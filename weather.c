@@ -85,7 +85,7 @@ typedef struct {
 } lightning_def;
 
 #ifdef XML_COMPILED
-#include "weather_inc.c"
+#include "weather.inc.c"
 #else
 weather_def weather_defs[MAX_WEATHER_TYPES];
 lightning_def lightnings_defs[MAX_LIGHTNING_DEFS];

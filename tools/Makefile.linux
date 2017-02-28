@@ -53,4 +53,6 @@ build_weather: build_weather.o xml.o
 clean:
 	rm -f $(OBJS) $(EXES)
 
+ifneq "$(MAKECMDGOALS)" "clean"
 -include $(DEP_FILES)
+endif

@@ -68,7 +68,7 @@ typedef struct
 } sound_reg;
 #endif
 
-#include "actor_defs_inc.c"
+#include "actor_defs.inc.c"
 
 hash_table *emotes = NULL;
 hash_table *emote_cmds = NULL;

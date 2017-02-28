@@ -113,7 +113,7 @@ typedef struct {
 } group_def;
 
 #ifdef XML_COMPILED
-#include "spells_inc.c"
+#include "spells.inc.c"
 #else // XML_COMPILED
 static sigil_def sigils_list[SIGILS_NO];
 static spell_info spells_list[SPELLS_NO];
