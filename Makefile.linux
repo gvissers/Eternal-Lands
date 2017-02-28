@@ -145,6 +145,7 @@ build_includes: tools
 	tools/build_extensions $(XML_COMPILED_DATA_DIR) extensions.inc.cpp
 	tools/build_icon_window $(XML_COMPILED_DATA_DIR) icon_window.inc.cpp
 	tools/build_mines $(XML_COMPILED_DATA_DIR) mines.inc.c
+	tools/build_named_colours $(XML_COMPILED_DATA_DIR) named_colours.inc.cpp
 	tools/build_sky $(XML_COMPILED_DATA_DIR) sky.inc.c
 	tools/build_spells $(XML_COMPILED_DATA_DIR) spells.inc.c
 	tools/build_weather $(XML_COMPILED_DATA_DIR) weather.inc.c

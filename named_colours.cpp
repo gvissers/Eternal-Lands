@@ -19,7 +19,9 @@
 #include "elloggingwrapper.h"
 #include "named_colours.h"
 #include "io/elfilewrapper.h"
+#ifndef XML_COMPILED
 #include "xml.h"
+#endif // XML_COMPILED
 
 namespace ELGL_Colour
 {
@@ -91,6 +93,9 @@ namespace ELGL_Colour
 	//
 	void Colour_Container::load_xml(void)
 	{
+#ifdef XML_COMPILED
+#include "named_colours.inc.cpp"
+#else
 		char const *error_prefix = __PRETTY_FUNCTION__;
 		std::string file_name = "named_colours.xml";
 
@@ -162,6 +167,7 @@ namespace ELGL_Colour
 			}
 		}
 		xmlFreeDoc(doc);
+#endif // XML_COMPILED
 	}
 
 

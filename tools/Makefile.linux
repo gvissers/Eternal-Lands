@@ -4,14 +4,15 @@ CXXFLAGS = -DLINUX $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) \
 	-g -Wall -W $(shell sdl-config --cflags) $(shell xml2-config --cflags)
 LDFLAGS = $(shell xml2-config --libs)
 
-OBJS = build_actor_defs.o build_extensions.o build_mines.o build_rules.o \
+OBJS = build_actor_defs.o build_extensions.o build_mines.o \
+	build_named_colours.o \ build_rules.o \
 	build_spells.o build_weather.o xml.o
 DEP_FILES=$(foreach OBJ, $(OBJS), .deps/$(OBJ).P)
 
 DEPS_MAGIC := $(shell mkdir .deps > /dev/null 2>&1 || :)
 
 EXES = build_actor_defs build_extensions build_icon_window build_mines \
-	build_rules build_sky build_spells build_weather
+	build_named_colours build_rules build_sky build_spells build_weather
 
 all: $(EXES)
 
@@ -35,6 +36,10 @@ build_icon_window: build_icon_window.o xml.o
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 build_mines: build_mines.o xml.o
+	@echo "  LINK $@"
+	@$(CXX) -o $@ $^ $(LDFLAGS)
+
+build_named_colours: build_named_colours.o xml.o
 	@echo "  LINK $@"
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 

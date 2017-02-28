@@ -18,5 +18,6 @@ std::string item_value(const xmlNode *item, const char *name);
 std::string property(const xmlNode *node, const char *prop);
 std::string lc_property(const xmlNode *node, const char *prop);
 int int_property(const xmlNode *node, const char *prop, int def=-1);
+float float_property(const xmlNode *node, const char *prop, int def=-1.0f);
 
 #endif // TOOLS_XML_H

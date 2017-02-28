@@ -115,3 +115,11 @@ int int_property(const xmlNode *node, const char *prop, int def)
     return std::stoi(sval);
 }
 
+float float_property(const xmlNode *node, const char *prop, int def)
+{
+    std::string sval = property(node, prop);
+    if (sval.empty())
+        return def;
+    return std::stof(sval);
+}
+
