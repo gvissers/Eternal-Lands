@@ -872,7 +872,9 @@ void init_stuff()
 	load_harvestable_list();
 	load_entrable_list();
 	load_knowledge_list();
+#ifndef XML_COMPILED
 	load_mines_config();
+#endif
 	update_loading_win(load_cursors_str, 5);
 	load_cursors();
 	build_cursors();
@@ -897,7 +899,9 @@ void init_stuff()
 	LOG_DEBUG("Init actor defs");
 	init_actor_defs();
 	LOG_DEBUG("Init actor defs done");
+#ifndef XML_COMPILED
 	read_emotes_defs("", "emotes.xml");
+#endif
 
 	missiles_init_defs();
 
