@@ -6,7 +6,7 @@
 OPTIONS = -DLINUX -DELC $(foreach FEATURE, $(FEATURES), -D$(FEATURE)) -D_7ZIP_ST $(GIT_VERSION)
 CFLAGS=$(PLATFORM) $(CWARN) -O0 -ggdb -pipe $(OPTIONS) $(shell sdl-config --cflags) $(shell xml2-config --cflags) -fno-strict-aliasing $(EXTRA_INCLUDES)
 _CFLAGS=$(PLATFORM) -O2 -fomit-frame-pointer -ffast-math -pipe $(OPTIONS) $(shell sdl-config --cflags) $(shell xml2-config --cflags) -fno-strict-aliasing $(EXTRA_INCLUDES)
-CXXFLAGS=$(PLATFORM) $(CXXWARN) -O0 -ggdb -pipe $(OPTIONS) $(shell sdl-config --cflags) $(shell xml2-config --cflags) -fno-strict-aliasing $(EXTRA_INCLUDES)
+CXXFLAGS=-std=c++11 $(PLATFORM) $(CXXWARN) -O0 -ggdb -pipe $(OPTIONS) $(shell sdl-config --cflags) $(shell xml2-config --cflags) -fno-strict-aliasing $(EXTRA_INCLUDES)
 _CXXFLAGS=$(PLATFORM) -O3 -fomit-frame-pointer -ffast-math -pipe $(OPTIONS) $(shell sdl-config --cflags) $(shell xml2-config --cflags) -fno-strict-aliasing $(EXTRA_INCLUDES)
 
 PNG_SCREENSHOT_LIBS = -lpng
@@ -136,6 +136,7 @@ else
 build_includes: tools
 	tools/build_actor_defs $(XML_COMPILED_DATA_DIR) actor_defs.inc.c
 	tools/build_extensions $(XML_COMPILED_DATA_DIR) extensions.inc.cpp
+	tools/build_icon_window $(XML_COMPILED_DATA_DIR) icon_window.inc.cpp
 	tools/build_mines $(XML_COMPILED_DATA_DIR) mines.inc.c
 	tools/build_sky $(XML_COMPILED_DATA_DIR) sky.inc.c
 	tools/build_spells $(XML_COMPILED_DATA_DIR) spells.inc.c

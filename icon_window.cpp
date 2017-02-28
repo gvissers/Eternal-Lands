@@ -11,7 +11,6 @@
 #include <utility>
 #include <cassert>
 #include <algorithm>
-
 #include "actors.h"
 #include "chat.h"
 #include "context_menu.h"
@@ -30,7 +29,9 @@
 #include "translate.h"
 #include "sound.h"
 #include "command_queue.hpp"
+#ifndef XML_COMPILED
 #include "xml.h"
+#endif // XML_COMPILED
 
 /*
  * TODO		Add icon window position code - allowing the window to be repositioned
@@ -91,7 +92,7 @@ namespace IconWindow
 	class Multi_Icon : public Virtual_Icon
 	{
 		public:
-			Multi_Icon(const char *control_name, std::vector<Virtual_Icon *> &the_icons)
+			Multi_Icon(const char *control_name, const std::vector<Virtual_Icon *> &the_icons)
 				: control_var(0), icons(the_icons)
 			{
 				assert(!the_icons.empty());
@@ -265,7 +266,9 @@ namespace IconWindow
 			void mouse_over(int icon_number) { mouse_over_icon = icon_number; }
 			void draw_icons(void);
 			void default_icons(icon_window_mode icon_mode);
+#ifndef XML_COMPILED
 			Virtual_Icon * icon_xml_factory(const xmlNodePtr cur);
+#endif // XML_COMPILED
 			bool read_xml(icon_window_mode icon_mode);
 			int get_icon_size(void) const { return display_icon_size; }
 			static int cm_generic_handler(window_info *win, int widget_id, int mx, int my, int option)
@@ -399,7 +402,7 @@ namespace IconWindow
 		mouse_over_icon = -1;
 	}
 
-
+#ifndef XML_COMPILED
 	// helper function for reading xml strings, perhaps make generally available?
 	//
 	bool get_xml_field_string(std::string &ret_string, const char *field_name, const xmlNodePtr cur)
@@ -491,13 +494,17 @@ namespace IconWindow
 			return new Command_Icon(image_id, alt_image_id, help_str, param_name.c_str(), menu_lines_ptr);
 		return 0;
 	}
-
+#endif // XML_COMPILED
 
 	//	Read the icon xml file, constructing icon objects as we go.
 	//
 	bool Container::read_xml(icon_window_mode icon_mode)
 	{
 		char const *error_prefix = __PRETTY_FUNCTION__;
+
+#ifdef XML_COMPILED
+#include "icon_window.inc.cpp"
+#else
 		std::string file_name;
 		if (icon_mode == NEW_CHARACTER_ICONS)
 			file_name = "new_character_icon_window.xml";
@@ -569,7 +576,9 @@ namespace IconWindow
 				get_xml_field_int(&display_icon_size, "display_size", cur);
 		}
 		xmlFreeDoc(doc);
-		return true;
+#endif // XML_COMPILED
+
+        return true;
 	}
 
 

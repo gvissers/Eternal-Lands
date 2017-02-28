@@ -4,10 +4,10 @@ make.conf
 el.x86.linux.bin
 git_version
 map_editor/mapedit.x86.linux.bin
-*_inc.c
-*_inc.cpp
+*.inc.c*
 tools/build_actor_defs
 tools/build_extensions
+tools/build_icon_window
 tools/build_mines
 tools/build_rules
 tools/build_sky

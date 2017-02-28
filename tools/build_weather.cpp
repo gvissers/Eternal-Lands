@@ -303,7 +303,7 @@ int main(int argc, const char* argv[])
     std::ofstream os(argv[2]);
     if (!os)
     {
-        std::cerr << "Unable to open oitput file " << argv[2] << '\n';
+        std::cerr << "Unable to open output file " << argv[2] << '\n';
         return 1;
     }
     write_c_file(os);
