@@ -35,7 +35,7 @@ int wind_direction = 0;	//wind direction, based on server's setting and local ra
 
 #define MAX_RAIN_DROPS 10000
 #ifndef XML_COMPILED
-#define MAX_LIGHTwNING_DEFS 20
+#define MAX_LIGHTNING_DEFS 20
 #endif
 #define MAX_THUNDERS 20
 

@@ -18,6 +18,10 @@
 
 namespace
 {
+#ifndef XML_COMPILED
+	using namespace eternal_lands;
+#endif
+
 	const int vendor_names_count = 5;
 
 	const char* vendor_names[vendor_names_count] =
@@ -61,7 +65,8 @@ namespace
 	}
 
 #ifndef XML_COMPILED
-	inline void parse_extention(const xmlNodePtr extension_element, std::string extensions, bit_set_96 bits)
+	inline void parse_extention(const xmlNodePtr extension_element,
+		const std::string& extensions, bit_set_96 bits)
 	{
 		xmlNodePtr cur_node;
 		std::string name;
@@ -88,7 +93,7 @@ namespace
 	}
 
 	inline void parse_extentions(const xmlNodePtr extensions_element,
-		const char* extensions, bit_set_96 bits)
+		const std::string& extensions, bit_set_96 bits)
 	{
 		xmlNodePtr cur_node;
 
