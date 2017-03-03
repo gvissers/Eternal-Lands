@@ -49,8 +49,6 @@ static int paper1_text = -1; // Index in the texture cache of the paper texture
 static int book1_text = -1;  // Index in the texture cache of the book texture
 
 typedef struct {
-	char file[200];
-
 	int x;
 	int y;
 
@@ -529,10 +527,10 @@ void read_knowledge_book_index()
 {
 	xmlDoc * doc;
 	xmlNode * root=NULL;
-	char path[1024];
+	const char *path = "knowledge.xml";
 
-	if ((doc = xmlReadFile("knowledge.xml", NULL, 0)) == NULL) {
-			LOG_TO_CONSOLE(c_red1, "Can't open knowledge book index");
+	if ((doc = xmlReadFile(path, NULL, 0)) == NULL) {
+		LOG_TO_CONSOLE(c_red1, "Can't open knowledge book index");
 	} else if ((root = xmlDocGetRootElement(doc))==NULL) {
 		LOG_ERROR("Error while parsing: %s", path);
 	} else if(xmlStrcasecmp(root->name,(xmlChar*)"Knowledge_Books")){
