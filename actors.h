@@ -104,6 +104,38 @@ typedef struct
 
 	/*! \name The texture names*/
 	/*! \{ */
+#ifdef XML_COMPILED
+	const char* pants_tex;
+	const char* pants_mask;
+
+	const char* boots_tex;
+	const char* boots_mask;
+
+	const char* torso_tex;
+	const char* arms_tex;
+	const char* torso_mask;
+	const char* arms_mask;
+
+	const char* hands_tex;
+	const char* head_tex;
+	const char* hands_mask;
+	const char* head_mask;
+
+	const char* head_base;
+	const char* body_base;
+	const char* arms_base;
+	const char* legs_base;
+	const char* boots_base;
+
+	const char* hair_tex;
+	const char* eyes_tex;
+	const char* weapon_tex;
+	const char* shield_tex;
+	const char* helmet_tex;
+	const char* neck_tex;
+	const char* cape_tex;
+	const char* hands_tex_save;
+#else // XML_COMPILED
 	char pants_tex[MAX_FILE_PATH];
 	char pants_mask[MAX_FILE_PATH];
 
@@ -134,6 +166,7 @@ typedef struct
 	char neck_tex[MAX_FILE_PATH];
 	char cape_tex[MAX_FILE_PATH];
 	char hands_tex_save[MAX_FILE_PATH];
+#endif // XML_COMPILED
 #ifndef	NEW_TEXTURES
 	char has_alpha;//is there alpha masking?
 #endif	/* NEW_TEXTURES */

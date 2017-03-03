@@ -328,14 +328,17 @@ CHECK_GL_ERRORS();
 }
 
 #ifdef CUSTOM_LOOK
-void custom_path(char * path, char * custom1, char * custom2) {
+void custom_path(char* path, const char* custom1, const char* custom2)
+{
 	char buffer[256];
 
 	// check to see if ANY processing needs to be done
 #ifdef CUSTOM_UPDATE
-	if(!path || !*path || !custom_clothing)	return;
+	if (!path || !*path || !custom_clothing)
+		return;
 #else
-	if(!path || !*path ) return;
+	if (!path || !*path )
+		return;
 #endif
 
 	/* Check if custom1 has path readable */
@@ -365,274 +368,342 @@ void actor_wear_item(int actor_id,Uint8 which_part, Uint8 which_id)
 	int j;
 #endif
 
+	for (i = 0; i < max_actors; i++)
+	{
+		if (!actors_list[i] || actors_list[i]->actor_id != actor_id)
+			continue;
 
-	for(i=0;i<max_actors;i++)
-		{
-			if(actors_list[i])
-				if(actors_list[i]->actor_id==actor_id)
-					{
 #ifdef CUSTOM_LOOK
-						safe_snprintf(guildpath, sizeof(guildpath), "custom/guild/%d/", actors_list[i]->body_parts->guild_id);
-						for(j=0;j<30;j++){
-                            if(actors_list[i]->actor_name[j]==' ' || actors_list[i]->actor_name[j]>125){
-								j=31;
-							}
-							else if(actors_list[i]->actor_name[0]>'z'){
-								onlyname[j]=actors_list[i]->actor_name[j+1];
-							}
-							else
-							{
-								onlyname[j]=actors_list[i]->actor_name[j];
-							}
-						}
-						my_tolower(onlyname);
-						safe_snprintf(playerpath, sizeof(playerpath), "custom/player/%s/", onlyname);
-#endif
-#ifndef	NEW_TEXTURES
-						if (actors_list[i]->in_aim_mode > 0 &&
-							(which_part == KIND_OF_WEAPON || which_part == KIND_OF_SHIELD)) {
-							if (actors_list[i]->delayed_item_changes_count < MAX_ITEM_CHANGES_QUEUE) {
-								missiles_log_message("%s (%d): wear item type %d delayed",
-													 actors_list[i]->actor_name, actors_list[i]->actor_id, which_part);
-								actors_list[i]->delayed_item_changes[actors_list[i]->delayed_item_changes_count] = which_id;
-								actors_list[i]->delayed_item_type_changes[actors_list[i]->delayed_item_changes_count] = which_part;
-								++actors_list[i]->delayed_item_changes_count;
-							}
-							else {
-								LOG_ERROR("the item changes queue is full!");
-							}
-							return;
-						}
-#endif	/* NEW_TEXTURES */
-						if (which_part==KIND_OF_WEAPON)
-							{
-								if (which_id == GLOVE_FUR || which_id == GLOVE_LEATHER)
-								{
-									my_strcp(actors_list[i]->body_parts->hands_tex, actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name);
-									my_strcp(actors_list[i]->body_parts->hands_mask, actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_mask);
-#ifdef CUSTOM_LOOK
-									custom_path(actors_list[i]->body_parts->hands_tex, playerpath, guildpath);
-									custom_path(actors_list[i]->body_parts->hands_mask, playerpath, guildpath);
-#endif
-								}
-								else
-								{
-									my_strcp(actors_list[i]->body_parts->weapon_tex,actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name);
-#ifdef CUSTOM_LOOK
-									custom_path(actors_list[i]->body_parts->weapon_tex, playerpath, guildpath);
-#endif
-								}
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].weapon[which_id].mesh_index);
-								actors_list[i]->cur_weapon=which_id;
-								actors_list[i]->body_parts->weapon_meshindex = actors_defs[actors_list[i]->actor_type].weapon[which_id].mesh_index;
-								actors_list[i]->body_parts->weapon_glow=actors_defs[actors_list[i]->actor_type].weapon[which_id].glow;
-								switch (which_id)
-								{
-									case SWORD_1_FIRE:
-									case SWORD_2_FIRE:
-									case SWORD_3_FIRE:
-									case SWORD_4_FIRE:
-									case SWORD_4_THERMAL:
-									case SWORD_5_FIRE:
-									case SWORD_5_THERMAL:
-									case SWORD_6_FIRE:
-									case SWORD_6_THERMAL:
-									case SWORD_7_FIRE:
-									case SWORD_7_THERMAL:
-										ec_create_sword_of_fire(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_2_COLD:
-									case SWORD_3_COLD:
-									case SWORD_4_COLD:
-									case SWORD_5_COLD:
-									case SWORD_6_COLD:
-									case SWORD_7_COLD:
-										ec_create_sword_of_ice(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_3_MAGIC:
-									case SWORD_4_MAGIC:
-									case SWORD_5_MAGIC:
-									case SWORD_6_MAGIC:
-									case SWORD_7_MAGIC:
-										ec_create_sword_of_magic(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_EMERALD_CLAYMORE:
-										ec_create_sword_emerald_claymore(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_CUTLASS:
-										ec_create_sword_cutlass(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_SUNBREAKER:
-										ec_create_sword_sunbreaker(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_ORC_SLAYER:
-										ec_create_sword_orc_slayer(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_EAGLE_WING:
-										ec_create_sword_eagle_wing(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case SWORD_JAGGED_SABER:
-										ec_create_sword_jagged_saber(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case STAFF_3: // staff of protection
-										ec_create_staff_of_protection(actors_list[i], (poor_man ? 6 : 10));
-										break;
-									case STAFF_4: // staff of the mage
-										ec_create_staff_of_the_mage(actors_list[i], (poor_man ? 6 : 10));
-										break;
-								}
-							}
-
-						else if (which_part==KIND_OF_SHIELD)
-							{
-								my_strcp(actors_list[i]->body_parts->shield_tex,actors_defs[actors_list[i]->actor_type].shield[which_id].skin_name);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->shield_tex, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index);
-				                                actors_list[i]->body_parts->shield_meshindex=actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index;
-								actors_list[i]->cur_shield=which_id;
-								actors_list[i]->body_parts->shield_meshindex = actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index;
-							}
-
-						else if (which_part==KIND_OF_CAPE)
-							{
-								my_strcp(actors_list[i]->body_parts->cape_tex,actors_defs[actors_list[i]->actor_type].cape[which_id].skin_name);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->cape_tex, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].cape[which_id].mesh_index);
-								actors_list[i]->body_parts->cape_meshindex=actors_defs[actors_list[i]->actor_type].cape[which_id].mesh_index;
-							}
-
-						else if (which_part==KIND_OF_HELMET)
-							{
-								my_strcp(actors_list[i]->body_parts->helmet_tex,actors_defs[actors_list[i]->actor_type].helmet[which_id].skin_name);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->helmet_tex, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].helmet[which_id].mesh_index);
-								actors_list[i]->body_parts->helmet_meshindex=actors_defs[actors_list[i]->actor_type].helmet[which_id].mesh_index;
-							}
-						else if (which_part==KIND_OF_NECK)
-							{
-								assert(!"Using old client data" || actors_defs[actors_list[i]->actor_type].neck != NULL);
-								my_strcp(actors_list[i]->body_parts->neck_tex,actors_defs[actors_list[i]->actor_type].neck[which_id].skin_name);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->neck_tex, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].neck[which_id].mesh_index);
-								actors_list[i]->body_parts->neck_meshindex=actors_defs[actors_list[i]->actor_type].neck[which_id].mesh_index;
-							}
-
-						else if (which_part==KIND_OF_BODY_ARMOR)
-							{
-								my_strcp(actors_list[i]->body_parts->arms_tex,actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_name);
-								my_strcp(actors_list[i]->body_parts->torso_tex,actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_name);
-								my_strcp(actors_list[i]->body_parts->arms_mask,actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_mask);
-								my_strcp(actors_list[i]->body_parts->torso_mask,actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_mask);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->arms_tex, playerpath, guildpath);
-								custom_path(actors_list[i]->body_parts->torso_tex, playerpath, guildpath);
-								custom_path(actors_list[i]->body_parts->arms_mask, playerpath, guildpath);
-								custom_path(actors_list[i]->body_parts->torso_mask, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								if(actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index != actors_list[i]->body_parts->torso_meshindex)
-								{
-									model_detach_mesh(actors_list[i], actors_list[i]->body_parts->torso_meshindex);
-									model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index);
-									actors_list[i]->body_parts->torso_meshindex=actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index;
-								}
-							}
-						else if (which_part==KIND_OF_LEG_ARMOR)
-							{
-								strcpy(actors_list[i]->body_parts->pants_tex, actors_defs[actors_list[i]->actor_type].legs[which_id].skin_name);
-								strcpy(actors_list[i]->body_parts->pants_mask, actors_defs[actors_list[i]->actor_type].legs[which_id].skin_mask);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->pants_tex, playerpath, guildpath);
-								custom_path(actors_list[i]->body_parts->pants_mask, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								if(actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index != actors_list[i]->body_parts->legs_meshindex)
-								{
-									model_detach_mesh(actors_list[i], actors_list[i]->body_parts->legs_meshindex);
-									model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index);
-									actors_list[i]->body_parts->legs_meshindex=actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index;
-								}
-							}
-
-						else if (which_part==KIND_OF_BOOT_ARMOR)
-							{
-								my_strcp(actors_list[i]->body_parts->boots_tex, actors_defs[actors_list[i]->actor_type].boots[which_id].skin_name);
-								my_strcp(actors_list[i]->body_parts->boots_mask, actors_defs[actors_list[i]->actor_type].boots[which_id].skin_mask);
-#ifdef CUSTOM_LOOK
-								custom_path(actors_list[i]->body_parts->boots_tex, playerpath, guildpath);
-								custom_path(actors_list[i]->body_parts->boots_mask, playerpath, guildpath);
-#endif
-#ifdef	NEW_TEXTURES
-								if (delay_texture_item_change(actors_list[i], which_part, which_id))
-								{
-									return;
-								}
-#endif	/* NEW_TEXTURES */
-								if(actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index != actors_list[i]->body_parts->boots_meshindex)
-								{
-									model_detach_mesh(actors_list[i], actors_list[i]->body_parts->boots_meshindex);
-									model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index);
-									actors_list[i]->body_parts->boots_meshindex=actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index;
-								}
-							}
-						else return;
-
-#ifndef	NEW_TEXTURES
-						glDeleteTextures(1,&actors_list[i]->texture_id);
-						actors_list[i]->texture_id = load_bmp8_enhanced_actor(actors_list[i]->body_parts, 255);
-						actors_list[i]->has_alpha = actors_list[i]->body_parts->has_alpha;
-#endif	/* NEW_TEXTURES */
-						return;
-					}
+		safe_snprintf(guildpath, sizeof(guildpath), "custom/guild/%d/", actors_list[i]->body_parts->guild_id);
+		for(j=0;j<30;j++){
+			if(actors_list[i]->actor_name[j]==' ' || actors_list[i]->actor_name[j]>125){
+				j=31;
+			}
+			else if(actors_list[i]->actor_name[0]>'z'){
+				onlyname[j]=actors_list[i]->actor_name[j+1];
+			}
+			else
+			{
+				onlyname[j]=actors_list[i]->actor_name[j];
+			}
 		}
+		my_tolower(onlyname);
+		safe_snprintf(playerpath, sizeof(playerpath), "custom/player/%s/", onlyname);
+#endif
+#ifndef	NEW_TEXTURES
+		if (actors_list[i]->in_aim_mode > 0 &&
+			(which_part == KIND_OF_WEAPON || which_part == KIND_OF_SHIELD)) {
+			if (actors_list[i]->delayed_item_changes_count < MAX_ITEM_CHANGES_QUEUE) {
+				missiles_log_message("%s (%d): wear item type %d delayed",
+										actors_list[i]->actor_name, actors_list[i]->actor_id, which_part);
+				actors_list[i]->delayed_item_changes[actors_list[i]->delayed_item_changes_count] = which_id;
+				actors_list[i]->delayed_item_type_changes[actors_list[i]->delayed_item_changes_count] = which_part;
+				++actors_list[i]->delayed_item_changes_count;
+			}
+			else {
+				LOG_ERROR("the item changes queue is full!");
+			}
+			return;
+		}
+#endif	/* NEW_TEXTURES */
+		if (which_part==KIND_OF_WEAPON)
+		{
+			if (which_id == GLOVE_FUR || which_id == GLOVE_LEATHER)
+			{
+#ifdef XML_COMPILED
+				actors_list[i]->body_parts->hands_tex
+					= actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name;
+				my_strcp(actors_list[i]->body_parts->hands_mask
+					= actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_mask;
+#else // XML_COMPILED
+				my_strcp(actors_list[i]->body_parts->hands_tex,
+					actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name);
+				my_strcp(actors_list[i]->body_parts->hands_mask,
+					actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_mask);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+				custom_path(actors_list[i]->body_parts->hands_tex, playerpath, guildpath);
+				custom_path(actors_list[i]->body_parts->hands_mask, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+			}
+			else
+			{
+#ifdef XML_COMPILED
+				actors_list[i]->body_parts->weapon_tex
+					= actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name;
+#else // XML_COMPILED
+				my_strcp(actors_list[i]->body_parts->weapon_tex,
+					actors_defs[actors_list[i]->actor_type].weapon[which_id].skin_name);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+				custom_path(actors_list[i]->body_parts->weapon_tex, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+			}
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].weapon[which_id].mesh_index);
+			actors_list[i]->cur_weapon=which_id;
+			actors_list[i]->body_parts->weapon_meshindex = actors_defs[actors_list[i]->actor_type].weapon[which_id].mesh_index;
+			actors_list[i]->body_parts->weapon_glow=actors_defs[actors_list[i]->actor_type].weapon[which_id].glow;
+			switch (which_id)
+			{
+				case SWORD_1_FIRE:
+				case SWORD_2_FIRE:
+				case SWORD_3_FIRE:
+				case SWORD_4_FIRE:
+				case SWORD_4_THERMAL:
+				case SWORD_5_FIRE:
+				case SWORD_5_THERMAL:
+				case SWORD_6_FIRE:
+				case SWORD_6_THERMAL:
+				case SWORD_7_FIRE:
+				case SWORD_7_THERMAL:
+					ec_create_sword_of_fire(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_2_COLD:
+				case SWORD_3_COLD:
+				case SWORD_4_COLD:
+				case SWORD_5_COLD:
+				case SWORD_6_COLD:
+				case SWORD_7_COLD:
+					ec_create_sword_of_ice(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_3_MAGIC:
+				case SWORD_4_MAGIC:
+				case SWORD_5_MAGIC:
+				case SWORD_6_MAGIC:
+				case SWORD_7_MAGIC:
+					ec_create_sword_of_magic(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_EMERALD_CLAYMORE:
+					ec_create_sword_emerald_claymore(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_CUTLASS:
+					ec_create_sword_cutlass(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_SUNBREAKER:
+					ec_create_sword_sunbreaker(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_ORC_SLAYER:
+					ec_create_sword_orc_slayer(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_EAGLE_WING:
+					ec_create_sword_eagle_wing(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case SWORD_JAGGED_SABER:
+					ec_create_sword_jagged_saber(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case STAFF_3: // staff of protection
+					ec_create_staff_of_protection(actors_list[i], (poor_man ? 6 : 10));
+					break;
+				case STAFF_4: // staff of the mage
+					ec_create_staff_of_the_mage(actors_list[i], (poor_man ? 6 : 10));
+					break;
+			}
+		}
+		else if (which_part==KIND_OF_SHIELD)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->shield_tex
+				= actors_defs[actors_list[i]->actor_type].shield[which_id].skin_name);
+#else // XML_COMPILED
+			my_strcp(actors_list[i]->body_parts->shield_tex,
+				actors_defs[actors_list[i]->actor_type].shield[which_id].skin_name);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->shield_tex, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index);
+							actors_list[i]->body_parts->shield_meshindex=actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index;
+			actors_list[i]->cur_shield=which_id;
+			actors_list[i]->body_parts->shield_meshindex = actors_defs[actors_list[i]->actor_type].shield[which_id].mesh_index;
+		}
+		else if (which_part==KIND_OF_CAPE)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->cape_tex
+				= actors_defs[actors_list[i]->actor_type].cape[which_id].skin_name;
+#else
+			my_strcp(actors_list[i]->body_parts->cape_tex,
+				actors_defs[actors_list[i]->actor_type].cape[which_id].skin_name);
+#endif
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->cape_tex, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].cape[which_id].mesh_index);
+			actors_list[i]->body_parts->cape_meshindex=actors_defs[actors_list[i]->actor_type].cape[which_id].mesh_index;
+		}
+		else if (which_part==KIND_OF_HELMET)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->helmet_tex
+				= actors_defs[actors_list[i]->actor_type].helmet[which_id].skin_name;
+#else // XML_COMPILED
+			my_strcp(actors_list[i]->body_parts->helmet_tex,
+				actors_defs[actors_list[i]->actor_type].helmet[which_id].skin_name);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->helmet_tex, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].helmet[which_id].mesh_index);
+			actors_list[i]->body_parts->helmet_meshindex=actors_defs[actors_list[i]->actor_type].helmet[which_id].mesh_index;
+		}
+		else if (which_part==KIND_OF_NECK)
+		{
+			assert(!"Using old client data" || actors_defs[actors_list[i]->actor_type].neck != NULL);
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->neck_tex
+				= actors_defs[actors_list[i]->actor_type].neck[which_id].skin_name;
+#else // XML_COMPILED
+			my_strcp(actors_list[i]->body_parts->neck_tex,
+				actors_defs[actors_list[i]->actor_type].neck[which_id].skin_name);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->neck_tex, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].neck[which_id].mesh_index);
+			actors_list[i]->body_parts->neck_meshindex=actors_defs[actors_list[i]->actor_type].neck[which_id].mesh_index;
+		}
+		else if (which_part==KIND_OF_BODY_ARMOR)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->arms_tex
+				= actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_name;
+			actors_list[i]->body_parts->torso_tex
+				= actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_name;
+			actors_list[i]->body_parts->arms_mask
+				= actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_mask;
+			actors_list[i]->body_parts->torso_mask
+				= actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_mask;
+#else // XML_COMPILED
+			my_strcp(actors_list[i]->body_parts->arms_tex,
+				actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_name);
+			my_strcp(actors_list[i]->body_parts->torso_tex,
+				actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_name);
+			my_strcp(actors_list[i]->body_parts->arms_mask,
+				actors_defs[actors_list[i]->actor_type].shirt[which_id].arms_mask);
+			my_strcp(actors_list[i]->body_parts->torso_mask,
+				actors_defs[actors_list[i]->actor_type].shirt[which_id].torso_mask);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->arms_tex, playerpath, guildpath);
+			custom_path(actors_list[i]->body_parts->torso_tex, playerpath, guildpath);
+			custom_path(actors_list[i]->body_parts->arms_mask, playerpath, guildpath);
+			custom_path(actors_list[i]->body_parts->torso_mask, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			if(actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index != actors_list[i]->body_parts->torso_meshindex)
+			{
+				model_detach_mesh(actors_list[i], actors_list[i]->body_parts->torso_meshindex);
+				model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index);
+				actors_list[i]->body_parts->torso_meshindex=actors_defs[actors_list[i]->actor_type].shirt[which_id].mesh_index;
+			}
+		}
+		else if (which_part==KIND_OF_LEG_ARMOR)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->pants_tex
+				= actors_defs[actors_list[i]->actor_type].legs[which_id].skin_name;
+			actors_list[i]->body_parts->pants_mask
+				= actors_defs[actors_list[i]->actor_type].legs[which_id].skin_mask;
+#else // XML_COMPILED
+			strcpy(actors_list[i]->body_parts->pants_tex,
+				actors_defs[actors_list[i]->actor_type].legs[which_id].skin_name);
+			strcpy(actors_list[i]->body_parts->pants_mask,
+				actors_defs[actors_list[i]->actor_type].legs[which_id].skin_mask);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->pants_tex, playerpath, guildpath);
+			custom_path(actors_list[i]->body_parts->pants_mask, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			if(actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index != actors_list[i]->body_parts->legs_meshindex)
+			{
+				model_detach_mesh(actors_list[i], actors_list[i]->body_parts->legs_meshindex);
+				model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index);
+				actors_list[i]->body_parts->legs_meshindex=actors_defs[actors_list[i]->actor_type].legs[which_id].mesh_index;
+			}
+		}
+		else if (which_part==KIND_OF_BOOT_ARMOR)
+		{
+#ifdef XML_COMPILED
+			actors_list[i]->body_parts->boots_tex
+				= actors_defs[actors_list[i]->actor_type].boots[which_id].skin_name;
+			actors_list[i]->body_parts->boots_mask
+				= actors_defs[actors_list[i]->actor_type].boots[which_id].skin_mask;
+#else // XML_COMPILED
+			my_strcp(actors_list[i]->body_parts->boots_tex,
+				actors_defs[actors_list[i]->actor_type].boots[which_id].skin_name);
+			my_strcp(actors_list[i]->body_parts->boots_mask,
+				actors_defs[actors_list[i]->actor_type].boots[which_id].skin_mask);
+#endif // XML_COMPILED
+#ifdef CUSTOM_LOOK
+			custom_path(actors_list[i]->body_parts->boots_tex, playerpath, guildpath);
+			custom_path(actors_list[i]->body_parts->boots_mask, playerpath, guildpath);
+#endif // CUSTOM_LOOK
+#ifdef	NEW_TEXTURES
+			if (delay_texture_item_change(actors_list[i], which_part, which_id))
+			{
+				return;
+			}
+#endif	/* NEW_TEXTURES */
+			if(actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index != actors_list[i]->body_parts->boots_meshindex)
+			{
+				model_detach_mesh(actors_list[i], actors_list[i]->body_parts->boots_meshindex);
+				model_attach_mesh(actors_list[i], actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index);
+				actors_list[i]->body_parts->boots_meshindex=actors_defs[actors_list[i]->actor_type].boots[which_id].mesh_index;
+			}
+		}
+		else
+		{
+			return;
+		}
+
+#ifndef	NEW_TEXTURES
+		glDeleteTextures(1,&actors_list[i]->texture_id);
+		actors_list[i]->texture_id = load_bmp8_enhanced_actor(actors_list[i]->body_parts, 255);
+		actors_list[i]->has_alpha = actors_list[i]->body_parts->has_alpha;
+#endif	/* NEW_TEXTURES */
+		return;
+	}
 }
 
 void add_enhanced_actor_from_server (const char *in_data, int len)
@@ -917,6 +988,51 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	this_actor->guild_id = guild_id;
 
 	//get the torso
+#ifdef XML_COMPILED
+	this_actor->arms_tex = actors_defs[actor_type].shirt[shirt].arms_name;
+	this_actor->torso_tex = actors_defs[actor_type].shirt[shirt].torso_name;
+	this_actor->arms_mask = actors_defs[actor_type].shirt[shirt].arms_mask;
+	this_actor->torso_mask = actors_defs[actor_type].shirt[shirt].torso_mask;
+	//skin
+	this_actor->hands_tex = actors_defs[actor_type].skin[skin].hands_name;
+	this_actor->hands_tex_save = actors_defs[actor_type].skin[skin].hands_name;
+	this_actor->hands_mask = "";
+	this_actor->head_tex = actors_defs[actor_type].skin[skin].head_name;
+	this_actor->head_base = actors_defs[actor_type].skin[skin].head_name;
+	if (*actors_defs[actor_type].head[head].skin_name)
+		this_actor->head_tex = actors_defs[actor_type].head[head].skin_name;
+	this_actor->head_mask = actors_defs[actor_type].head[head].skin_mask;
+	this_actor->body_base = actors_defs[actor_type].skin[skin].body_name;
+	this_actor->arms_base = actors_defs[actor_type].skin[skin].arms_name;
+	this_actor->legs_base = actors_defs[actor_type].skin[skin].legs_name;
+	this_actor->boots_base = actors_defs[actor_type].skin[skin].feet_name;
+	//hair
+	this_actor->hair_tex = actors_defs[actor_type].hair[hair].hair_name;
+#ifdef NEW_EYES
+	//eyes
+	if (actors_defs[actor_type].eyes && actors_defs[actor_type].eyes[eyes].eyes_name)
+	{
+		this_actor->eyes_tex = actors_defs[actor_type].eyes[eyes].eyes_name;
+	}
+	else
+	{
+		static int already_said = 0;
+		if (!already_said)
+		{
+			const char *message = "Looks like we compiled with NEW_EYES but do not have the textures";
+			LOG_ERROR(message);
+			LOG_TO_CONSOLE(c_red2,message);
+			already_said = 1;
+		}
+	}
+#endif // NEW_EYES
+	//boots
+	this_actor->boots_tex = actors_defs[actor_type].boots[boots].skin_name;
+	this_actor->boots_mask = actors_defs[actor_type].boots[boots].skin_mask;
+	//legs
+	this_actor->pants_tex = actors_defs[actor_type].legs[pants].skin_name;
+	this_actor->pants_mask = actors_defs[actor_type].legs[pants].skin_mask;
+#else // XML_COMPILED
 	my_strncp(this_actor->arms_tex,actors_defs[actor_type].shirt[shirt].arms_name,sizeof(this_actor->arms_tex));
 	my_strncp(this_actor->torso_tex,actors_defs[actor_type].shirt[shirt].torso_name,sizeof(this_actor->torso_tex));
 	my_strncp(this_actor->arms_mask,actors_defs[actor_type].shirt[shirt].arms_mask,sizeof(this_actor->arms_mask));
@@ -955,7 +1071,7 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 			already_said = 1;
 		}
 	}
-#endif
+#endif // NEW_EYES
 	//boots
 	safe_strncpy(this_actor->boots_tex,
 		actors_defs[actor_type].boots[boots].skin_name,
@@ -970,6 +1086,7 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	safe_strncpy(this_actor->pants_mask,
 		actors_defs[actor_type].legs[pants].skin_mask,
 		sizeof(this_actor->pants_mask));
+#endif // XML_COMPILED
 
 #ifdef CUSTOM_LOOK
 	if(kind_of_actor != NPC)
@@ -1002,35 +1119,61 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 #endif //CUSTOM_LOOK
 
 	//cape
-	if(cape!=CAPE_NONE)
-		{
-			my_strncp(this_actor->cape_tex,actors_defs[actor_type].cape[cape].skin_name,sizeof(this_actor->cape_tex));
+	if (cape != CAPE_NONE)
+	{
+#ifdef XML_COMPILED
+		this_actor->cape_tex = actors_defs[actor_type].cape[cape].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->cape_tex,
+			actors_defs[actor_type].cape[cape].skin_name,
+			sizeof(this_actor->cape_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
-			if(kind_of_actor != NPC)
-				custom_path(this_actor->cape_tex, playerpath, guildpath);
+		if(kind_of_actor != NPC)
+			custom_path(this_actor->cape_tex, playerpath, guildpath);
 #endif //CUSTOM_LOOK
-		}
+	}
 	else
-		{
-			my_strncp(this_actor->cape_tex,"",sizeof(this_actor->cape_tex));
-		}
+	{
+#ifdef XML_COMPILED
+		this_actor->cape_tex = "":
+#else // XML_COMPILED
+		my_strncp(this_actor->cape_tex,"",sizeof(this_actor->cape_tex));
+#endif // XML_COMPILED
+	}
 	//shield
-	if(shield!=SHIELD_NONE)
-		{
-			my_strncp(this_actor->shield_tex,actors_defs[actor_type].shield[shield].skin_name,sizeof(this_actor->shield_tex));
+	if (shield != SHIELD_NONE)
+	{
+#ifdef XML_COMPILED
+		this_actor->shield_tex = actors_defs[actor_type].shield[shield].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->shield_tex,
+			actors_defs[actor_type].shield[shield].skin_name,
+			sizeof(this_actor->shield_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
-			if(kind_of_actor != NPC)
-				custom_path(this_actor->shield_tex, playerpath, guildpath);
+		if(kind_of_actor != NPC)
+			custom_path(this_actor->shield_tex, playerpath, guildpath);
 #endif //CUSTOM_LOOK
-		}
+	}
 	else
-		{
-			my_strncp(this_actor->shield_tex,"",sizeof(this_actor->shield_tex));
-		}
+	{
+#ifdef XML_COMPILED
+		this_actor->shield_tex = "";
+#else
+		my_strncp(this_actor->shield_tex,"",sizeof(this_actor->shield_tex));
+#endif
+	}
 
 	if (weapon == GLOVE_FUR || weapon == GLOVE_LEATHER)
 	{
-		my_strncp(this_actor->hands_tex, actors_defs[actor_type].weapon[weapon].skin_name,sizeof(this_actor->hands_tex));
+#ifdef XML_COMPILED
+		this_actor->hands_tex = actors_defs[actor_type].weapon[weapon].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->hands_tex,
+			actors_defs[actor_type].weapon[weapon].skin_name,
+			sizeof(this_actor->hands_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
 		if(kind_of_actor != NPC)
 			custom_path(this_actor->hands_tex, playerpath, guildpath);
@@ -1038,7 +1181,13 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	}
 	else
 	{
-		my_strncp(this_actor->weapon_tex,actors_defs[actor_type].weapon[weapon].skin_name,sizeof(this_actor->weapon_tex));
+#ifdef XML_COMPILED
+		this_actor->weapon_tex = actors_defs[actor_type].weapon[weapon].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->weapon_tex,
+			actors_defs[actor_type].weapon[weapon].skin_name,
+			sizeof(this_actor->weapon_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
 		if(kind_of_actor != NPC)
 			custom_path(this_actor->weapon_tex, playerpath, guildpath);
@@ -1048,34 +1197,53 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 	this_actor->weapon_glow=actors_defs[actor_type].weapon[weapon].glow;
 
 	//helmet
-	if(helmet!=HELMET_NONE)
-		{
-			my_strncp(this_actor->helmet_tex,actors_defs[actor_type].helmet[helmet].skin_name,sizeof(this_actor->helmet_tex));
-
+	if (helmet != HELMET_NONE)
+	{
+#ifdef XML_COMPILED
+		this_actor->helmet_tex = actors_defs[actor_type].helmet[helmet].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->helmet_tex,
+			actors_defs[actor_type].helmet[helmet].skin_name,
+			sizeof(this_actor->helmet_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
-			if(kind_of_actor != NPC)
-				custom_path(this_actor->helmet_tex, playerpath, guildpath);
+		if(kind_of_actor != NPC)
+			custom_path(this_actor->helmet_tex, playerpath, guildpath);
 #endif //CUSTOM_LOOK
-		}
+	}
 	else
-		{
-			my_strncp(this_actor->helmet_tex,"",sizeof(this_actor->helmet_tex));
-		}
+	{
+#ifdef XML_COMPILED
+		this_actor->helmet_tex = "";
+#else // XML_COMPILED
+		my_strncp(this_actor->helmet_tex,"",sizeof(this_actor->helmet_tex));
+#endif // XML_COMPILED
+	}
 
 	//neck
-	if(neck!=NECK_NONE)
-		{
-			assert(!"Using old client data" || actors_defs[actor_type].neck != NULL);
-			my_strncp(this_actor->neck_tex,actors_defs[actor_type].neck[neck].skin_name,sizeof(this_actor->neck_tex));
+	if (neck != NECK_NONE)
+	{
+		assert(!"Using old client data" || actors_defs[actor_type].neck != NULL);
+#ifdef XML_COMPILED
+		this_actor->neck_tex = actors_defs[actor_type].neck[neck].skin_name;
+#else // XML_COMPILED
+		my_strncp(this_actor->neck_tex,
+			actors_defs[actor_type].neck[neck].skin_name,
+			sizeof(this_actor->neck_tex));
+#endif // XML_COMPILED
 #ifdef CUSTOM_LOOK
-			if(kind_of_actor != NPC)
-				custom_path(this_actor->neck_tex, playerpath, guildpath);
+		if(kind_of_actor != NPC)
+			custom_path(this_actor->neck_tex, playerpath, guildpath);
 #endif //CUSTOM_LOOK
-		}
+	}
 	else
-		{
-			my_strncp(this_actor->neck_tex,"",sizeof(this_actor->neck_tex));
-		}
+	{
+#ifdef XML_COMPILED
+		this_actor->neck_tex = "";
+#else // XML_COMPILED
+		my_strncp(this_actor->neck_tex,"",sizeof(this_actor->neck_tex));
+#endif // XML_COMPILED
+	}
 
 #ifdef	NEW_TEXTURES
 	i=add_enhanced_actor(this_actor,f_x_pos,f_y_pos,0.0,f_z_rot,scale,actor_id, onlyname);
@@ -1315,20 +1483,51 @@ void add_enhanced_actor_from_server (const char *in_data, int len)
 #endif
 }
 
-actor * add_actor_interface(float x, float y, float z_rot, float scale, int actor_type, short skin, short hair, short eyes,
-				short shirt, short pants, short boots, short head)
+actor *add_actor_interface(float x, float y, float z_rot, float scale,
+	int actor_type, short skin, short hair, short eyes, short shirt,
+	short pants, short boots, short head)
 {
-	enhanced_actor * this_actor=calloc(1,sizeof(enhanced_actor));
-	actor * a;
+	enhanced_actor *this_actor = calloc(1, sizeof(enhanced_actor));
+	actor *a;
 
 	//get the torso
-	my_strncp(this_actor->arms_tex,actors_defs[actor_type].shirt[shirt].arms_name,sizeof(this_actor->arms_tex));
-	my_strncp(this_actor->arms_mask,actors_defs[actor_type].shirt[shirt].arms_mask,sizeof(this_actor->arms_mask));
-	my_strncp(this_actor->torso_tex,actors_defs[actor_type].shirt[shirt].torso_name,sizeof(this_actor->torso_tex));
-	my_strncp(this_actor->torso_mask,actors_defs[actor_type].shirt[shirt].torso_mask,sizeof(this_actor->torso_mask));
-	my_strncp(this_actor->hands_tex,actors_defs[actor_type].skin[skin].hands_name,sizeof(this_actor->hands_tex));
-	my_strncp(this_actor->head_tex,actors_defs[actor_type].skin[skin].head_name,sizeof(this_actor->head_tex));
-	my_strncp(this_actor->hair_tex,actors_defs[actor_type].hair[hair].hair_name,sizeof(this_actor->hair_tex));
+#ifdef XML_COMPILED
+	this_actor->arms_tex = actors_defs[actor_type].shirt[shirt].arms_name;
+	this_actor->arms_mask = actors_defs[actor_type].shirt[shirt].arms_mask;
+	this_actor->torso_tex = actors_defs[actor_type].shirt[shirt].torso_name;
+	this_actor->torso_mask = actors_defs[actor_type].shirt[shirt].torso_mask;
+	this_actor->hands_tex = actors_defs[actor_type].skin[skin].hands_name;
+	this_actor->head_tex = actors_defs[actor_type].skin[skin].head_name;
+	this_actor->hair_tex = actors_defs[actor_type].hair[hair].hair_name;
+#ifdef NEW_EYES
+	my_strncp(this_actor->eyes_tex,actors_defs[actor_type].eyes[eyes].eyes_name;
+#endif
+	this_actor->boots_tex = actors_defs[actor_type].boots[boots].skin_name;
+	this_actor->boots_mask = actors_defs[actor_type].boots[boots].skin_mask;
+	this_actor->pants_tex = actors_defs[actor_type].legs[pants].skin_name;
+	this_actor->pants_mask = actors_defs[actor_type].legs[pants].skin_mask;
+#else // XML_COMPILED
+	my_strncp(this_actor->arms_tex,
+		actors_defs[actor_type].shirt[shirt].arms_name,
+		sizeof(this_actor->arms_tex));
+	my_strncp(this_actor->arms_mask,
+		actors_defs[actor_type].shirt[shirt].arms_mask,
+		sizeof(this_actor->arms_mask));
+	my_strncp(this_actor->torso_tex,
+		actors_defs[actor_type].shirt[shirt].torso_name,
+		sizeof(this_actor->torso_tex));
+	my_strncp(this_actor->torso_mask,
+		actors_defs[actor_type].shirt[shirt].torso_mask,
+		sizeof(this_actor->torso_mask));
+	my_strncp(this_actor->hands_tex,
+		actors_defs[actor_type].skin[skin].hands_name,
+		sizeof(this_actor->hands_tex));
+	my_strncp(this_actor->head_tex,
+		actors_defs[actor_type].skin[skin].head_name,
+		sizeof(this_actor->head_tex));
+	my_strncp(this_actor->hair_tex,
+		actors_defs[actor_type].hair[hair].hair_name,
+		sizeof(this_actor->hair_tex));
 #ifdef NEW_EYES
 	my_strncp(this_actor->eyes_tex,actors_defs[actor_type].eyes[eyes].eyes_name,sizeof(this_actor->eyes_tex));
 #endif
@@ -1344,6 +1543,7 @@ actor * add_actor_interface(float x, float y, float z_rot, float scale, int acto
 	safe_strncpy(this_actor->pants_mask,
 		actors_defs[actor_type].legs[pants].skin_mask,
 		sizeof(this_actor->pants_mask));
+#endif // XML_COMPILED
 
 #ifdef	NEW_TEXTURES
 	a=actors_list[add_enhanced_actor(this_actor, x*0.5f, y*0.5f, 0.00000001f, z_rot, scale, 0, 0)];
