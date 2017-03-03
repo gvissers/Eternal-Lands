@@ -13,7 +13,7 @@
 #include <byteswap.h>
 inline uint32_t write_le(std::ostream& os, uint32_t x)
 {
-	uint32_t y = bswap_32(x);
+    uint32_t y = bswap_32(x);
     os.write(reinterpret_cast<const char*>(&y), 4);
     return 4;
 }
