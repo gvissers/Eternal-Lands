@@ -12,12 +12,12 @@ bool bool_value(const xmlNode *node, bool def=false);
 bool bool_value(const xmlAttr *attr, bool def=false);
 int int_value(const xmlNode *node, int def=0);
 int int_value(const xmlAttr *attr, int def=0);
-int float_value(const xmlNode *node, float def=0.0f);
-int float_value(const xmlAttr *attr, float def=0.0f);
+float float_value(const xmlNode *node, float def=0.0f);
+float float_value(const xmlAttr *attr, float def=0.0f);
 std::string item_value(const xmlNode *item, const char *name);
 std::string property(const xmlNode *node, const char *prop);
 std::string lc_property(const xmlNode *node, const char *prop);
 int int_property(const xmlNode *node, const char *prop, int def=-1);
-float float_property(const xmlNode *node, const char *prop, int def=-1.0f);
+float float_property(const xmlNode *node, const char *prop, float def=-1.0f);
 
 #endif // TOOLS_XML_H

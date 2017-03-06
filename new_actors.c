@@ -1559,21 +1559,22 @@ actor *add_actor_interface(float x, float y, float z_rot, float scale,
 	int actor_type, short skin, short hair, short eyes, short shirt,
 	short pants, short boots, short head)
 {
+	const actor_types *def = actors_defs + actor_type;
 	enhanced_actor *this_actor = calloc(1, sizeof(enhanced_actor));
 	actor *a;
 
 	//get the torso
 #ifdef XML_COMPILED
-	this_actor->pants_tex = actors_defs[actor_type].legs[pants].skin_name;
-	this_actor->pants_mask = actors_defs[actor_type].legs[pants].skin_mask;
-	this_actor->boots_tex = actors_defs[actor_type].boots[boots].skin_name;
-	this_actor->boots_mask = actors_defs[actor_type].boots[boots].skin_mask;
-	this_actor->torso_tex = actors_defs[actor_type].shirt[shirt].torso_name;
-	this_actor->arms_tex = actors_defs[actor_type].shirt[shirt].arms_name;
-	this_actor->torso_mask = actors_defs[actor_type].shirt[shirt].torso_mask;
-	this_actor->arms_mask = actors_defs[actor_type].shirt[shirt].arms_mask;
-	this_actor->hands_tex = actors_defs[actor_type].skin[skin].hands_name;
-	this_actor->head_tex = actors_defs[actor_type].skin[skin].head_name;
+	this_actor->pants_tex = def->legs[pants].skin_name;
+	this_actor->pants_mask = def->legs[pants].skin_mask;
+	this_actor->boots_tex = def->boots[boots].skin_name;
+	this_actor->boots_mask = def->boots[boots].skin_mask;
+	this_actor->torso_tex = def->shirt[shirt].torso_name;
+	this_actor->arms_tex = def->shirt[shirt].arms_name;
+	this_actor->torso_mask = def->shirt[shirt].torso_mask;
+	this_actor->arms_mask = def->shirt[shirt].arms_mask;
+	this_actor->hands_tex = def->skin[skin].hands_name;
+	this_actor->head_tex = def->skin[skin].head_name;
 	this_actor->hands_mask = "";
 	this_actor->head_mask = "";
 	this_actor->head_base = "";
@@ -1581,9 +1582,9 @@ actor *add_actor_interface(float x, float y, float z_rot, float scale,
 	this_actor->arms_base = "";
 	this_actor->legs_base = "";
 	this_actor->boots_base = "";
-	this_actor->hair_tex = actors_defs[actor_type].hair[hair].hair_name;
+	this_actor->hair_tex = def->hair[hair].hair_name;
 #ifdef NEW_EYES
-	this_actor->eyes_tex = actors_defs[actor_type].eyes[eyes].eyes_name;
+	this_actor->eyes_tex = def->eyes[eyes].eyes_name;
 #endif
 	this_actor->weapon_tex = "";
 	this_actor->shield_tex = "";
@@ -1592,42 +1593,20 @@ actor *add_actor_interface(float x, float y, float z_rot, float scale,
 	this_actor->cape_tex = "";
 	this_actor->hands_tex_save = "";
 #else // XML_COMPILED
-	my_strncp(this_actor->arms_tex,
-		actors_defs[actor_type].shirt[shirt].arms_name,
-		sizeof(this_actor->arms_tex));
-	my_strncp(this_actor->arms_mask,
-		actors_defs[actor_type].shirt[shirt].arms_mask,
-		sizeof(this_actor->arms_mask));
-	my_strncp(this_actor->torso_tex,
-		actors_defs[actor_type].shirt[shirt].torso_name,
-		sizeof(this_actor->torso_tex));
-	my_strncp(this_actor->torso_mask,
-		actors_defs[actor_type].shirt[shirt].torso_mask,
-		sizeof(this_actor->torso_mask));
-	my_strncp(this_actor->hands_tex,
-		actors_defs[actor_type].skin[skin].hands_name,
-		sizeof(this_actor->hands_tex));
-	my_strncp(this_actor->head_tex,
-		actors_defs[actor_type].skin[skin].head_name,
-		sizeof(this_actor->head_tex));
-	my_strncp(this_actor->hair_tex,
-		actors_defs[actor_type].hair[hair].hair_name,
-		sizeof(this_actor->hair_tex));
+	safe_strncpy(this_actor->arms_tex, def->shirt[shirt].arms_name, sizeof(this_actor->arms_tex));
+	safe_strncpy(this_actor->arms_mask, def->shirt[shirt].arms_mask, sizeof(this_actor->arms_mask));
+	safe_strncpy(this_actor->torso_tex, def->shirt[shirt].torso_name, sizeof(this_actor->torso_tex));
+	safe_strncpy(this_actor->torso_mask, def->shirt[shirt].torso_mask, sizeof(this_actor->torso_mask));
+	safe_strncpy(this_actor->hands_tex, def->skin[skin].hands_name, sizeof(this_actor->hands_tex));
+	safe_strncpy(this_actor->head_tex, def->skin[skin].head_name, sizeof(this_actor->head_tex));
+	safe_strncpy(this_actor->hair_tex, def->hair[hair].hair_name, sizeof(this_actor->hair_tex));
 #ifdef NEW_EYES
-	my_strncp(this_actor->eyes_tex,actors_defs[actor_type].eyes[eyes].eyes_name,sizeof(this_actor->eyes_tex));
+	safe_strncpy(this_actor->eyes_tex, def->eyes[eyes].eyes_name, sizeof(this_actor->eyes_tex));
 #endif
-	safe_strncpy(this_actor->boots_tex,
-		actors_defs[actor_type].boots[boots].skin_name,
-		sizeof(this_actor->boots_tex));
-	safe_strncpy(this_actor->boots_mask,
-		actors_defs[actor_type].boots[boots].skin_mask,
-		sizeof(this_actor->boots_mask));
-	safe_strncpy(this_actor->pants_tex,
-		actors_defs[actor_type].legs[pants].skin_name,
-		sizeof(this_actor->pants_tex));
-	safe_strncpy(this_actor->pants_mask,
-		actors_defs[actor_type].legs[pants].skin_mask,
-		sizeof(this_actor->pants_mask));
+	safe_strncpy(this_actor->boots_tex, def->boots[boots].skin_name, sizeof(this_actor->boots_tex));
+	safe_strncpy(this_actor->boots_mask, def->boots[boots].skin_mask, sizeof(this_actor->boots_mask));
+	safe_strncpy(this_actor->pants_tex, def->legs[pants].skin_name, sizeof(this_actor->pants_tex));
+	safe_strncpy(this_actor->pants_mask, def->legs[pants].skin_mask, sizeof(this_actor->pants_mask));
 #endif // XML_COMPILED
 
 #ifdef	NEW_TEXTURES
@@ -1646,42 +1625,48 @@ actor *add_actor_interface(float x, float y, float z_rot, float scale,
 	a->stop_animation=1;//helps when the actor is dead...
 	a->kind_of_actor=HUMAN;
 
-	safe_snprintf(a->actor_name, sizeof(a->actor_name), "Player");
+	safe_strncpy(a->actor_name, "Player", sizeof(a->actor_name));
 
-	if (actors_defs[actor_type].coremodel!=NULL) {
-		a->calmodel=model_new(actors_defs[actor_type].coremodel);
+	if (def->coremodel)
+	{
+		a->calmodel = model_new(def->coremodel);
 
-		if (a->calmodel!=NULL) {
+		if (a->calmodel)
+		{
 			//Setup cal3d model
-			//a->calmodel=CalModel_New(actors_defs[actor_type].coremodel);
+			//a->calmodel=CalModel_New(def->coremodel);
 			//Attach meshes
-			model_attach_mesh(a, actors_defs[actor_type].head[head].mesh_index);
-			model_attach_mesh(a, actors_defs[actor_type].shirt[shirt].mesh_index);
-			model_attach_mesh(a, actors_defs[actor_type].legs[pants].mesh_index);
-			model_attach_mesh(a, actors_defs[actor_type].boots[boots].mesh_index);
+			model_attach_mesh(a, def->head[head].mesh_index);
+			model_attach_mesh(a, def->shirt[shirt].mesh_index);
+			model_attach_mesh(a, def->legs[pants].mesh_index);
+			model_attach_mesh(a, def->boots[boots].mesh_index);
 
-			a->body_parts->torso_meshindex=actors_defs[actor_type].shirt[shirt].mesh_index;
-			a->body_parts->legs_meshindex=actors_defs[actor_type].legs[pants].mesh_index;
-			a->body_parts->head_meshindex=actors_defs[actor_type].head[head].mesh_index;
-			a->body_parts->boots_meshindex=actors_defs[actor_type].boots[boots].mesh_index;
+			a->body_parts->torso_meshindex = def->shirt[shirt].mesh_index;
+			a->body_parts->legs_meshindex = def->legs[pants].mesh_index;
+			a->body_parts->head_meshindex = def->head[head].mesh_index;
+			a->body_parts->boots_meshindex = def->boots[boots].mesh_index;
 
-			assert(!"Using old client data" || actors_defs[actor_type].neck != NULL);
-			a->body_parts->neck_meshindex=actors_defs[actor_type].neck[NECK_NONE].mesh_index;
-			a->body_parts->helmet_meshindex=actors_defs[actor_type].helmet[HELMET_NONE].mesh_index;
-			a->body_parts->cape_meshindex=actors_defs[actor_type].cape[CAPE_NONE].mesh_index;
-			a->body_parts->shield_meshindex=actors_defs[actor_type].shield[SHIELD_NONE].mesh_index;
+			assert(!"Using old client data" || def->neck != NULL);
+			a->body_parts->neck_meshindex = def->neck[NECK_NONE].mesh_index;
+			a->body_parts->helmet_meshindex = def->helmet[HELMET_NONE].mesh_index;
+			a->body_parts->cape_meshindex = def->cape[CAPE_NONE].mesh_index;
+			a->body_parts->shield_meshindex = def->shield[SHIELD_NONE].mesh_index;
 
-			a->cur_anim.anim_index=-1;
-			a->anim_time=0.0;
-			a->last_anim_update= cur_time;
-			CalModel_Update(a->calmodel,0);
+			a->cur_anim.anim_index = -1;
+			a->anim_time = 0.0;
+			a->last_anim_update = cur_time;
+			CalModel_Update(a->calmodel, 0);
 			build_actor_bounding_box(a);
 			if (use_animation_program)
 			{
 				set_transformation_buffers(a);
 			}
 		}
-	} else a->calmodel=NULL;
+	}
+	else
+	{
+		a->calmodel = NULL;
+	}
 
 	UNLOCK_ACTORS_LISTS();  //unlock it
 

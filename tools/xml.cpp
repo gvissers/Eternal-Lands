@@ -61,7 +61,7 @@ int int_value(const xmlAttr *attr, int def)
     return std::stoi(sval);
 }
 
-int float_value(const xmlNode *node, float def)
+float float_value(const xmlNode *node, float def)
 {
     std::string sval = value(node);
     if (sval.empty())
@@ -69,7 +69,7 @@ int float_value(const xmlNode *node, float def)
     return std::stof(sval);
 }
 
-int float_value(const xmlAttr *attr, float def)
+float float_value(const xmlAttr *attr, float def)
 {
     std::string sval = value(attr);
     if (sval.empty())
@@ -115,7 +115,7 @@ int int_property(const xmlNode *node, const char *prop, int def)
     return std::stoi(sval);
 }
 
-float float_property(const xmlNode *node, const char *prop, int def)
+float float_property(const xmlNode *node, const char *prop, float def)
 {
     std::string sval = property(node, prop);
     if (sval.empty())
