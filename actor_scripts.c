@@ -3232,6 +3232,11 @@ void destroy_all_actors()
 	my_timer_adjust = 0;
 	harvesting_effect_reference = NULL;
 	UNLOCK_ACTORS_LISTS();	//unlock it since we are done
+
+#if defined XML_COMPILED && defined CUSTOM_LOOK
+	free_custom_paths();
+#endif
+
 }
 
 //ugliest mapping functions ever :/

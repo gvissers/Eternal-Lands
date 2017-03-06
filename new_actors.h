@@ -97,6 +97,16 @@ void build_glow_color_table();
 actor * add_actor_interface(float x, float y, float z_rot, float scale, int actor_type, short skin, short hair, short eyes,
 							short shirt, short pants, short boots, short head);
 
+#if defined XML_COMPILED && defined CUSTOM_LOOK
+/*!
+ * \ingroup display_actors
+ * \brief Free paths to custom teextures
+ *
+ * Free the memory allocated to store the paths to custom clothes used.
+ */
+void free_custom_paths();
+#endif
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

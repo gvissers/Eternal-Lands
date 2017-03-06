@@ -190,53 +190,64 @@ void set_create_char_error (const char *msg, int len)
 
 void change_actor (void)
 {
+	actor_types *def = actors_defs + our_actor.race;
+
 	// We only need to reload the core model, and attach all the correct mesh types.
-	if (our_actor.our_model){
-		if(our_actor.our_model->calmodel!=NULL)
+	if (our_actor.our_model)
+	{
+		if(our_actor.our_model->calmodel != NULL)
 			model_delete(our_actor.our_model->calmodel);
 
-		our_actor.our_model->calmodel = model_new(actors_defs[our_actor.race].coremodel);
+		our_actor.our_model->calmodel = model_new(def->coremodel);
 		our_actor.our_model->actor_type = our_actor.race;
 
 		// Attach the Meshes.
-		model_attach_mesh(our_actor.our_model,
-			actors_defs[our_actor.race].head[our_actor.head].mesh_index);
-		model_attach_mesh(our_actor.our_model,
-			actors_defs[our_actor.race].shirt[our_actor.shirt].mesh_index);
-		model_attach_mesh(our_actor.our_model,
-			actors_defs[our_actor.race].legs[our_actor.pants].mesh_index);
-		model_attach_mesh(our_actor.our_model,
-			actors_defs[our_actor.race].boots[our_actor.boots].mesh_index);
+		model_attach_mesh(our_actor.our_model, def->head[our_actor.head].mesh_index);
+		model_attach_mesh(our_actor.our_model, def->shirt[our_actor.shirt].mesh_index);
+		model_attach_mesh(our_actor.our_model, def->legs[our_actor.pants].mesh_index);
+		model_attach_mesh(our_actor.our_model, def->boots[our_actor.boots].mesh_index);
 
 		// Save which mesh is which.
-		our_actor.our_model->body_parts->head_meshindex =
-			actors_defs[our_actor.race].head[our_actor.head].mesh_index;
-		our_actor.our_model->body_parts->torso_meshindex =
-			actors_defs[our_actor.race].shirt[our_actor.shirt].mesh_index;
-		our_actor.our_model->body_parts->legs_meshindex =
-			actors_defs[our_actor.race].legs[our_actor.pants].mesh_index;
-		our_actor.our_model->body_parts->boots_meshindex =
-			actors_defs[our_actor.race].boots[our_actor.boots].mesh_index;
+		our_actor.our_model->body_parts->head_meshindex = def->head[our_actor.head].mesh_index;
+		our_actor.our_model->body_parts->torso_meshindex = def->shirt[our_actor.shirt].mesh_index;
+		our_actor.our_model->body_parts->legs_meshindex = def->legs[our_actor.pants].mesh_index;
+		our_actor.our_model->body_parts->boots_meshindex = def->boots[our_actor.boots].mesh_index;
 
 		// Recopy all of the textures.
-		my_strncp(our_actor.our_model->body_parts->hands_tex,actors_defs[our_actor.race].skin[our_actor.skin].hands_name,sizeof(our_actor.our_model->body_parts->hands_tex));
-		my_strncp(our_actor.our_model->body_parts->head_tex,actors_defs[our_actor.race].skin[our_actor.skin].head_name,sizeof(our_actor.our_model->body_parts->head_tex));
+#ifdef XML_COMPILED
+		our_actor.our_model->body_parts->hands_tex = def->skin[our_actor.skin].hands_name;
+		our_actor.our_model->body_parts->head_tex = def->skin[our_actor.skin].head_name;
 
-		my_strncp(our_actor.our_model->body_parts->hair_tex,actors_defs[our_actor.race].hair[our_actor.hair].hair_name,sizeof(our_actor.our_model->body_parts->hair_tex));
+		our_actor.our_model->body_parts->hair_tex = def->hair[our_actor.hair].hair_name;
 #ifdef NEW_EYES
-		my_strncp(our_actor.our_model->body_parts->eyes_tex,actors_defs[our_actor.race].eyes[our_actor.eyes].eyes_name,sizeof(our_actor.our_model->body_parts->eyes_tex));
+		our_actor.our_model->body_parts->eyes_tex = def->eyes[our_actor.eyes].eyes_name;
 #endif
-		my_strncp(our_actor.our_model->body_parts->arms_tex,actors_defs[our_actor.race].shirt[our_actor.shirt].arms_name,sizeof(our_actor.our_model->body_parts->arms_tex));
-		my_strncp(our_actor.our_model->body_parts->torso_tex,actors_defs[our_actor.race].shirt[our_actor.shirt].torso_name,sizeof(our_actor.our_model->body_parts->torso_tex));
+		our_actor.our_model->body_parts->arms_tex = def->shirt[our_actor.shirt].arms_name;
+		our_actor.our_model->body_parts->torso_tex = def->shirt[our_actor.shirt].torso_name;
+
+		our_actor.our_model->body_parts->pants_tex = def->legs[our_actor.pants].skin_name;
+
+		our_actor.our_model->body_parts->boots_tex = def->boots[our_actor.boots].skin_name;
+#else // XML_COMPILED
+		my_strncp(our_actor.our_model->body_parts->hands_tex,def->skin[our_actor.skin].hands_name,sizeof(our_actor.our_model->body_parts->hands_tex));
+		my_strncp(our_actor.our_model->body_parts->head_tex,def->skin[our_actor.skin].head_name,sizeof(our_actor.our_model->body_parts->head_tex));
+
+		my_strncp(our_actor.our_model->body_parts->hair_tex,def->hair[our_actor.hair].hair_name,sizeof(our_actor.our_model->body_parts->hair_tex));
+#ifdef NEW_EYES
+		my_strncp(our_actor.our_model->body_parts->eyes_tex,def->eyes[our_actor.eyes].eyes_name,sizeof(our_actor.our_model->body_parts->eyes_tex));
+#endif
+		my_strncp(our_actor.our_model->body_parts->arms_tex,def->shirt[our_actor.shirt].arms_name,sizeof(our_actor.our_model->body_parts->arms_tex));
+		my_strncp(our_actor.our_model->body_parts->torso_tex,def->shirt[our_actor.shirt].torso_name,sizeof(our_actor.our_model->body_parts->torso_tex));
 
 		safe_strncpy(our_actor.our_model->body_parts->pants_tex,
-			actors_defs[our_actor.race].legs[our_actor.pants].skin_name,
+			def->legs[our_actor.pants].skin_name,
 			sizeof(our_actor.our_model->body_parts->pants_tex));
 
 		safe_strncpy(our_actor.our_model->body_parts->boots_tex,
-			actors_defs[our_actor.race].boots[our_actor.boots].skin_name,
+			def->boots[our_actor.boots].skin_name,
 			sizeof(our_actor.our_model->body_parts->boots_tex));
-
+#endif // XML_COMPILED
+#
 #ifdef	NEW_TEXTURES
 		free_actor_texture(our_actor.our_model->texture_id);
 		our_actor.our_model->texture_id = load_enhanced_actor(our_actor.our_model->body_parts, 0);	// Rebuild the actor's textures.
@@ -1754,12 +1765,19 @@ static void update_head(void)
 static void update_skin(void)
 {
 	// Copy the skin texture names.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->hands_tex
+		= actors_defs[our_actor.race].skin[our_actor.skin].hands_name;
+	our_actor.our_model->body_parts->head_tex
+		= actors_defs[our_actor.race].skin[our_actor.skin].head_name;
+#else // XML_COMPILED
 	my_strncp(our_actor.our_model->body_parts->hands_tex,
 		actors_defs[our_actor.race].skin[our_actor.skin].hands_name,
 		sizeof(our_actor.our_model->body_parts->hands_tex));
 	my_strncp(our_actor.our_model->body_parts->head_tex,
 		actors_defs[our_actor.race].skin[our_actor.skin].head_name,
 		sizeof(our_actor.our_model->body_parts->head_tex));
+#endif // XML_COMPILED
 
 #ifdef	NEW_TEXTURES
 	change_enhanced_actor(our_actor.our_model->texture_id,
@@ -1773,9 +1791,14 @@ static void update_skin(void)
 static void update_hair(void)
 {
 	// Copy the hair texture name.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->hair_tex
+		 = actors_defs[our_actor.race].hair[our_actor.hair].hair_name;
+#else // XML_COMPILED
 	my_strncp(our_actor.our_model->body_parts->hair_tex,
 		actors_defs[our_actor.race].hair[our_actor.hair].hair_name,
 		sizeof(our_actor.our_model->body_parts->hair_tex));
+#endif // XML_COMPILED
 
 #ifdef	NEW_TEXTURES
 	change_enhanced_actor(our_actor.our_model->texture_id,
@@ -1790,9 +1813,14 @@ static void update_hair(void)
 static void update_eyes()
 {
 	// Copy the eyes texture name.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->eyes_tex
+		= actors_defs[our_actor.race].eyes[our_actor.eyes].eyes_name;
+#else // XML_COMPILED
 	my_strncp(our_actor.our_model->body_parts->eyes_tex,
 		actors_defs[our_actor.race].eyes[our_actor.eyes].eyes_name,
 		sizeof(our_actor.our_model->body_parts->eyes_tex));
+#endif // XML_COMPILED
 
 #ifdef	NEW_TEXTURES
 	change_enhanced_actor(our_actor.our_model->texture_id,
@@ -1807,12 +1835,19 @@ static void update_eyes()
 static void update_shirt()
 {
 	// Copy the shirt and arms texture names.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->arms_tex
+		= actors_defs[our_actor.race].shirt[our_actor.shirt].arms_name;
+	our_actor.our_model->body_parts->torso_tex
+		= actors_defs[our_actor.race].shirt[our_actor.shirt].torso_name;
+#else // XML_COMPILED
 	my_strncp(our_actor.our_model->body_parts->arms_tex,
 		actors_defs[our_actor.race].shirt[our_actor.shirt].arms_name,
 		sizeof(our_actor.our_model->body_parts->arms_tex));
 	my_strncp(our_actor.our_model->body_parts->torso_tex,
 		actors_defs[our_actor.race].shirt[our_actor.shirt].torso_name,
 		sizeof(our_actor.our_model->body_parts->torso_tex));
+#endif // XML_COMPILED
 
 	// If we need a new mesh, drop the old one and load it.
 	if (actors_defs[our_actor.race].shirt[our_actor.shirt].mesh_index !=
@@ -1837,9 +1872,14 @@ static void update_shirt()
 static void update_pants(void)
 {
 	// Copy the pants texture name.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->pants_tex
+		= actors_defs[our_actor.race].legs[our_actor.pants].skin_name;
+#else // XML_COMPILED
 	safe_strncpy(our_actor.our_model->body_parts->pants_tex,
 		actors_defs[our_actor.race].legs[our_actor.pants].skin_name,
 		sizeof(our_actor.our_model->body_parts->pants_tex));
+#endif // XML_COMPILED
 
 	// If we need a new mesh, drop the old one and load it.
 	if (actors_defs[our_actor.race].legs[our_actor.pants].mesh_index !=
@@ -1865,9 +1905,14 @@ static void update_pants(void)
 static void update_boots(void)
 {
 	// Copy the new boots texture name.
+#ifdef XML_COMPILED
+	our_actor.our_model->body_parts->boots_tex
+		= actors_defs[our_actor.race].boots[our_actor.boots].skin_name;
+#else // XML_COMPILED
 	safe_strncpy(our_actor.our_model->body_parts->boots_tex,
 		actors_defs[our_actor.race].boots[our_actor.boots].skin_name,
 		sizeof(our_actor.our_model->body_parts->boots_tex));
+#endif // XML_COMPILED
 
 	// If we need a new mesh, drop the old one and load it.
 	if (actors_defs[our_actor.race].boots[our_actor.boots].mesh_index !=
