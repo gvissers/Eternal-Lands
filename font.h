@@ -90,6 +90,7 @@ typedef enum
 #ifdef __cplusplus
 
 #include <array>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
