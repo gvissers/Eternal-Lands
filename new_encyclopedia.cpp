@@ -6,6 +6,7 @@
 #include "text.h"
 #include "textures.h"
 #include "translate.h"
+#include "url.h"
 
 namespace
 {
@@ -260,7 +261,7 @@ EncyclopediaPageElementPosition::EncyclopediaPageElementPosition(const xmlNode *
 
 EncyclopediaPageElementLink::EncyclopediaPageElementLink(const xmlNode *node):
 	text(get_xml_attribute(node, "title", true)),
-	target(get_xml_attribute(node, "ref", true)),
+	target(reinterpret_cast<const char*>(get_xml_attribute(node, "ref", true))),
 	have_x(false), have_y(false), x(), y()
 {
 	std::tie(x, have_x) = get_xml_int_attribute(node, "x");
@@ -304,11 +305,22 @@ EncyclopediaPageElement::~EncyclopediaPageElement()
 	}
 }
 
-void EncyclopediaFormattedText::display(const window_info *win) const
+void EncyclopediaFormattedText::display(const window_info *win, int y_min) const
 {
 	TextDrawOptions options = TextDrawOptions().set_foreground(_color.r, _color.g, _color.b)
 		.set_zoom(_scale);
 	FontManager::get_instance().draw(win->font_category, _text.data(), _text.size(), x(), y(), options);
+	if (_is_link)
+	{
+		// Add line under link text
+		glColor3f(0.5,0.5,0.5);
+		glDisable(GL_TEXTURE_2D);
+		glBegin(GL_LINES);
+		glVertex3i(x() + 4, y() + height() - y_min, 0);
+		glVertex3i(x() + width() - 4, y() + height() - y_min, 0);
+		glEnd();
+		glEnable(GL_TEXTURE_2D);
+	}
 }
 
 void EncyclopediaPage::read_xml(const xmlNode* node)
@@ -429,7 +441,7 @@ void EncyclopediaPage::layout(const window_info *win)
 				if (!cur_size_is_big)
 					text_scale *= float(SMALL_FIXED_FONT_HEIGHT) / DEFAULT_FIXED_FONT_HEIGHT;
 				_formatted.emplace_back(
-					new EncyclopediaFormattedText(x, y, width, height, link.text, cur_color, text_scale)
+					new EncyclopediaFormattedText(x, y, width, height, link.text, cur_color, text_scale, true)
 				);
 
 				if (cur_size_is_big)
@@ -480,7 +492,7 @@ void EncyclopediaPage::layout(const window_info *win)
 				if (!cur_size_is_big)
 					text_scale *= float(SMALL_FIXED_FONT_HEIGHT) / DEFAULT_FIXED_FONT_HEIGHT;
 				_formatted.emplace_back(
-					new EncyclopediaFormattedText(x, y, width, height, text.text, cur_color, text_scale)
+					new EncyclopediaFormattedText(x, y, width, height, text.text, cur_color, text_scale, false)
 				);
 
 				if (cur_size_is_big)
@@ -522,9 +534,21 @@ void EncyclopediaPage::display(const window_info *win, int y_min)
 	{
 		if (element->y() < y_max && element->y() + element->height() >= y_min)
 		{
-			element->display(win);
+			element->display(win, y_min);
 		}
 	}
+}
+
+const std::string& EncyclopediaPage::link_clicked(int x, int y) const
+{
+	static const std::string empty;
+
+	for (const auto& link: _links)
+	{
+		if (link.contains(x, y))
+			return link.target();
+	}
+	return empty;
 }
 
 void EncyclopediaCategory::read_xml(const xmlNode* node)
@@ -640,7 +664,7 @@ void Encyclopedia::read_xml(const xmlNode* node)
 
 				xmlFreeDoc(doc);
 
-				for (const auto& page: category)
+				for (auto& page: category)
 					_pages.insert(std::make_pair(page.name(), &page));
 				_categories.push_back(std::move(category));
 			}
@@ -659,7 +683,7 @@ void EncyclopediaWindow::initialize(int window_id)
 	set_window_custom_scale(_window_id, MW_HELP);
 	set_window_font_category(_window_id, ENCYCLOPEDIA_FONT);
 	set_window_handler(_window_id, ELW_HANDLER_DISPLAY, (int (*)())&static_display_handler);
-// 	set_window_handler (window_id, ELW_HANDLER_CLICK, &click_encyclopedia_handler);
+	set_window_handler(_window_id, ELW_HANDLER_CLICK, (int (*)())&static_click_handler);
 // 	set_window_handler (window_id, ELW_HANDLER_RESIZE, &resize_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_UI_SCALE, &ui_scale_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_FONT_CHANGE, &change_encyclopedia_font_handler);
@@ -712,9 +736,51 @@ int EncyclopediaWindow::display_handler(window_info *win)
 	return 0;
 }
 
+int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uint32_t flags)
+{
+	if (flags &ELW_WHEEL_UP)
+	{
+		vscrollbar_scroll_up(_window_id, _scroll_id);
+	}
+	else if (flags & ELW_WHEEL_DOWN)
+	{
+		vscrollbar_scroll_down(_window_id, _scroll_id);
+	}
+	else if (_current_page)
+	{
+		int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
+		const std::string& target = _current_page->link_clicked(mx, my + y_min);
+		if (!target.empty())
+		{
+			if (target.compare(0, 7, "http://") == 0)
+			{
+				open_web_link(target.c_str());
+			}
+			else
+			{
+				EncyclopediaPage *page = Encyclopedia::get_instance().find_page(target);
+				if (page)
+				{
+					_current_page = page;
+					vscrollbar_set_pos(_window_id, _scroll_id, 0);
+					vscrollbar_set_bar_len(_window_id, _scroll_id, _current_page->height());
+				}
+			}
+		}
+	}
+
+	return 1;
+}
+
+
 int EncyclopediaWindow::static_display_handler(window_info *win)
 {
 	return EncyclopediaWindow::get_instance().display_handler(win);
+}
+
+int EncyclopediaWindow::static_click_handler(window_info *win, int mx, int my, std::uint32_t flags)
+{
+	return EncyclopediaWindow::get_instance().click_handler(win, mx, my, flags);
 }
 
 } // namespace eternal_lands

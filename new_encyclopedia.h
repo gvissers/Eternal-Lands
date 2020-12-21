@@ -126,7 +126,7 @@ struct EncyclopediaPageElementPosition
 struct EncyclopediaPageElementLink
 {
 	ustring text;
-	ustring target;
+	std::string target;
 	bool have_x, have_y;
 	int x, y;
 
@@ -232,7 +232,7 @@ public:
 	int width() const { return _width; }
 	int height() const { return _height; }
 
-	virtual void display(const window_info *win) const  = 0;
+	virtual void display(const window_info *win, int y_min) const  = 0;
 
 private:
 	int _x, _y;
@@ -247,7 +247,7 @@ public:
 		EncyclopediaFormattedElement(x, y, width, height),
 		_texture_id(texture_id), _u_start(u_start), _v_start(v_start), _u_end(u_end), _v_end(v_end) {}
 
-	void display(const window_info *win) const {}
+	void display(const window_info *win, int y_min) const {}
 
 private:
 	std::uint32_t _texture_id;
@@ -257,26 +257,34 @@ private:
 class EncyclopediaFormattedText: public EncyclopediaFormattedElement
 {
 public:
-	EncyclopediaFormattedText(int x, int y, int width, int height,
-		const ustring& text, const EncyclopediaPageElementColor& color, float scale):
-		EncyclopediaFormattedElement(x, y, width, height), _text(text), _color(color),_scale(scale) {}
+	EncyclopediaFormattedText(int x, int y, int width, int height, const ustring& text,
+		const EncyclopediaPageElementColor& color, float scale, bool is_link):
+		EncyclopediaFormattedElement(x, y, width, height), _text(text), _color(color),_scale(scale),
+		_is_link(is_link) {}
 
-	void display(const window_info *win) const;
+	void display(const window_info *win, int y_min) const;
 
 private:
 	ustring _text;
 	EncyclopediaPageElementColor _color;
 	float _scale;
+	bool _is_link;
 };
 
 class EncyclopediaFormattedLink
 {
 public:
-	EncyclopediaFormattedLink(const ustring& target, int x, int y, int width, int height):
+	EncyclopediaFormattedLink(const std::string& target, int x, int y, int width, int height):
 		_target(target), _x(x), _y(y), _width(width), _height(height) {}
 
+	const std::string& target() const { return _target; }
+	int contains(int x, int y) const
+	{
+		return x >= _x && x <= _x + _width && y >= _y && y <= _y + _height;
+	}
+
 private:
-	ustring _target;
+	std::string _target;
 	int _x, _y, _width, _height;
 };
 
@@ -290,6 +298,7 @@ public:
 	const std::string& name() const { return _name; }
 	//! Return the height of the contents on this page
 	int height() const { return _height; }
+	const std::string& link_clicked(int x, int y) const;
 
 	void read_xml(const xmlNode *node);
 
@@ -344,12 +353,20 @@ public:
 		else
 			return &*_categories[0].begin();
 	}
+	EncyclopediaPage* find_page(const std::string& name)
+	{
+		auto it = _pages.find(name);
+		if (it == _pages.end())
+			return nullptr;
+		else
+			return it->second;
+	}
 
 private:
 	//! The list of categories in this encyclopedia.
 	std::vector<EncyclopediaCategory> _categories;
 	//! Map from page name to pointer to the page
-	std::unordered_map<std::string, const EncyclopediaPage*> _pages;
+	std::unordered_map<std::string, EncyclopediaPage*> _pages;
 
 	//! Read a new encyclopedia from file \a file_name.
 	Encyclopedia();
@@ -388,6 +405,8 @@ private:
 	int display_handler(window_info *win);
 	//! Static handler for displaying the window, calls display_handler()
 	static int static_display_handler(window_info *win);
+	int click_handler(window_info *win, int mx, int my, std::uint32_t flags);
+	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 };
 
 } //namespace eternal_lands
