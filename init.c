@@ -1025,7 +1025,6 @@ void init_stuff(void)
 	if (!el_file_exists(file_name))
 		safe_snprintf(file_name, sizeof(file_name), "languages/%s/Encyclopedia/index.xml", "en");
 	ReadXML(file_name);
-init_new_encyclopedia();
 	read_key_config();
 	init_buddy();
 	init_channel_names();

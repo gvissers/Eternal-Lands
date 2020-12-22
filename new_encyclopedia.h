@@ -346,11 +346,8 @@ private:
 class Encyclopedia
 {
 public:
-	static Encyclopedia& get_instance()
-	{
-		static Encyclopedia encyclopedia;
-		return encyclopedia;
-	}
+	//! Read a new encyclopedia from file \a file_name.
+	Encyclopedia(const std::string& file_name);
 
 	const std::string& first_page_name()
 	{
@@ -373,13 +370,6 @@ private:
 	//! Map from page name to pointer to the page
 	std::unordered_map<std::string, EncyclopediaPage*> _pages;
 
-	//! Read a new encyclopedia from file \a file_name.
-	Encyclopedia();
-	//! Prevent the encyclopedia from being copied
-	Encyclopedia(const Encyclopedia&) = delete;
-	//! Prevent the encyclopedia from being copied
-	Encyclopedia& operator=(const Encyclopedia&) = delete;
-
 	void read_xml(const xmlNode* node);
 };
 
@@ -398,9 +388,11 @@ public:
 private:
 	int _window_id;
 	int _scroll_id;
+	Encyclopedia _encyclopedia;
 	EncyclopediaPage* _current_page;
 
-	EncyclopediaWindow(): _window_id(-1), _scroll_id(-1), _current_page(nullptr) {}
+	EncyclopediaWindow(): _window_id(-1), _scroll_id(-1), _encyclopedia("Encyclopedia/index.xml"),
+		_current_page(nullptr) {}
 	//! Prevent the encyclopedia window from being copied
 	EncyclopediaWindow(const EncyclopediaWindow&) = delete;
 	//! Prevent the encyclopedia from being copied
@@ -427,7 +419,6 @@ extern "C"
 {
 #endif
 
-void init_new_encyclopedia();
 void fill_new_encyclopedia_win(int window_id);
 
 #ifdef __cplusplus

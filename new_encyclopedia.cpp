@@ -574,31 +574,27 @@ void EncyclopediaCategory::read_xml(const xmlNode* node)
 	}
 }
 
-Encyclopedia::Encyclopedia(): _categories(), _pages()
+Encyclopedia::Encyclopedia(const std::string& file_name): _categories(), _pages()
 {
 	xmlDocPtr doc = nullptr;
-	std::string file_name;
 	try
 	{
-		file_name = std::string("languages/") + lang + "/Encyclopedia/index.xml";
-		doc = xmlReadFile(file_name.c_str(), nullptr, 0);
+		std::string path = std::string("languages/") + lang + '/' + file_name;
+		doc = xmlReadFile(path.c_str(), nullptr, 0);
 		if (!doc)
 		{
-			file_name = "languages/en/Encyclopedia/index.xml";
-			doc = xmlReadFile(file_name.c_str(), nullptr, 0);
+			path = "languages/en/" + file_name;
+			doc = xmlReadFile(path.c_str(), nullptr, 0);
 			if (!doc)
 			{
-				std::string err = std::string(cant_open_file) + " \"" + file_name + '"';
+				std::string err = std::string(cant_open_file) + " \"" + path + '"';
 				EXTENDED_EXCEPTION(ExtendedException::ec_file_not_found, err);
 			}
 		}
 
 		xmlNode *root = xmlDocGetRootElement(doc);
 		if (!root)
-		{
-			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
-				"Error while parsing: " << file_name);
-		}
+			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Error while parsing: " << path);
 		read_xml(root);
 
 		xmlFreeDoc(doc);
@@ -694,7 +690,7 @@ void EncyclopediaWindow::initialize(int window_id)
 	_scroll_id = vscrollbar_add_extended(_window_id, 1, nullptr, 0, 0, 0, 0, 0, 1.0, 0, 30, 0);
 	try
 	{
-		set_current_page(&windows_list.window[_window_id], Encyclopedia::get_instance().first_page_name());
+		set_current_page(&windows_list.window[_window_id], _encyclopedia.first_page_name());
 	}
 	CATCH_AND_LOG_EXCEPTIONS;
 
@@ -779,7 +775,7 @@ int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, in
 
 void EncyclopediaWindow::set_current_page(const window_info *win, const std::string& page_name)
 {
-	EncyclopediaPage *page = Encyclopedia::get_instance().find_page(page_name);
+	EncyclopediaPage *page = _encyclopedia.find_page(page_name);
 	if (page)
 	{
 		page->layout_if_needed(win);
@@ -805,12 +801,6 @@ int EncyclopediaWindow::static_resize_handler(const window_info *win, int new_wi
 }
 
 } // namespace eternal_lands
-
-extern "C"
-void init_new_encyclopedia()
-{
-	static eternal_lands::Encyclopedia& encyclopedia = eternal_lands::Encyclopedia::get_instance();
-}
 
 extern "C"
 void fill_new_encyclopedia_win(int window_id)
