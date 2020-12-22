@@ -685,7 +685,7 @@ void EncyclopediaWindow::initialize(int window_id)
 	set_window_font_category(_window_id, ENCYCLOPEDIA_FONT);
 	set_window_handler(_window_id, ELW_HANDLER_DISPLAY, (int (*)())&static_display_handler);
 	set_window_handler(_window_id, ELW_HANDLER_CLICK, (int (*)())&static_click_handler);
-// 	set_window_handler (window_id, ELW_HANDLER_RESIZE, &resize_encyclopedia_handler);
+	set_window_handler (window_id, ELW_HANDLER_RESIZE, (int (*)())&static_resize_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_UI_SCALE, &ui_scale_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_FONT_CHANGE, &change_encyclopedia_font_handler);
 
@@ -770,6 +770,13 @@ int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uin
 	return 1;
 }
 
+int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, int new_height)
+{
+	widget_resize(_window_id, _scroll_id, win->box_size, win->len_y);
+	widget_move(_window_id, _scroll_id, win->len_x - win->box_size, 0);
+	return 0;
+}
+
 void EncyclopediaWindow::set_current_page(const window_info *win, const std::string& page_name)
 {
 	EncyclopediaPage *page = Encyclopedia::get_instance().find_page(page_name);
@@ -790,6 +797,11 @@ int EncyclopediaWindow::static_display_handler(window_info *win)
 int EncyclopediaWindow::static_click_handler(window_info *win, int mx, int my, std::uint32_t flags)
 {
 	return EncyclopediaWindow::get_instance().click_handler(win, mx, my, flags);
+}
+
+int EncyclopediaWindow::static_resize_handler(const window_info *win, int new_width, int new_height)
+{
+	return EncyclopediaWindow::get_instance().resize_handler(win, new_width, new_height);
 }
 
 } // namespace eternal_lands

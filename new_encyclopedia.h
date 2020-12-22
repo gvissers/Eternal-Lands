@@ -414,6 +414,8 @@ private:
 	static int static_display_handler(window_info *win);
 	int click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
+	int resize_handler(const window_info *win, int new_width, int new_height);
+	static int static_resize_handler(const window_info *win, int new_width, int new_height);
 };
 
 } //namespace eternal_lands
