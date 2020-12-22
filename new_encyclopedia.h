@@ -300,6 +300,12 @@ public:
 	int height() const { return _height; }
 	const std::string& link_clicked(int x, int y) const;
 
+	void layout_if_needed(const window_info *win)
+	{
+		if (!_laid_out)
+			layout(win);
+	}
+
 	void read_xml(const xmlNode *node);
 
 	void display(const window_info *win, int y_min);
@@ -346,12 +352,11 @@ public:
 		return encyclopedia;
 	}
 
-	EncyclopediaPage* first_page()
+	const std::string& first_page_name()
 	{
 		if (_categories.empty() || _categories[0].empty())
-			return nullptr;
-		else
-			return &*_categories[0].begin();
+			throw ExtendedException(ExtendedException::ec_item_not_found, "Encyclopedia is empty");
+		return _categories[0].begin()->name();
 	}
 	EncyclopediaPage* find_page(const std::string& name)
 	{
@@ -400,6 +405,8 @@ private:
 	EncyclopediaWindow(const EncyclopediaWindow&) = delete;
 	//! Prevent the encyclopedia from being copied
 	EncyclopediaWindow& operator=(const EncyclopediaWindow&) = delete;
+
+	void set_current_page(const window_info *win, const std::string& page);
 
 	//! Handler for displaying the window
 	int display_handler(window_info *win);

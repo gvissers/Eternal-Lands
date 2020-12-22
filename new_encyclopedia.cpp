@@ -309,7 +309,8 @@ void EncyclopediaFormattedText::display(const window_info *win, int y_min) const
 {
 	TextDrawOptions options = TextDrawOptions().set_foreground(_color.r, _color.g, _color.b)
 		.set_zoom(_scale);
-	FontManager::get_instance().draw(win->font_category, _text.data(), _text.size(), x(), y(), options);
+	FontManager::get_instance().draw(win->font_category, _text.data(), _text.size(),
+		x(), y() - y_min, options);
 	if (_is_link)
 	{
 		// Add line under link text
@@ -532,7 +533,7 @@ void EncyclopediaPage::display(const window_info *win, int y_min)
 	int y_max = y_min + win->len_y;
 	for (const auto& element: _formatted)
 	{
-		if (element->y() < y_max && element->y() + element->height() >= y_min)
+		if (element->y() >= y_min && element->y() + element->height() <= y_max)
 		{
 			element->display(win, y_min);
 		}
@@ -688,11 +689,14 @@ void EncyclopediaWindow::initialize(int window_id)
 // 	set_window_handler(window_id, ELW_HANDLER_UI_SCALE, &ui_scale_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_FONT_CHANGE, &change_encyclopedia_font_handler);
 
-	_current_page = Encyclopedia::get_instance().first_page();
-	_scroll_id = vscrollbar_add_extended(_window_id, 1, nullptr, 0, 0, 0, 0, 0, 1.0, 0, 30,
-		_current_page ? _current_page->height() : 0);
-
 	set_minimum_size();
+
+	_scroll_id = vscrollbar_add_extended(_window_id, 1, nullptr, 0, 0, 0, 0, 0, 1.0, 0, 30, 0);
+	try
+	{
+		set_current_page(&windows_list.window[_window_id], Encyclopedia::get_instance().first_page_name());
+	}
+	CATCH_AND_LOG_EXCEPTIONS;
 
 	if (!_current_page)
 	{
@@ -758,13 +762,7 @@ int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uin
 			}
 			else
 			{
-				EncyclopediaPage *page = Encyclopedia::get_instance().find_page(target);
-				if (page)
-				{
-					_current_page = page;
-					vscrollbar_set_pos(_window_id, _scroll_id, 0);
-					vscrollbar_set_bar_len(_window_id, _scroll_id, _current_page->height());
-				}
+				set_current_page(win, target);
 			}
 		}
 	}
@@ -772,6 +770,17 @@ int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uin
 	return 1;
 }
 
+void EncyclopediaWindow::set_current_page(const window_info *win, const std::string& page_name)
+{
+	EncyclopediaPage *page = Encyclopedia::get_instance().find_page(page_name);
+	if (page)
+	{
+		page->layout_if_needed(win);
+		_current_page = page;
+		vscrollbar_set_pos(_window_id, _scroll_id, 0);
+		vscrollbar_set_bar_len(_window_id, _scroll_id, std::max(0, _current_page->height() - win->len_y));
+	}
+}
 
 int EncyclopediaWindow::static_display_handler(window_info *win)
 {
