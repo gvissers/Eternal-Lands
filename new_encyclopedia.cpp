@@ -773,10 +773,13 @@ void EncyclopediaWindow::set_current_page(const window_info *win, const std::str
 	EncyclopediaPage *page = _encyclopedia.find_page(page_name);
 	if (page)
 	{
+		int scroll_margin = win->default_font_len_y;
+
 		page->layout_if_needed(win);
 		_current_page = page;
 		vscrollbar_set_pos(_window_id, _scroll_id, 0);
-		vscrollbar_set_bar_len(_window_id, _scroll_id, std::max(0, _current_page->height() - win->len_y));
+		vscrollbar_set_bar_len(_window_id, _scroll_id,
+			std::max(0, _current_page->height() - win->len_y + scroll_margin));
 	}
 }
 
