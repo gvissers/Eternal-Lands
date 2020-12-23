@@ -40,6 +40,7 @@ struct EncyclopediaPageElementColor
 	float r, g, b;
 
 	EncyclopediaPageElementColor(int idx): r(colors_list[idx].r1), g(colors_list[idx].g1), b(colors_list[idx].b1) {}
+	EncyclopediaPageElementColor(float r, float g, float b): r(r), g(g), b(b) {}
 	EncyclopediaPageElementColor(const xmlNode *node);
 };
 
@@ -227,18 +228,26 @@ class EncyclopediaFormattedElement
 {
 public:
 	EncyclopediaFormattedElement(int x, int y, int width, int height):
-		_x(x), _y(y), _width(width), _height(height) {}
+		_x(x), _y(y), _width(width), _height(height), _under_mouse(false) {}
 
 	int x() const { return _x; }
 	int y() const { return _y; }
 	int width() const { return _width; }
 	int height() const { return _height; }
+	bool is_under_mouse() const { return _under_mouse; }
+
+	void set_under_mouse(int mouse_x, int mouse_y)
+	{
+		_under_mouse = mouse_x >= _x && mouse_x <= _x + _width
+			&& mouse_y >= _y && mouse_y <= _y + _height;
+	}
 
 	virtual void display(const window_info *win, int y_min) const  = 0;
 
 private:
 	int _x, _y;
 	int _width, _height;
+	bool _under_mouse;
 };
 
 class EncyclopediaFormattedImage: public EncyclopediaFormattedElement
@@ -261,14 +270,18 @@ class EncyclopediaFormattedText: public EncyclopediaFormattedElement
 public:
 	EncyclopediaFormattedText(int x, int y, int width, int height, const ustring& text,
 		const EncyclopediaPageElementColor& color, float scale, bool is_link):
-		EncyclopediaFormattedElement(x, y, width, height), _text(text), _color(color),_scale(scale),
+		EncyclopediaFormattedElement(x, y, width, height), _text(text),
+		_color(color), _mouseover_color(is_link ? link_mouseover_color : color), _scale(scale),
 		_is_link(is_link) {}
 
 	void display(const window_info *win, int y_min) const;
 
 private:
+	static const EncyclopediaPageElementColor link_mouseover_color;
+
 	ustring _text;
 	EncyclopediaPageElementColor _color;
+	EncyclopediaPageElementColor _mouseover_color;
 	float _scale;
 	bool _is_link;
 };
@@ -312,6 +325,11 @@ public:
 	void read_xml(const xmlNode *node);
 
 	void display(const window_info *win, int y_min);
+	void mouseover(int mouse_x, int mouse_y)
+	{
+		for (auto& element: _formatted)
+			element->set_under_mouse(mouse_x, mouse_y);
+	}
 
 private:
 	std::string _name;
@@ -420,6 +438,8 @@ private:
 	int display_handler(window_info *win);
 	//! Static handler for displaying the window, calls display_handler()
 	static int static_display_handler(window_info *win);
+	int mouseover_handler(window_info *win, int mouse_x, int mouse_y);
+	static int static_mouseover_handler(window_info *win, int mouse_x, int mouse_y);
 	int click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 	int resize_handler(const window_info *win, int new_width, int new_height);

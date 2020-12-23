@@ -138,6 +138,8 @@ std::string trim(const std::string &str)
 namespace eternal_lands
 {
 
+const EncyclopediaPageElementColor EncyclopediaFormattedText::link_mouseover_color{0.3, 0.6, 1.0};
+
 EncyclopediaPageElementColor::EncyclopediaPageElementColor(const xmlNode *node):
 	r(get_xml_float_attribute(node, "r").first),
 	g(get_xml_float_attribute(node, "g").first),
@@ -307,7 +309,8 @@ EncyclopediaPageElement::~EncyclopediaPageElement()
 
 void EncyclopediaFormattedText::display(const window_info *win, int y_min) const
 {
-	TextDrawOptions options = TextDrawOptions().set_foreground(_color.r, _color.g, _color.b)
+	const EncyclopediaPageElementColor& color = is_under_mouse() ? _mouseover_color : _color;
+	TextDrawOptions options = TextDrawOptions().set_foreground(color.r, color.g, color.b)
 		.set_zoom(_scale);
 	FontManager::get_instance().draw(win->font_category, _text.data(), _text.size(),
 		x(), y() - y_min, options);
@@ -675,8 +678,9 @@ void EncyclopediaWindow::initialize(int window_id)
 	set_window_custom_scale(_window_id, MW_HELP);
 	set_window_font_category(_window_id, ENCYCLOPEDIA_FONT);
 	set_window_handler(_window_id, ELW_HANDLER_DISPLAY, (int (*)())&static_display_handler);
+	set_window_handler(_window_id, ELW_HANDLER_MOUSEOVER, (int (*)())&static_mouseover_handler);
 	set_window_handler(_window_id, ELW_HANDLER_CLICK, (int (*)())&static_click_handler);
-	set_window_handler (window_id, ELW_HANDLER_RESIZE, (int (*)())&static_resize_handler);
+	set_window_handler(_window_id, ELW_HANDLER_RESIZE, (int (*)())&static_resize_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_UI_SCALE, &ui_scale_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_FONT_CHANGE, &change_encyclopedia_font_handler);
 
@@ -695,7 +699,6 @@ void EncyclopediaWindow::initialize(int window_id)
 	}
 	else
 	{
-// 	set_window_handler(window_id, ELW_HANDLER_MOUSEOVER, &mouseover_encyclopedia_handler);
 // 	set_window_handler(window_id, ELW_HANDLER_KEYPRESS, (int (*)())&keypress_encyclopedia_handler);
 //
 // 	if (!cm_valid(cm_encycl))
@@ -729,6 +732,16 @@ int EncyclopediaWindow::display_handler(window_info *win)
 		_current_page->display(win, y_min);
 	}
 	return 0;
+}
+
+int EncyclopediaWindow::mouseover_handler(window_info *win, int mouse_x, int mouse_y)
+{
+	if (!_current_page)
+		return 0;
+
+	int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
+	_current_page->mouseover(mouse_x, mouse_y + y_min);
+	return 1;
 }
 
 int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uint32_t flags)
@@ -770,6 +783,7 @@ int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, in
 	_encyclopedia.invalidate_layout();
 	if (_current_page)
 		set_current_page(win, _current_page->name());
+
 	return 0;
 }
 
@@ -791,6 +805,11 @@ void EncyclopediaWindow::set_current_page(const window_info *win, const std::str
 int EncyclopediaWindow::static_display_handler(window_info *win)
 {
 	return EncyclopediaWindow::get_instance().display_handler(win);
+}
+
+int EncyclopediaWindow::static_mouseover_handler(window_info *win, int mouse_x, int mouse_y)
+{
+	return EncyclopediaWindow::get_instance().mouseover_handler(win, mouse_x, mouse_y);
 }
 
 int EncyclopediaWindow::static_click_handler(window_info *win, int mx, int my, std::uint32_t flags)
