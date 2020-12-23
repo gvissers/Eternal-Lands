@@ -79,14 +79,16 @@ struct EncyclopediaPageElementPosition
 		x_pixels(x), x_char_big(0), x_char_small(0), y_pixels(y) {}
 	EncyclopediaPageElementPosition(const xmlNode *node);
 
-	int x_scaled(float scale) const
+	int x_scaled(const window_info *win) const
 	{
-		return std::round(scale
-			* (x_pixels + x_char_big * DEFAULT_FIXED_FONT_WIDTH + x_char_small * SMALL_FIXED_FONT_WIDTH));
+		float pixel_scale = float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH;
+		return std::round(pixel_scale * x_pixels
+			+ x_char_big * win->default_font_max_len_x
+			+ x_char_small * win->small_font_max_len_x);
 	}
-	int y_scaled(float scale) const
+	int y_scaled(const window_info *win) const
 	{
-		return std::round(scale * y_pixels);
+		return std::round(y_pixels * win->default_font_len_y / DEFAULT_FIXED_FONT_HEIGHT);
 	}
 
 	void set(int x, int y)

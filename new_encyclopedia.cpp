@@ -386,8 +386,9 @@ void EncyclopediaPage::read_xml(const xmlNode* node)
 
 void EncyclopediaPage::layout(const window_info *win)
 {
-	float scale = std::min(float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH,
-		float(win->default_font_len_y) / DEFAULT_FIXED_FONT_HEIGHT);
+	float x_scale = float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH;
+	float y_scale = float(win->default_font_len_y) / DEFAULT_FIXED_FONT_HEIGHT;
+	float min_scale = std::min(x_scale, y_scale);
 	int offset = 2;
 
 	EncyclopediaPageElementColor cur_color(c_grey1);
@@ -404,19 +405,19 @@ void EncyclopediaPage::layout(const window_info *win)
 			case EncyclopediaPageElementType::Image:
 			{
 				const EncyclopediaPageElementImage& image = element.image();
-				int width = std::round(scale * image.width);
-				int height = std::round(scale * image.height);
+				int width = std::round(min_scale * image.width);
+				int height = std::round(min_scale * image.height);
 				if (image.mouseover)
 				{
-					int x = std::round(scale * image.x);
-					int y = std::round(scale * image.y);
+					int x = std::round(x_scale * image.x);
+					int y = std::round(y_scale * image.y);
 					_formatted.emplace_back(new EncyclopediaFormattedImage(x, y, width, height,
 						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end));
 				}
 				else
 				{
-					int x = image.have_x ? std::round(scale * image.x) : cur_position.x_scaled(scale);
-					int y = image.have_y ? std::round(scale * image.y) : cur_position.y_scaled(scale);
+					int x = image.have_x ? std::round(x_scale * image.x) : cur_position.x_scaled(win);
+					int y = image.have_y ? std::round(y_scale * image.y) : cur_position.y_scaled(win);
 					_formatted.emplace_back(new EncyclopediaFormattedImage(x, y, width, height,
 						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end));
 					if (image.update_x)
@@ -432,15 +433,12 @@ void EncyclopediaPage::layout(const window_info *win)
 			case EncyclopediaPageElementType::Link:
 			{
 				const EncyclopediaPageElementLink& link = element.link();
-				int x = link.have_x ? std::round(scale * link.x) : cur_position.x_scaled(scale);
-				int y = link.have_y ? std::round(scale * link.y) : cur_position.y_scaled(scale);
+				int x = link.have_x ? std::round(x_scale * link.x) : cur_position.x_scaled(win);
+				int y = link.have_y ? std::round(y_scale * link.y) : cur_position.y_scaled(win);
+				float text_scale = cur_size_is_big ? win->current_scale : win->current_scale_small;
 				int width, height;
 				std::tie(width, height) = FontManager::get_instance().dimensions(win->font_category,
-					link.text.data(), link.text.size(),
-					cur_size_is_big ? win->current_scale : win->current_scale_small);
-				float text_scale = scale;
-				if (!cur_size_is_big)
-					text_scale *= float(SMALL_FIXED_FONT_HEIGHT) / DEFAULT_FIXED_FONT_HEIGHT;
+					link.text.data(), link.text.size(), text_scale);
 				_formatted.emplace_back(
 					new EncyclopediaFormattedText(x, y, width, height, link.text, cur_color, text_scale, true)
 				);
@@ -483,15 +481,12 @@ void EncyclopediaPage::layout(const window_info *win)
 			case EncyclopediaPageElementType::Text:
 			{
 				const EncyclopediaPageElementText& text = element.text();
-				int x = text.have_x ? std::round(scale * text.x) : cur_position.x_scaled(scale);
-				int y = text.have_y ? std::round(scale * text.y) : cur_position.y_scaled(scale);
+				int x = text.have_x ? std::round(x_scale * text.x) : cur_position.x_scaled(win);
+				int y = text.have_y ? std::round(y_scale * text.y) : cur_position.y_scaled(win);
+				float text_scale = cur_size_is_big ? win->current_scale : win->current_scale_small;
 				int width, height;
 				std::tie(width, height) = FontManager::get_instance().dimensions(win->font_category,
-					text.text.data(), text.text.size(),
-					cur_size_is_big ? win->current_scale : win->current_scale_small);
-				float text_scale = scale;
-				if (!cur_size_is_big)
-					text_scale *= float(SMALL_FIXED_FONT_HEIGHT) / DEFAULT_FIXED_FONT_HEIGHT;
+					text.text.data(), text.text.size(), text_scale);
 				_formatted.emplace_back(
 					new EncyclopediaFormattedText(x, y, width, height, text.text, cur_color, text_scale, false)
 				);
