@@ -302,6 +302,7 @@ public:
 	int height() const { return _height; }
 	const std::string& link_clicked(int x, int y) const;
 
+	void invalidate_layout() { _laid_out = false; }
 	void layout_if_needed(const window_info *win)
 	{
 		if (!_laid_out)
@@ -338,6 +339,12 @@ public:
 	const_iterator begin() const { return _pages.begin(); }
 	const_iterator end() const { return _pages.end(); }
 
+	void invalidate_layout()
+	{
+		for (auto& page: _pages)
+			page.invalidate_layout();
+	}
+
 	void read_xml(const xmlNode *node);
 
 private:
@@ -365,6 +372,13 @@ public:
 		else
 			return it->second;
 	}
+
+	void invalidate_layout()
+	{
+		for (auto& category: _categories)
+			category.invalidate_layout();
+	}
+
 
 private:
 	//! The list of categories in this encyclopedia.

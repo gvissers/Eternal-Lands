@@ -765,6 +765,11 @@ int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, in
 {
 	widget_resize(_window_id, _scroll_id, win->box_size, win->len_y);
 	widget_move(_window_id, _scroll_id, win->len_x - win->box_size, 0);
+
+	// Adjust layout of current page (and scrollbar length)
+	_encyclopedia.invalidate_layout();
+	if (_current_page)
+		set_current_page(win, _current_page->name());
 	return 0;
 }
 
