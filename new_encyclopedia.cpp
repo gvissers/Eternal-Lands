@@ -199,7 +199,7 @@ EncyclopediaPageElementImage::EncyclopediaPageElementImage(const xmlNode *node,
 	u_start(0.0f), v_start(0.0f), u_end(1.0f), v_end(1.0f),
 	have_x(false), have_y(false),
 	x(), y(), width(), height(),
-	mouseover(false), update_x(true), update_y(true)
+	mouseover(EncyclopediaPageElementImageMouseover::Unset), update_x(true), update_y(true)
 {
 	const xmlChar* texture_name = get_xml_attribute(node, "name", true);
 	texture_id = load_texture_cached(reinterpret_cast<const char*>(texture_name), tt_gui);
@@ -207,9 +207,10 @@ EncyclopediaPageElementImage::EncyclopediaPageElementImage(const xmlNode *node,
 	std::tie(x, have_x) = get_xml_int_attribute(node, "x");
 	std::tie(y, have_y) = get_xml_int_attribute(node, "y");
 	bool ok, val;
+	// NOTE: this attribute appears to be unused in the current version of the encyclopedia (1.9.5.8)
 	std::tie(val, ok) = get_xml_bool_attribute(node, "mouseover");
 	if (ok)
-		mouseover = val;
+		mouseover = val ? EncyclopediaPageElementImageMouseover::Mouseover : EncyclopediaPageElementImageMouseover::NoMouseover;
 	std::tie(val, ok) = get_xml_bool_attribute(node, "xposupdate");
 	if (ok)
 		update_x = val;
@@ -310,11 +311,19 @@ EncyclopediaPageElement::~EncyclopediaPageElement()
 
 void EncyclopediaFormattedImage::display(const window_info *win, int y_min) const
 {
-	glColor3f(1.0f, 1.0f, 1.0f);
-	::bind_texture(_texture_id);
-	glBegin(GL_QUADS);
-	draw_2d_thing(_u_start, _v_start, _u_end, _v_end, x(), y() - y_min, x_end(), y_end() - y_min);
-	glEnd();
+	// NOTE: attribute mouseover appears to be unused in the current version of the
+	// encyclopedia (1.9.5.8). From the legacy code it appears that this attribute was intended
+	// to toggle between images on when the mouse cursor moves over the image, though the code
+	// is a bit murky.
+	if (_mouseover == EncyclopediaPageElementImageMouseover::Unset
+		|| is_under_mouse() == (_mouseover == EncyclopediaPageElementImageMouseover::Mouseover))
+	{
+		glColor3f(1.0f, 1.0f, 1.0f);
+		::bind_texture(_texture_id);
+		glBegin(GL_QUADS);
+		draw_2d_thing(_u_start, _v_start, _u_end, _v_end, x(), y() - y_min, x_end(), y_end() - y_min);
+		glEnd();
+	}
 }
 
 void EncyclopediaFormattedText::display(const window_info *win, int y_min) const
@@ -420,19 +429,23 @@ void EncyclopediaPage::layout(const window_info *win)
 				const EncyclopediaPageElementImage& image = element.image();
 				int width = std::round(min_scale * image.width);
 				int height = std::round(min_scale * image.height);
-				if (image.mouseover)
+				// NOTE: attribute mouseover appears to be unused in the current version of the
+				// encyclopedia (1.9.5.8).
+				if (image.mouseover == EncyclopediaPageElementImageMouseover::Mouseover)
 				{
 					int x = std::round(x_scale * image.x);
 					int y = std::round(y_scale * image.y);
 					_formatted.emplace_back(new EncyclopediaFormattedImage(x, y, width, height,
-						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end));
+						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end,
+						image.mouseover));
 				}
 				else
 				{
 					int x = image.have_x ? std::round(x_scale * image.x) : cur_position.x_scaled(win);
 					int y = image.have_y ? std::round(y_scale * image.y) : cur_position.y_scaled(win);
 					_formatted.emplace_back(new EncyclopediaFormattedImage(x, y, width, height,
-						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end));
+						image.texture_id, image.u_start, image.v_start, image.u_end, image.v_end,
+						image.mouseover));
 					if (image.update_x)
 						cur_position.add_x(image.width);
 					if (image.update_y)

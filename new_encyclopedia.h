@@ -59,6 +59,13 @@ enum class EncyclopediaPageElementImageType
 	SImage
 };
 
+enum class EncyclopediaPageElementImageMouseover
+{
+	Unset,
+	NoMouseover,
+	Mouseover
+};
+
 struct EncyclopediaPageElementImage
 {
 	EncyclopediaPageElementImageType type;
@@ -66,7 +73,8 @@ struct EncyclopediaPageElementImage
 	float u_start, v_start, u_end, v_end;
 	bool have_x, have_y;
 	int x, y, width, height;
-	bool mouseover, update_x, update_y;
+	EncyclopediaPageElementImageMouseover mouseover;
+	bool update_x, update_y;
 
 	EncyclopediaPageElementImage(const xmlNode *node, EncyclopediaPageElementImageType type);
 };
@@ -260,15 +268,18 @@ class EncyclopediaFormattedImage: public EncyclopediaFormattedElement
 {
 public:
 	EncyclopediaFormattedImage(int x, int y, int width, int height,
-		std::uint32_t texture_id, float u_start, float v_start, float u_end, float v_end):
+		std::uint32_t texture_id, float u_start, float v_start, float u_end, float v_end,
+		EncyclopediaPageElementImageMouseover mouseover):
 		EncyclopediaFormattedElement(x, y, width, height),
-		_texture_id(texture_id), _u_start(u_start), _v_start(v_start), _u_end(u_end), _v_end(v_end) {}
+		_texture_id(texture_id), _u_start(u_start), _v_start(v_start), _u_end(u_end), _v_end(v_end),
+		_mouseover(mouseover) {}
 
 	void display(const window_info *win, int y_min) const;
 
 private:
 	std::uint32_t _texture_id;
 	float _u_start, _v_start, _u_end, _v_end;
+	EncyclopediaPageElementImageMouseover _mouseover;
 };
 
 class EncyclopediaFormattedText: public EncyclopediaFormattedElement
