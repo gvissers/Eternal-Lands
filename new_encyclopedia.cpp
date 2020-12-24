@@ -3,6 +3,7 @@
 #include "new_encyclopedia.h"
 #include "client_serv.h"
 #include "elconfig.h"
+#include "interface.h"
 #include "text.h"
 #include "textures.h"
 #include "translate.h"
@@ -307,6 +308,15 @@ EncyclopediaPageElement::~EncyclopediaPageElement()
 	}
 }
 
+void EncyclopediaFormattedImage::display(const window_info *win, int y_min) const
+{
+	glColor3f(1.0f, 1.0f, 1.0f);
+	::bind_texture(_texture_id);
+	glBegin(GL_QUADS);
+	draw_2d_thing(_u_start, _v_start, _u_end, _v_end, x(), y() - y_min, x_end(), y_end() - y_min);
+	glEnd();
+}
+
 void EncyclopediaFormattedText::display(const window_info *win, int y_min) const
 {
 	const EncyclopediaPageElementColor& color = is_under_mouse() ? _mouseover_color : _color;
@@ -531,7 +541,7 @@ void EncyclopediaPage::display(const window_info *win, int y_min)
 	int y_max = y_min + win->len_y;
 	for (const auto& element: _formatted)
 	{
-		if (element->y() >= y_min && element->y() + element->height() <= y_max)
+		if (element->is_visible(y_min, y_max))
 		{
 			element->display(win, y_min);
 		}

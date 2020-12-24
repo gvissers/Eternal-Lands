@@ -232,14 +232,20 @@ public:
 
 	int x() const { return _x; }
 	int y() const { return _y; }
+	int x_end() const { return _x + _width; }
+	int y_end() const { return _y + _height; }
 	int width() const { return _width; }
 	int height() const { return _height; }
+	bool is_visible(int y_min, int y_max)
+	{
+		return y() >= y_min && y_end() <= y_max;
+	}
 	bool is_under_mouse() const { return _under_mouse; }
 
 	void set_under_mouse(int mouse_x, int mouse_y)
 	{
-		_under_mouse = mouse_x >= _x && mouse_x <= _x + _width
-			&& mouse_y >= _y && mouse_y <= _y + _height;
+		_under_mouse = mouse_x >= x() && mouse_x <= x_end()
+			&& mouse_y >= y() && mouse_y <= y_end();
 	}
 
 	virtual void display(const window_info *win, int y_min) const  = 0;
@@ -258,7 +264,7 @@ public:
 		EncyclopediaFormattedElement(x, y, width, height),
 		_texture_id(texture_id), _u_start(u_start), _v_start(v_start), _u_end(u_end), _v_end(v_end) {}
 
-	void display(const window_info *win, int y_min) const {}
+	void display(const window_info *win, int y_min) const;
 
 private:
 	std::uint32_t _texture_id;
