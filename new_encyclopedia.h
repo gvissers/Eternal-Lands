@@ -4,14 +4,17 @@
 #ifdef __cplusplus
 
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <libxml/tree.h>
 #include "colors.h"
+#include "context_menu.h"
 #include "elwindows.h"
 #include "exceptions/extendedexception.hpp"
 #include "font.h"
+#include "notepad.h"
 
 namespace eternal_lands
 {
@@ -340,6 +343,7 @@ public:
 	}
 
 	void read_xml(const xmlNode *node);
+	void add_page_links(std::vector<std::pair<ustring, std::string>>& links) const;
 
 	void display(const window_info *win, int y_min);
 	void mouseover(int mouse_x, int mouse_y)
@@ -381,6 +385,11 @@ public:
 	}
 
 	void read_xml(const xmlNode *node);
+	void add_page_links(std::vector<std::pair<ustring, std::string>>& links) const
+	{
+		for (const auto& page: _pages)
+			page.add_page_links(links);
+	}
 
 private:
 	std::string _name;
@@ -408,6 +417,8 @@ public:
 			return it->second;
 	}
 
+	std::vector<std::pair<ustring, std::string>> search_titles(const std::string& search_term) const;
+
 	void invalidate_layout()
 	{
 		for (auto& category: _categories)
@@ -420,8 +431,11 @@ private:
 	std::vector<EncyclopediaCategory> _categories;
 	//! Map from page name to pointer to the page
 	std::unordered_map<std::string, EncyclopediaPage*> _pages;
+	//! List of all link targets and titles, for searching through the encyclopedia
+	std::vector<std::pair<ustring, std::string>> _links;
 
 	void read_xml(const xmlNode* node);
+	void set_page_links();
 };
 
 class EncyclopediaWindow
@@ -437,19 +451,31 @@ public:
 	void set_minimum_size();
 
 private:
+	static const std::string context_menu_help_string;
+
 	int _window_id;
 	int _scroll_id;
+	std::size_t _context_menu_id, _results_context_menu_id;
+	INPUT_POPUP _ipu;
 	Encyclopedia _encyclopedia;
 	EncyclopediaPage* _current_page;
+	std::set<std::string> _bookmarks;
+	std::string _last_search_term;
+	std::vector<std::pair<ustring, std::string>> _search_results;
+	bool _repeat_last_search;
+	bool _show_context_menu_help;
 
-	EncyclopediaWindow(): _window_id(-1), _scroll_id(-1), _encyclopedia("Encyclopedia/index.xml"),
-		_current_page(nullptr) {}
+	EncyclopediaWindow(): _window_id(-1), _scroll_id(-1), _context_menu_id(CM_INIT_VALUE),
+		_results_context_menu_id(CM_INIT_VALUE), _ipu(), _encyclopedia("Encyclopedia/index.xml"),
+		_current_page(nullptr), _bookmarks(), _last_search_term(), _search_results(),
+		_repeat_last_search(false), _show_context_menu_help(false) {}
 	//! Prevent the encyclopedia window from being copied
 	EncyclopediaWindow(const EncyclopediaWindow&) = delete;
 	//! Prevent the encyclopedia from being copied
 	EncyclopediaWindow& operator=(const EncyclopediaWindow&) = delete;
 
 	void set_current_page(const window_info *win, const std::string& page);
+	void rebuild_context_menu();
 
 	//! Handler for displaying the window
 	int display_handler(window_info *win);
@@ -461,6 +487,22 @@ private:
 	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 	int resize_handler(const window_info *win, int new_width, int new_height);
 	static int static_resize_handler(const window_info *win, int new_width, int new_height);
+	int context_menu_handler(window_info *win, int mx, int my, int option);
+	static int static_context_menu_handler(window_info *win, int widget_id, int mx, int my, int option);
+	void context_menu_pre_show_handler(window_info *cm_win);
+	static void static_context_menu_pre_show_handler(window_info *win, int widget_id,
+		int mx, int my, window_info *cm_win);
+	void find_page_callback(const std::string& search_term);
+	static void static_find_page_callback(const char* search_term, void *data);
+	static void static_search_results_pre_show_handler(window_info *win, int widget_id,
+		int mx, int my, window_info *cm_win)
+	{
+		if (cm_win)
+			cm_win->opaque = 1;
+	}
+	int search_results_handler(int option);
+	static int static_search_results_handler(window_info *win, int widget_id, int mx, int my,
+		int option);
 };
 
 } //namespace eternal_lands

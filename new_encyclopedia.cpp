@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <sstream>
 #include "new_encyclopedia.h"
+#include "asc.h"
 #include "client_serv.h"
 #include "elconfig.h"
 #include "interface.h"
@@ -11,6 +12,18 @@
 
 namespace
 {
+
+enum ContextMenuElement
+{
+	CM_ENCYCL_INDEX = 0,
+	CM_ENCYCL_SEARCH,
+	CM_ENCYCL_REPSEARCH,
+	CM_ENCYCL_BOOKMARK,
+	CM_ENCYCL_UNBOOKMARK,
+	CM_ENCYCL_CLEARBOOKMARKS,
+	CM_ENCYCL_SEP_02,
+	CM_ENCYCL_THEBOOKMARKS
+};
 
 /*!
  * \brief Retrieve attribute disregarding case
@@ -140,6 +153,7 @@ namespace eternal_lands
 {
 
 const EncyclopediaPageElementColor EncyclopediaFormattedText::link_mouseover_color{0.3, 0.6, 1.0};
+const std::string EncyclopediaWindow::context_menu_help_string = "Right-click for search and bookmark options";
 
 EncyclopediaPageElementColor::EncyclopediaPageElementColor(const xmlNode *node):
 	r(get_xml_float_attribute(node, "r").first),
@@ -406,6 +420,18 @@ void EncyclopediaPage::read_xml(const xmlNode* node)
 	}
 }
 
+void EncyclopediaPage::add_page_links(std::vector<std::pair<ustring, std::string>>& links) const
+{
+	for (const auto& element: _elements)
+	{
+		if (element.type() == EncyclopediaPageElementType::Link)
+		{
+			const EncyclopediaPageElementLink& link = element.link();
+			links.push_back(std::make_pair(link.text, link.target));
+		}
+	}
+}
+
 void EncyclopediaPage::layout(const window_info *win)
 {
 	float x_scale = float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH;
@@ -619,6 +645,8 @@ Encyclopedia::Encyclopedia(const std::string& file_name): _categories(), _pages(
 		read_xml(root);
 
 		xmlFreeDoc(doc);
+
+		set_page_links();
 	}
 	catch (const std::exception& exc)
 	{
@@ -694,6 +722,81 @@ void Encyclopedia::read_xml(const xmlNode* node)
 	}
 }
 
+void Encyclopedia::set_page_links()
+{
+	// This code is pretty awful. Some helper functions on std::string and/or ustring might help.
+	// Perhaps using a set with a case-insensitive hasher as well.
+
+	_links.clear();
+	for (const auto& category: _categories)
+		category.add_page_links(_links);
+
+	std::sort(_links.begin(), _links.end(),
+		[](const std::pair<ustring, std::string>& l0, const std::pair<ustring, std::string>& l1) {
+			int cmp = strcasecmp(reinterpret_cast<const char*>(l0.first.c_str()),
+				reinterpret_cast<const char*>(l1.first.c_str()));
+			if (cmp == 0)
+				cmp = strcasecmp(l0.second.c_str(), l1.second.c_str());
+			return cmp < 0;
+		}
+	);
+
+	// Remove duplicates
+	auto it1 = _links.begin() + 1;
+	while (it1 != _links.end())
+	{
+		auto it0 = it1 - 1;
+		if (strcasecmp(reinterpret_cast<const char*>(it0->first.c_str()),
+		               reinterpret_cast<const char*>(it1->first.c_str())) != 0
+			|| strcasecmp(it0->second.c_str(), it1->second.c_str()) != 0)
+		{
+			++it1;
+		}
+		else
+		{
+			it1 = _links.erase(it1);
+		}
+	}
+
+	// Add link target to title for duplicate titles
+	auto it0 = _links.begin();
+	while (it0 != _links.end())
+	{
+		auto it1 = it0 + 1;
+		for ( ; it1 != _links.end(); ++it1)
+		{
+			if (strcasecmp(reinterpret_cast<const char*>(it0->first.c_str()),
+		               reinterpret_cast<const char*>(it1->first.c_str())) != 0)
+				break;
+		}
+
+		if (std::distance(it0, it1) > 1)
+		{
+			for ( ; it0 != it1; ++it0)
+			{
+				it0->first += reinterpret_cast<const unsigned char*>(" (");
+				it0->first.append(it0->second.begin(), it0->second.end());
+				it0->first += ')';
+			}
+		}
+		else
+		{
+			++it0;
+		}
+	}
+}
+
+std::vector<std::pair<ustring, std::string>> Encyclopedia::search_titles(const std::string& search_term) const
+{
+	std::vector<std::pair<ustring, std::string>> matches;
+	std::copy_if(_links.begin(), _links.end(), std::back_inserter(matches),
+		[search_term](const std::pair<ustring, std::string>& link) {
+			return safe_strcasestr(reinterpret_cast<const char*>(link.first.c_str()),
+				link.first.size(), search_term.c_str(), search_term.size()) != nullptr;
+		});
+	return matches;
+}
+
 void EncyclopediaWindow::initialize(int window_id)
 {
 	_window_id = window_id;
@@ -724,15 +827,15 @@ void EncyclopediaWindow::initialize(int window_id)
 	{
 // 	set_window_handler(window_id, ELW_HANDLER_KEYPRESS, (int (*)())&keypress_encyclopedia_handler);
 //
-// 	if (!cm_valid(cm_encycl))
-// 	{
-// 		cm_encycl = cm_create(cm_encycl_base_str, cm_encycl_handler);
-// 		cm_set_pre_show_handler(cm_encycl, cm_encycl_pre_show_handler);
-// 		cm_add_window(cm_encycl, window_id);
-// 		init_ipu(&ipu_encycl, -1, 1, 1, 1, NULL, NULL);
+		if (!cm_valid(_context_menu_id))
+		{
+			_context_menu_id = cm_create(cm_encycl_base_str, static_context_menu_handler);
+			cm_set_pre_show_handler(_context_menu_id, static_context_menu_pre_show_handler);
+			cm_add_window(_context_menu_id, _window_id);
+			init_ipu(&_ipu, -1, 1, 1, 1, nullptr, nullptr);
 // 		find_base_pages();
 // 		process_encycl_links();
-// 	}
+		}
 	}
 }
 
@@ -741,8 +844,8 @@ void EncyclopediaWindow::set_minimum_size()
 	if (_window_id >= 0 && _window_id < windows_list.num_windows)
 	{
 		window_info* window = &windows_list.window[_window_id];
-		int min_width = max2i(63 * window->small_font_max_len_x, 46 * window->default_font_max_len_x);
-		int min_height = max2i(24 * window->small_font_len_y, 20 * window->default_font_len_y);
+		int min_width = std::max(63 * window->small_font_max_len_x, 46 * window->default_font_max_len_x);
+		int min_height = std::max(24 * window->small_font_len_y, 20 * window->default_font_len_y);
 		set_window_min_size(_window_id, min_width, min_height);
 	}
 }
@@ -754,6 +857,18 @@ int EncyclopediaWindow::display_handler(window_info *win)
 		int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
 		_current_page->display(win, y_min);
 	}
+
+	if (_repeat_last_search)
+	{
+		find_page_callback(_last_search_term);
+		_repeat_last_search = false;
+	}
+	if (_show_context_menu_help)
+	{
+		show_help(context_menu_help_string.c_str(), 0, win->len_y+10, win->current_scale);
+		_show_context_menu_help = false;
+	}
+
 	return 0;
 }
 
@@ -764,12 +879,14 @@ int EncyclopediaWindow::mouseover_handler(window_info *win, int mouse_x, int mou
 
 	int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
 	_current_page->mouseover(mouse_x, mouse_y + y_min);
+
+	_show_context_menu_help = mouse_y >= y_min;
 	return 1;
 }
 
 int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uint32_t flags)
 {
-	if (flags &ELW_WHEEL_UP)
+	if (flags & ELW_WHEEL_UP)
 	{
 		vscrollbar_scroll_up(_window_id, _scroll_id);
 	}
@@ -810,6 +927,87 @@ int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, in
 	return 0;
 }
 
+int EncyclopediaWindow::context_menu_handler(window_info *win, int mx, int my, int option)
+{
+	switch (option)
+	{
+		case CM_ENCYCL_INDEX:
+			set_current_page(win, "Index");
+			break;
+		case CM_ENCYCL_SEARCH:
+			close_ipu(&_ipu);
+			init_ipu(&_ipu, _window_id, 21, 1, 22, nullptr, static_find_page_callback);
+			_ipu.x = mx;
+			_ipu.y = my;
+			display_popup_win(&_ipu, encycl_search_prompt_str);
+			if (_ipu.popup_win >=0 && _ipu.popup_win < windows_list.num_windows)
+				windows_list.window[_ipu.popup_win].opaque = 1;
+			break;
+		case CM_ENCYCL_REPSEARCH:
+			if (!_last_search_term.empty())
+				_repeat_last_search = true;
+			break;
+		case CM_ENCYCL_BOOKMARK:
+			if (_current_page && _bookmarks.insert(_current_page->name()).second)
+				rebuild_context_menu();
+			break;
+		case CM_ENCYCL_UNBOOKMARK:
+			if (_current_page && _bookmarks.erase(_current_page->name()) > 0)
+				rebuild_context_menu();
+			break;
+		case CM_ENCYCL_CLEARBOOKMARKS:
+			_bookmarks.clear();
+			rebuild_context_menu();
+			break;
+		default:
+			set_current_page(win, *std::next(_bookmarks.begin(), option - CM_ENCYCL_THEBOOKMARKS));
+	}
+	return 1;
+}
+
+void EncyclopediaWindow::context_menu_pre_show_handler(window_info *cm_win)
+{
+	if (cm_win)
+		cm_win->opaque = 1;
+
+	bool is_bookmarked = _current_page && _bookmarks.count(_current_page->name()) > 0;
+	cm_grey_line(_context_menu_id, CM_ENCYCL_REPSEARCH, _last_search_term.empty());
+	cm_grey_line(_context_menu_id, CM_ENCYCL_BOOKMARK, is_bookmarked /* || _bookmarks.size() == max_bookmarks*/);
+	cm_grey_line(_context_menu_id, CM_ENCYCL_UNBOOKMARK, !is_bookmarked);
+	cm_grey_line(_context_menu_id, CM_ENCYCL_CLEARBOOKMARKS, _bookmarks.empty());
+}
+
+void EncyclopediaWindow::find_page_callback(const std::string& search_term)
+{
+	_last_search_term = search_term;
+	_search_results = _encyclopedia.search_titles(_last_search_term);
+	if (_search_results.empty())
+		return;
+
+	if (_search_results.size() == 1)
+	{
+		search_results_handler(0);
+	}
+	else
+	{
+		if (cm_valid(_results_context_menu_id))
+			cm_destroy(_results_context_menu_id);
+		_results_context_menu_id = cm_create(reinterpret_cast<const char*>(_search_results[0].first.c_str()), static_search_results_handler);
+		cm_set_pre_show_handler(_results_context_menu_id, static_search_results_pre_show_handler);
+		for (int i = 1; i < _search_results.size(); ++i)
+			cm_add(_results_context_menu_id, reinterpret_cast<const char*>(_search_results[i].first.c_str()), nullptr);
+		cm_show_direct(_results_context_menu_id, -1, -1);
+	}
+}
+
+int EncyclopediaWindow::search_results_handler(int option)
+{
+	window_info *win = &windows_list.window[_window_id];
+	if (option >= 0 && option < _search_results.size())
+		set_current_page(win, _search_results[option].second);
+	return 1;
+}
+
 void EncyclopediaWindow::set_current_page(const window_info *win, const std::string& page_name)
 {
 	EncyclopediaPage *page = _encyclopedia.find_page(page_name);
@@ -822,6 +1020,17 @@ void EncyclopediaWindow::set_current_page(const window_info *win, const std::str
 		vscrollbar_set_pos(_window_id, _scroll_id, 0);
 		vscrollbar_set_bar_len(_window_id, _scroll_id,
 			std::max(0, _current_page->height() - win->len_y + scroll_margin));
+	}
+}
+
+void EncyclopediaWindow::rebuild_context_menu()
+{
+	cm_set(_context_menu_id, cm_encycl_base_str, static_context_menu_handler);
+	if (_bookmarks.size() > 0)
+	{
+		cm_add(_context_menu_id, "--", nullptr);
+		for (const auto& bookmark: _bookmarks)
+			cm_add(_context_menu_id, bookmark.c_str(), nullptr);
 	}
 }
 
@@ -844,6 +1053,29 @@ int EncyclopediaWindow::static_resize_handler(const window_info *win, int new_wi
 {
 	return EncyclopediaWindow::get_instance().resize_handler(win, new_width, new_height);
 }
+
+int EncyclopediaWindow::static_context_menu_handler(window_info *win, int widget_id, int mx, int my, int option)
+{
+	return EncyclopediaWindow::get_instance().context_menu_handler(win, mx, my, option);
+}
+
+void EncyclopediaWindow::static_context_menu_pre_show_handler(window_info *win, int widget_id,
+	int mx, int my, window_info *cm_win)
+{
+	EncyclopediaWindow::get_instance().context_menu_pre_show_handler(cm_win);
+}
+
+void EncyclopediaWindow::static_find_page_callback(const char *search_term, void *data)
+{
+	EncyclopediaWindow::get_instance().find_page_callback(search_term);
+}
+
+int EncyclopediaWindow::static_search_results_handler(window_info *win, int widget_id,
+	int mx, int my, int option)
+{
+	return EncyclopediaWindow::get_instance().search_results_handler(option);
+}
+
 
 } // namespace eternal_lands
 
