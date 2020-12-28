@@ -487,6 +487,10 @@ private:
 	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
 	int resize_handler(const window_info *win, int new_width, int new_height);
 	static int static_resize_handler(const window_info *win, int new_width, int new_height);
+	int ui_scale_handler();
+	static int static_ui_scale_handler(window_info *win);
+	int change_font_handler(window_info *win, font_cat cat);
+	static int static_change_font_handler(window_info *win, font_cat cat);
 	int context_menu_handler(window_info *win, int mx, int my, int option);
 	static int static_context_menu_handler(window_info *win, int widget_id, int mx, int my, int option);
 	void context_menu_pre_show_handler(window_info *cm_win);

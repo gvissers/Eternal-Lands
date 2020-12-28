@@ -443,6 +443,7 @@ void EncyclopediaPage::layout(const window_info *win)
 	EncyclopediaPageElementPosition cur_position(offset, offset);
 	bool cur_size_is_big = true;
 	int last_len_big = 0, last_len_small = 0;
+	_formatted.clear();
 	for (const auto& element: _elements)
 	{
 		switch (element.type())
@@ -807,8 +808,8 @@ void EncyclopediaWindow::initialize(int window_id)
 	set_window_handler(_window_id, ELW_HANDLER_MOUSEOVER, (int (*)())&static_mouseover_handler);
 	set_window_handler(_window_id, ELW_HANDLER_CLICK, (int (*)())&static_click_handler);
 	set_window_handler(_window_id, ELW_HANDLER_RESIZE, (int (*)())&static_resize_handler);
-// 	set_window_handler(window_id, ELW_HANDLER_UI_SCALE, &ui_scale_encyclopedia_handler);
-// 	set_window_handler(window_id, ELW_HANDLER_FONT_CHANGE, &change_encyclopedia_font_handler);
+	set_window_handler(_window_id, ELW_HANDLER_UI_SCALE, (int (*)())&static_ui_scale_handler);
+	set_window_handler(_window_id, ELW_HANDLER_FONT_CHANGE, (int (*)())&static_change_font_handler);
 
 	set_minimum_size();
 
@@ -925,6 +926,22 @@ int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, in
 		set_current_page(win, _current_page->name());
 
 	return 0;
+}
+
+int EncyclopediaWindow::ui_scale_handler()
+{
+	set_minimum_size();
+	_encyclopedia.invalidate_layout();
+	return 1;
+}
+
+int EncyclopediaWindow::change_font_handler(window_info *win, font_cat cat)
+{
+	if (cat != win->font_category)
+		return 0;
+	set_minimum_size();
+	_encyclopedia.invalidate_layout();
+	return 1;
 }
 
 int EncyclopediaWindow::context_menu_handler(window_info *win, int mx, int my, int option)
@@ -1076,6 +1093,15 @@ int EncyclopediaWindow::static_search_results_handler(window_info *win, int widg
 	return EncyclopediaWindow::get_instance().search_results_handler(option);
 }
 
+int EncyclopediaWindow::static_ui_scale_handler(window_info *win)
+{
+	return EncyclopediaWindow::get_instance().ui_scale_handler();
+}
+
+int EncyclopediaWindow::static_change_font_handler(window_info *win, font_cat cat)
+{
+	return EncyclopediaWindow::get_instance().change_font_handler(win, cat);
+}
 
 } // namespace eternal_lands
 
