@@ -813,8 +813,8 @@ EncyclopediaWindow::EncyclopediaWindow(int window_id): Window(window_id), _scrol
 		_current_page(nullptr), _bookmarks(), _last_search_term(), _search_results(),
 		_repeat_last_search(false), _show_context_menu_help(false)
 {
-	set_window_custom_scale(id(), MW_HELP);
-	set_window_font_category(id(), ENCYCLOPEDIA_FONT);
+	set_custom_scale(MW_HELP);
+	set_font_category(ENCYCLOPEDIA_FONT);
 
 	set_minimum_size();
 
@@ -851,7 +851,7 @@ void EncyclopediaWindow::set_minimum_size()
 {
 	int min_width = std::max(63 * small_font_max_char_width(), 46 * default_font_max_char_width());
 	int min_height = std::max(24 * small_font_height(), 20 * default_font_height());
-	set_window_min_size(id(), min_width, min_height);
+	Window::set_minimum_size(min_width, min_height);
 }
 
 int EncyclopediaWindow::display_handler()
