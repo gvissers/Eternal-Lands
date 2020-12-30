@@ -655,70 +655,79 @@ Encyclopedia::Encyclopedia(const std::string& file_name): _categories(), _pages(
 			xmlFreeDoc(doc);
 		LOG_ERROR("Failed to read encyclopedia from file \"%s\": %s", file_name.c_str(), exc.what());
 	}
-
-// 	// Sanitize all of the page lengths.
-// 	for (i = 0; i < numpage+1; i++) {
-// 		if(Page[i].max_y > encyclopedia_menu_y_len - ENCYC_OFFSET)
-// 		{
-// 			Page[i].max_y -= encyclopedia_menu_y_len - ENCYC_OFFSET;
-// 		} else {
-// 			Page[i].max_y = 0;
-// 		}
-// 	}
 }
 
 void Encyclopedia::read_xml(const xmlNode* node)
 {
-	for (const xmlNode *cur_node = node->children; cur_node; cur_node = cur_node->next)
+	if (!strcasecmp(reinterpret_cast<const char*>(node->name), "Encyclopedia"))
 	{
-		if (cur_node->type == XML_ELEMENT_NODE
-			&& !strcasecmp(reinterpret_cast<const char*>(cur_node->name), "Category"))
+		for (const xmlNode *cur_node = node->children; cur_node; cur_node = cur_node->next)
 		{
-			try
+			if (cur_node->type == XML_ELEMENT_NODE
+				&& !strcasecmp(reinterpret_cast<const char*>(cur_node->name), "Category"))
 			{
-				EncyclopediaCategory category(reinterpret_cast<const char*>(cur_node->children->content));
-
-				std::string file_name = std::string("languages/") + lang + "/Encyclopedia/" + category.name() + ".xml";
-				xmlDocPtr doc = xmlReadFile(file_name.c_str(), nullptr, 0);
-				if (!doc)
-				{
-					file_name = "languages/en/Encyclopedia/" + category.name() + ".xml";
-					doc = xmlReadFile(file_name.c_str(), nullptr, 0);
-					if (!doc)
-					{
-						std::string err = std::string(cant_open_file) + " \"" + file_name + '"';
-						EXTENDED_EXCEPTION(ExtendedException::ec_file_not_found, err);
-					}
-				}
-
-				xmlNode *root = xmlDocGetRootElement(doc);
-				if (!root)
-				{
-					xmlFreeDoc(doc);
-					EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
-						"Error while parsing: " << file_name);
-				}
-
 				try
 				{
-					category.read_xml(root);
-				}
-				catch (...)
-				{
+					EncyclopediaCategory category(reinterpret_cast<const char*>(cur_node->children->content));
+
+					std::string file_name = std::string("languages/") + lang + "/Encyclopedia/" + category.name() + ".xml";
+					xmlDocPtr doc = xmlReadFile(file_name.c_str(), nullptr, 0);
+					if (!doc)
+					{
+						file_name = "languages/en/Encyclopedia/" + category.name() + ".xml";
+						doc = xmlReadFile(file_name.c_str(), nullptr, 0);
+						if (!doc)
+						{
+							std::string err = std::string(cant_open_file) + " \"" + file_name + '"';
+							EXTENDED_EXCEPTION(ExtendedException::ec_file_not_found, err);
+						}
+					}
+
+					xmlNode *root = xmlDocGetRootElement(doc);
+					if (!root)
+					{
+						xmlFreeDoc(doc);
+						EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
+							"Error while parsing: " << file_name);
+					}
+
+					try
+					{
+						category.read_xml(root);
+					}
+					catch (...)
+					{
+						xmlFreeDoc(doc);
+						throw;
+					}
+
 					xmlFreeDoc(doc);
-					throw;
+
+					for (auto& page: category)
+						_pages.insert(std::make_pair(page.name(), &page));
+					_categories.push_back(std::move(category));
 				}
-
-				xmlFreeDoc(doc);
-
-				for (auto& page: category)
-					_pages.insert(std::make_pair(page.name(), &page));
-				_categories.push_back(std::move(category));
+				catch (const ExtendedException& exc)
+				{
+					LOG_TO_CONSOLE(c_red1, exc.what());
+				}
 			}
-			catch (const ExtendedException& exc)
-			{
-				LOG_TO_CONSOLE(c_red1, exc.what());
-			}
+		}
+	}
+	else if (!strcasecmp(reinterpret_cast<const char*>(node->name), "Help"))
+	{
+		// This collection consists of a single category only
+		try
+		{
+			EncyclopediaCategory category(reinterpret_cast<const char*>(node->name));
+			category.read_xml(node);
+			for (auto& page: category)
+				_pages.insert(std::make_pair(page.name(), &page));
+			_categories.push_back(std::move(category));
+		}
+		catch (const ExtendedException& exc)
+		{
+			LOG_TO_CONSOLE(c_red1, exc.what());
 		}
 	}
 }
@@ -798,25 +807,21 @@ std::vector<std::pair<ustring, std::string>> Encyclopedia::search_titles(const s
 	return matches;
 }
 
-void EncyclopediaWindow::initialize(int window_id)
+EncyclopediaWindow::EncyclopediaWindow(int window_id): Window(window_id), _scroll_id(-1),
+		_context_menu_id(CM_INIT_VALUE),
+		_results_context_menu_id(CM_INIT_VALUE), _ipu(), _encyclopedia("Encyclopedia/Help.xml"),
+		_current_page(nullptr), _bookmarks(), _last_search_term(), _search_results(),
+		_repeat_last_search(false), _show_context_menu_help(false)
 {
-	_window_id = window_id;
-
-	set_window_custom_scale(_window_id, MW_HELP);
-	set_window_font_category(_window_id, ENCYCLOPEDIA_FONT);
-	set_window_handler(_window_id, ELW_HANDLER_DISPLAY, (int (*)())&static_display_handler);
-	set_window_handler(_window_id, ELW_HANDLER_MOUSEOVER, (int (*)())&static_mouseover_handler);
-	set_window_handler(_window_id, ELW_HANDLER_CLICK, (int (*)())&static_click_handler);
-	set_window_handler(_window_id, ELW_HANDLER_RESIZE, (int (*)())&static_resize_handler);
-	set_window_handler(_window_id, ELW_HANDLER_UI_SCALE, (int (*)())&static_ui_scale_handler);
-	set_window_handler(_window_id, ELW_HANDLER_FONT_CHANGE, (int (*)())&static_change_font_handler);
+	set_window_custom_scale(id(), MW_HELP);
+	set_window_font_category(id(), ENCYCLOPEDIA_FONT);
 
 	set_minimum_size();
 
-	_scroll_id = vscrollbar_add_extended(_window_id, 1, nullptr, 0, 0, 0, 0, 0, 1.0, 0, 30, 0);
+	_scroll_id = vscrollbar_add_extended(id(), 1, nullptr, 0, 0, 0, 0, 0, 1.0, 0, 30, 0);
 	try
 	{
-		set_current_page(&windows_list.window[_window_id], _encyclopedia.first_page_name());
+		set_current_page(_encyclopedia.first_page_name());
 	}
 	CATCH_AND_LOG_EXCEPTIONS;
 
@@ -831,32 +836,30 @@ void EncyclopediaWindow::initialize(int window_id)
 		if (!cm_valid(_context_menu_id))
 		{
 			_context_menu_id = cm_create(cm_encycl_base_str, static_context_menu_handler);
-			cm_set_pre_show_handler(_context_menu_id, static_context_menu_pre_show_handler);
-			cm_add_window(_context_menu_id, _window_id);
+			cm_set_pre_show_handler(_context_menu_id,
+				[](window_info *win, int, int, int, window_info *cm_win) {
+					get_cpp_window(win).context_menu_pre_show_handler(cm_win);
+				}
+			);
+			cm_add_window(_context_menu_id, id());
 			init_ipu(&_ipu, -1, 1, 1, 1, nullptr, nullptr);
-// 		find_base_pages();
-// 		process_encycl_links();
 		}
 	}
 }
 
 void EncyclopediaWindow::set_minimum_size()
 {
-	if (_window_id >= 0 && _window_id < windows_list.num_windows)
-	{
-		window_info* window = &windows_list.window[_window_id];
-		int min_width = std::max(63 * window->small_font_max_len_x, 46 * window->default_font_max_len_x);
-		int min_height = std::max(24 * window->small_font_len_y, 20 * window->default_font_len_y);
-		set_window_min_size(_window_id, min_width, min_height);
-	}
+	int min_width = std::max(63 * small_font_max_char_width(), 46 * default_font_max_char_width());
+	int min_height = std::max(24 * small_font_height(), 20 * default_font_height());
+	set_window_min_size(id(), min_width, min_height);
 }
 
-int EncyclopediaWindow::display_handler(window_info *win)
+int EncyclopediaWindow::display_handler()
 {
 	if (_current_page)
 	{
-		int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
-		_current_page->display(win, y_min);
+		int y_min = vscrollbar_get_pos(id(), _scroll_id);
+		_current_page->display(window_ptr(), y_min);
 	}
 
 	if (_repeat_last_search)
@@ -866,39 +869,39 @@ int EncyclopediaWindow::display_handler(window_info *win)
 	}
 	if (_show_context_menu_help)
 	{
-		show_help(context_menu_help_string.c_str(), 0, win->len_y+10, win->current_scale);
+		show_help(context_menu_help_string.c_str(), 0, height() + 10, current_scale());
 		_show_context_menu_help = false;
 	}
 
 	return 0;
 }
 
-int EncyclopediaWindow::mouseover_handler(window_info *win, int mouse_x, int mouse_y)
+int EncyclopediaWindow::mouseover_handler(int mouse_x, int mouse_y)
 {
 	if (!_current_page)
 		return 0;
 
-	int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
+	int y_min = vscrollbar_get_pos(id(), _scroll_id);
 	_current_page->mouseover(mouse_x, mouse_y + y_min);
 
 	_show_context_menu_help = mouse_y >= y_min;
 	return 1;
 }
 
-int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uint32_t flags)
+int EncyclopediaWindow::click_handler(int mouse_x, int mouse_y, std::uint32_t flags)
 {
 	if (flags & ELW_WHEEL_UP)
 	{
-		vscrollbar_scroll_up(_window_id, _scroll_id);
+		vscrollbar_scroll_up(id(), _scroll_id);
 	}
 	else if (flags & ELW_WHEEL_DOWN)
 	{
-		vscrollbar_scroll_down(_window_id, _scroll_id);
+		vscrollbar_scroll_down(id(), _scroll_id);
 	}
 	else if (_current_page)
 	{
-		int y_min = vscrollbar_get_pos(_window_id, _scroll_id);
-		const std::string& target = _current_page->link_clicked(mx, my + y_min);
+		int y_min = vscrollbar_get_pos(id(), _scroll_id);
+		const std::string& target = _current_page->link_clicked(mouse_x, mouse_y + y_min);
 		if (!target.empty())
 		{
 			if (target.compare(0, 7, "http://") == 0)
@@ -907,7 +910,7 @@ int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uin
 			}
 			else
 			{
-				set_current_page(win, target);
+				set_current_page(target);
 			}
 		}
 	}
@@ -915,15 +918,15 @@ int EncyclopediaWindow::click_handler(window_info *win, int mx, int my, std::uin
 	return 1;
 }
 
-int EncyclopediaWindow::resize_handler(const window_info *win, int new_width, int new_height)
+int EncyclopediaWindow::resize_handler(int new_width, int new_height)
 {
-	widget_resize(_window_id, _scroll_id, win->box_size, win->len_y);
-	widget_move(_window_id, _scroll_id, win->len_x - win->box_size, 0);
+	widget_resize(id(), _scroll_id, box_size(), height());
+	widget_move(id(), _scroll_id, width() - box_size(), 0);
 
 	// Adjust layout of current page (and scrollbar length)
 	_encyclopedia.invalidate_layout();
 	if (_current_page)
-		set_current_page(win, _current_page->name());
+		set_current_page(_current_page->name());
 
 	return 0;
 }
@@ -935,27 +938,30 @@ int EncyclopediaWindow::ui_scale_handler()
 	return 1;
 }
 
-int EncyclopediaWindow::change_font_handler(window_info *win, font_cat cat)
+int EncyclopediaWindow::font_change_handler(FontManager::Category cat)
 {
-	if (cat != win->font_category)
+	if (cat != font_category())
 		return 0;
 	set_minimum_size();
 	_encyclopedia.invalidate_layout();
 	return 1;
 }
 
-int EncyclopediaWindow::context_menu_handler(window_info *win, int mx, int my, int option)
+int EncyclopediaWindow::context_menu_handler(int mouse_x, int mouse_y, int option)
 {
 	switch (option)
 	{
 		case CM_ENCYCL_INDEX:
-			set_current_page(win, "Index");
+			set_current_page("Index");
 			break;
 		case CM_ENCYCL_SEARCH:
 			close_ipu(&_ipu);
-			init_ipu(&_ipu, _window_id, 21, 1, 22, nullptr, static_find_page_callback);
-			_ipu.x = mx;
-			_ipu.y = my;
+			init_ipu(&_ipu, id(), 21, 1, 22, nullptr, [](const char *search_term, void *data) {
+				reinterpret_cast<EncyclopediaWindow*>(data)->find_page_callback(search_term);
+			});
+			_ipu.x = mouse_x;
+			_ipu.y = mouse_y;
+			_ipu.data = this;
 			display_popup_win(&_ipu, encycl_search_prompt_str);
 			if (_ipu.popup_win >=0 && _ipu.popup_win < windows_list.num_windows)
 				windows_list.window[_ipu.popup_win].opaque = 1;
@@ -977,7 +983,7 @@ int EncyclopediaWindow::context_menu_handler(window_info *win, int mx, int my, i
 			rebuild_context_menu();
 			break;
 		default:
-			set_current_page(win, *std::next(_bookmarks.begin(), option - CM_ENCYCL_THEBOOKMARKS));
+			set_current_page(*std::next(_bookmarks.begin(), option - CM_ENCYCL_THEBOOKMARKS));
 	}
 	return 1;
 }
@@ -1009,34 +1015,39 @@ void EncyclopediaWindow::find_page_callback(const std::string& search_term)
 	{
 		if (cm_valid(_results_context_menu_id))
 			cm_destroy(_results_context_menu_id);
-		_results_context_menu_id = cm_create(reinterpret_cast<const char*>(_search_results[0].first.c_str()), static_search_results_handler);
-		cm_set_pre_show_handler(_results_context_menu_id, static_search_results_pre_show_handler);
+		_results_context_menu_id = cm_create(reinterpret_cast<const char*>(_search_results[0].first.c_str()),
+			[](window_info *win, int, int, int, int option) {
+				return get_cpp_window(win).search_results_handler(option);
+			}
+		);
+		cm_set_pre_show_handler(_results_context_menu_id,
+			[](window_info*, int, int, int, window_info *cm_win) {
+				if (cm_win) cm_win->opaque = 1;
+			}
+		);
 		for (int i = 1; i < _search_results.size(); ++i)
 			cm_add(_results_context_menu_id, reinterpret_cast<const char*>(_search_results[i].first.c_str()), nullptr);
-		cm_show_direct(_results_context_menu_id, -1, -1);
+		cm_show_direct(_results_context_menu_id, id(), -1);
 	}
 }
 
 int EncyclopediaWindow::search_results_handler(int option)
 {
-	window_info *win = &windows_list.window[_window_id];
 	if (option >= 0 && option < _search_results.size())
-		set_current_page(win, _search_results[option].second);
+		set_current_page(_search_results[option].second);
 	return 1;
 }
 
-void EncyclopediaWindow::set_current_page(const window_info *win, const std::string& page_name)
+void EncyclopediaWindow::set_current_page(const std::string& page_name)
 {
 	EncyclopediaPage *page = _encyclopedia.find_page(page_name);
 	if (page)
 	{
-		int scroll_margin = win->default_font_len_y;
-
-		page->layout_if_needed(win);
+		page->layout_if_needed(window_ptr());
 		_current_page = page;
-		vscrollbar_set_pos(_window_id, _scroll_id, 0);
-		vscrollbar_set_bar_len(_window_id, _scroll_id,
-			std::max(0, _current_page->height() - win->len_y + scroll_margin));
+		vscrollbar_set_pos(id(), _scroll_id, 0);
+		vscrollbar_set_bar_len(id(), _scroll_id,
+			std::max(0, _current_page->height() - height() + default_font_height()));
 	}
 }
 
@@ -1051,56 +1062,10 @@ void EncyclopediaWindow::rebuild_context_menu()
 	}
 }
 
-int EncyclopediaWindow::static_display_handler(window_info *win)
+int EncyclopediaWindow::static_context_menu_handler(window_info *win, int widget_id,
+	int mouse_x, int mouse_y, int option)
 {
-	return EncyclopediaWindow::get_instance().display_handler(win);
-}
-
-int EncyclopediaWindow::static_mouseover_handler(window_info *win, int mouse_x, int mouse_y)
-{
-	return EncyclopediaWindow::get_instance().mouseover_handler(win, mouse_x, mouse_y);
-}
-
-int EncyclopediaWindow::static_click_handler(window_info *win, int mx, int my, std::uint32_t flags)
-{
-	return EncyclopediaWindow::get_instance().click_handler(win, mx, my, flags);
-}
-
-int EncyclopediaWindow::static_resize_handler(const window_info *win, int new_width, int new_height)
-{
-	return EncyclopediaWindow::get_instance().resize_handler(win, new_width, new_height);
-}
-
-int EncyclopediaWindow::static_context_menu_handler(window_info *win, int widget_id, int mx, int my, int option)
-{
-	return EncyclopediaWindow::get_instance().context_menu_handler(win, mx, my, option);
-}
-
-void EncyclopediaWindow::static_context_menu_pre_show_handler(window_info *win, int widget_id,
-	int mx, int my, window_info *cm_win)
-{
-	EncyclopediaWindow::get_instance().context_menu_pre_show_handler(cm_win);
-}
-
-void EncyclopediaWindow::static_find_page_callback(const char *search_term, void *data)
-{
-	EncyclopediaWindow::get_instance().find_page_callback(search_term);
-}
-
-int EncyclopediaWindow::static_search_results_handler(window_info *win, int widget_id,
-	int mx, int my, int option)
-{
-	return EncyclopediaWindow::get_instance().search_results_handler(option);
-}
-
-int EncyclopediaWindow::static_ui_scale_handler(window_info *win)
-{
-	return EncyclopediaWindow::get_instance().ui_scale_handler();
-}
-
-int EncyclopediaWindow::static_change_font_handler(window_info *win, font_cat cat)
-{
-	return EncyclopediaWindow::get_instance().change_font_handler(win, cat);
+	return get_cpp_window(win).context_menu_handler(mouse_x, mouse_y, option);
 }
 
 } // namespace eternal_lands
@@ -1108,5 +1073,5 @@ int EncyclopediaWindow::static_change_font_handler(window_info *win, font_cat ca
 extern "C"
 void fill_new_encyclopedia_win(int window_id)
 {
-	eternal_lands::EncyclopediaWindow::get_instance().initialize(window_id);
+	static eternal_lands::EncyclopediaWindow window(window_id);
 }

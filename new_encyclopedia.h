@@ -10,6 +10,7 @@
 #include <vector>
 #include <libxml/tree.h>
 #include "colors.h"
+#include "cppwindows.h"
 #include "context_menu.h"
 #include "elwindows.h"
 #include "exceptions/extendedexception.hpp"
@@ -438,22 +439,29 @@ private:
 	void set_page_links();
 };
 
-class EncyclopediaWindow
+class EncyclopediaWindow: public Window<EncyclopediaWindow>
 {
 public:
-	static EncyclopediaWindow& get_instance()
-	{
-		static EncyclopediaWindow window;
-		return window;
-	}
+	explicit EncyclopediaWindow(int id);
 
-	void initialize(int window_id);
 	void set_minimum_size();
+
+	//! Handler for displaying the window
+	int display_handler();
+	//! Handler for mouse click events in the window
+	int click_handler(int mouse_x, int mouse_y, std::uint32_t flags);
+	//! Handler for handling mouse cursor over the window
+	int mouseover_handler(int mouse_x, int mouse_y);
+	//! Handler for window resize events
+	int resize_handler(int new_width, int new_height);
+	//! Handler for changing the UI scale factor
+	int ui_scale_handler();
+	//! Handler for changing the window font
+	int font_change_handler(FontManager::Category cat);
 
 private:
 	static const std::string context_menu_help_string;
 
-	int _window_id;
 	int _scroll_id;
 	std::size_t _context_menu_id, _results_context_menu_id;
 	INPUT_POPUP _ipu;
@@ -465,48 +473,20 @@ private:
 	bool _repeat_last_search;
 	bool _show_context_menu_help;
 
-	EncyclopediaWindow(): _window_id(-1), _scroll_id(-1), _context_menu_id(CM_INIT_VALUE),
-		_results_context_menu_id(CM_INIT_VALUE), _ipu(), _encyclopedia("Encyclopedia/index.xml"),
-		_current_page(nullptr), _bookmarks(), _last_search_term(), _search_results(),
-		_repeat_last_search(false), _show_context_menu_help(false) {}
 	//! Prevent the encyclopedia window from being copied
 	EncyclopediaWindow(const EncyclopediaWindow&) = delete;
 	//! Prevent the encyclopedia from being copied
 	EncyclopediaWindow& operator=(const EncyclopediaWindow&) = delete;
 
-	void set_current_page(const window_info *win, const std::string& page);
+	void set_current_page(const std::string& page);
 	void rebuild_context_menu();
 
-	//! Handler for displaying the window
-	int display_handler(window_info *win);
-	//! Static handler for displaying the window, calls display_handler()
-	static int static_display_handler(window_info *win);
-	int mouseover_handler(window_info *win, int mouse_x, int mouse_y);
-	static int static_mouseover_handler(window_info *win, int mouse_x, int mouse_y);
-	int click_handler(window_info *win, int mx, int my, std::uint32_t flags);
-	static int static_click_handler(window_info *win, int mx, int my, std::uint32_t flags);
-	int resize_handler(const window_info *win, int new_width, int new_height);
-	static int static_resize_handler(const window_info *win, int new_width, int new_height);
-	int ui_scale_handler();
-	static int static_ui_scale_handler(window_info *win);
-	int change_font_handler(window_info *win, font_cat cat);
-	static int static_change_font_handler(window_info *win, font_cat cat);
-	int context_menu_handler(window_info *win, int mx, int my, int option);
-	static int static_context_menu_handler(window_info *win, int widget_id, int mx, int my, int option);
+	int context_menu_handler(int mx, int my, int option);
+	static int static_context_menu_handler(window_info *win, int widget_id,
+		int mouse_x, int mouse_y, int option);
 	void context_menu_pre_show_handler(window_info *cm_win);
-	static void static_context_menu_pre_show_handler(window_info *win, int widget_id,
-		int mx, int my, window_info *cm_win);
 	void find_page_callback(const std::string& search_term);
-	static void static_find_page_callback(const char* search_term, void *data);
-	static void static_search_results_pre_show_handler(window_info *win, int widget_id,
-		int mx, int my, window_info *cm_win)
-	{
-		if (cm_win)
-			cm_win->opaque = 1;
-	}
 	int search_results_handler(int option);
-	static int static_search_results_handler(window_info *win, int widget_id, int mx, int my,
-		int option);
 };
 
 } //namespace eternal_lands
