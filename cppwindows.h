@@ -125,6 +125,26 @@ public:
 	//! Return a pointer to the underlying window_info structure
 	window_info* window_ptr() { return &window(); }
 
+	//! Set the minimum size of this window to \a min_width × \a min_height pixels.
+	void set_minimum_size(int min_width, int min_height)
+	{
+		if (min_width >= 0 && min_height >= 0)
+		{
+			window().min_len_x = min_width;
+			window().min_len_y = min_height;
+		}
+	}
+	//! Set the custom UI scale factor for this window to that defined for window type \a managed_win.
+	void set_custom_scale(managed_window_enum managed_win)
+	{
+		set_window_custom_scale(id(), managed_win);
+	}
+	//! Set the text font category for this window to \a font_cat.
+	void set_font_category(FontManager::Category font_cat)
+	{
+		set_window_font_category(id(), font_cat);
+	}
+
 	/*!
 	 * \brief Static display handler
 	 *
