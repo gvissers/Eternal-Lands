@@ -197,6 +197,7 @@ void display_tab_help ()
 		fill_skills_win (tab_add (tab_help_win, tab_help_collection_id, tab_skills, 0, 0, ELW_USE_UISCALE));
 		fill_encyclopedia_win (tab_add (tab_help_win, tab_help_collection_id, tab_encyclopedia, 0, 0, ELW_USE_UISCALE));
 		fill_rules_window(tab_add(tab_help_win, tab_help_collection_id, tab_rules, 0, 0, ELW_USE_UISCALE));
+		fill_new_help_win(tab_add(tab_help_win, tab_help_collection_id, tab_help, 0, 0, ELW_USE_UISCALE));
 		fill_new_encyclopedia_win(tab_add(tab_help_win, tab_help_collection_id, tab_encyclopedia, 0, 0, ELW_USE_UISCALE));
 
 		if ((tab_help_win > -1) && (tab_help_win < windows_list.num_windows))

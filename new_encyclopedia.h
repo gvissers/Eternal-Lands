@@ -324,6 +324,46 @@ private:
 	int _x, _y, _width, _height;
 };
 
+class EncyclopediaPageLink
+{
+public:
+	EncyclopediaPageLink(const ustring& title, const std::string& target):
+		_title(title), _target(target), _title_target(title), _title_is_unique(true)
+	{
+		_title_target += ' ';
+		_title_target += '(';
+		_title_target.append(target.begin(), target.end());
+		_title_target += ')';
+	}
+
+	const std::string& target() const { return _target; }
+	const ustring& title() const { return _title; }
+	const ustring& formatted_title() const
+	{
+		return _title_is_unique ? _title : _title_target;
+	}
+	bool operator<(const EncyclopediaPageLink& link) const
+	{
+		return _title_target < link._title_target;
+	}
+
+	void check_title_uniqueness(const EncyclopediaPageLink& link) const
+	{
+		if (strcasecmp(reinterpret_cast<const char*>(_title.c_str()),
+			reinterpret_cast<const char*>(link._title.c_str())) == 0)
+		{
+			_title_is_unique = false;
+			link._title_is_unique = false;
+		}
+	}
+
+private:
+	ustring _title;
+	std::string _target;
+	ustring _title_target;
+	mutable bool _title_is_unique;
+};
+
 class EncyclopediaPage
 {
 public:
@@ -344,7 +384,7 @@ public:
 	}
 
 	void read_xml(const xmlNode *node);
-	void add_page_links(std::vector<std::pair<ustring, std::string>>& links) const;
+	void add_page_links(std::set<EncyclopediaPageLink>& links) const;
 
 	void display(const window_info *win, int y_min);
 	void mouseover(int mouse_x, int mouse_y)
@@ -386,7 +426,7 @@ public:
 	}
 
 	void read_xml(const xmlNode *node);
-	void add_page_links(std::vector<std::pair<ustring, std::string>>& links) const
+	void add_page_links(std::set<EncyclopediaPageLink>& links) const
 	{
 		for (const auto& page: _pages)
 			page.add_page_links(links);
@@ -433,7 +473,7 @@ private:
 	//! Map from page name to pointer to the page
 	std::unordered_map<std::string, EncyclopediaPage*> _pages;
 	//! List of all link targets and titles, for searching through the encyclopedia
-	std::vector<std::pair<ustring, std::string>> _links;
+	std::set<EncyclopediaPageLink> _links;
 
 	void read_xml(const xmlNode* node);
 	void set_page_links();
@@ -442,7 +482,7 @@ private:
 class EncyclopediaWindow: public Window<EncyclopediaWindow>
 {
 public:
-	explicit EncyclopediaWindow(int id);
+	explicit EncyclopediaWindow(int id, const std::string& file_name);
 
 	void set_minimum_size();
 
@@ -498,6 +538,7 @@ extern "C"
 {
 #endif
 
+void fill_new_help_win(int window_id);
 void fill_new_encyclopedia_win(int window_id);
 
 #ifdef __cplusplus

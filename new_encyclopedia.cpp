@@ -420,14 +420,14 @@ void EncyclopediaPage::read_xml(const xmlNode* node)
 	}
 }
 
-void EncyclopediaPage::add_page_links(std::vector<std::pair<ustring, std::string>>& links) const
+void EncyclopediaPage::add_page_links(std::set<EncyclopediaPageLink>& links) const
 {
 	for (const auto& element: _elements)
 	{
 		if (element.type() == EncyclopediaPageElementType::Link)
 		{
 			const EncyclopediaPageElementLink& link = element.link();
-			links.push_back(std::make_pair(link.text, link.target));
+			links.emplace(link.text, link.target);
 		}
 	}
 }
@@ -741,75 +741,28 @@ void Encyclopedia::set_page_links()
 	for (const auto& category: _categories)
 		category.add_page_links(_links);
 
-	std::sort(_links.begin(), _links.end(),
-		[](const std::pair<ustring, std::string>& l0, const std::pair<ustring, std::string>& l1) {
-			int cmp = strcasecmp(reinterpret_cast<const char*>(l0.first.c_str()),
-				reinterpret_cast<const char*>(l1.first.c_str()));
-			if (cmp == 0)
-				cmp = strcasecmp(l0.second.c_str(), l1.second.c_str());
-			return cmp < 0;
-		}
-	);
-
-	// Remove duplicates
-	auto it1 = _links.begin() + 1;
-	while (it1 != _links.end())
-	{
-		auto it0 = it1 - 1;
-		if (strcasecmp(reinterpret_cast<const char*>(it0->first.c_str()),
-		               reinterpret_cast<const char*>(it1->first.c_str())) != 0
-			|| strcasecmp(it0->second.c_str(), it1->second.c_str()) != 0)
-		{
-			++it1;
-		}
-		else
-		{
-			it1 = _links.erase(it1);
-		}
-	}
-
-	// Add link target to title for duplicate titles
-	auto it0 = _links.begin();
-	while (it0 != _links.end())
-	{
-		auto it1 = it0 + 1;
-		for ( ; it1 != _links.end(); ++it1)
-		{
-			if (strcasecmp(reinterpret_cast<const char*>(it0->first.c_str()),
-		               reinterpret_cast<const char*>(it1->first.c_str())) != 0)
-				break;
-		}
-
-		if (std::distance(it0, it1) > 1)
-		{
-			for ( ; it0 != it1; ++it0)
-			{
-				it0->first += reinterpret_cast<const unsigned char*>(" (");
-				it0->first.append(it0->second.begin(), it0->second.end());
-				it0->first += ')';
-			}
-		}
-		else
-		{
-			++it0;
-		}
-	}
+	for (auto it0 = _links.begin(), it1 = std::next(it0); it1 != _links.end(); it0 = it1++)
+		it0->check_title_uniqueness(*it1);
 }
 
 std::vector<std::pair<ustring, std::string>> Encyclopedia::search_titles(const std::string& search_term) const
 {
 	std::vector<std::pair<ustring, std::string>> matches;
-	std::copy_if(_links.begin(), _links.end(), std::back_inserter(matches),
-		[search_term](const std::pair<ustring, std::string>& link) {
-			return safe_strcasestr(reinterpret_cast<const char*>(link.first.c_str()),
-				link.first.size(), search_term.c_str(), search_term.size()) != nullptr;
-		});
+	for (const auto& link: _links)
+	{
+		if (safe_strcasestr(reinterpret_cast<const char*>(link.title().c_str()),
+			link.title().size(), search_term.c_str(), search_term.size()))
+		{
+			matches.push_back(std::make_pair(link.formatted_title(), link.target()));
+		}
+	}
 	return matches;
 }
 
-EncyclopediaWindow::EncyclopediaWindow(int window_id): Window(window_id), _scroll_id(-1),
+EncyclopediaWindow::EncyclopediaWindow(int window_id, const std::string& file_name):
+		Window(window_id), _scroll_id(-1),
 		_context_menu_id(CM_INIT_VALUE),
-		_results_context_menu_id(CM_INIT_VALUE), _ipu(), _encyclopedia("Encyclopedia/Help.xml"),
+		_results_context_menu_id(CM_INIT_VALUE), _ipu(), _encyclopedia(file_name),
 		_current_page(nullptr), _bookmarks(), _last_search_term(), _search_results(),
 		_repeat_last_search(false), _show_context_menu_help(false)
 {
@@ -1071,7 +1024,13 @@ int EncyclopediaWindow::static_context_menu_handler(window_info *win, int widget
 } // namespace eternal_lands
 
 extern "C"
+void fill_new_help_win(int window_id)
+{
+	static eternal_lands::EncyclopediaWindow window(window_id, "Encyclopedia/Help.xml");
+}
+
+extern "C"
 void fill_new_encyclopedia_win(int window_id)
 {
-	static eternal_lands::EncyclopediaWindow window(window_id);
+	static eternal_lands::EncyclopediaWindow window(window_id, "Encyclopedia/index.xml");
 }
