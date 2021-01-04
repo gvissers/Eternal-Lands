@@ -29,14 +29,8 @@ enum class EncyclopediaPageElementType
 	Size,
 	Newline,
 	NewlineKeepX,
-	Text
-};
-
-enum class EncyclopediaPageElementSize
-{
-	Small,
-	Medium,
-	Big
+	Text,
+	Title
 };
 
 struct EncyclopediaPageElementColor
@@ -46,15 +40,33 @@ struct EncyclopediaPageElementColor
 	EncyclopediaPageElementColor(int idx): r(colors_list[idx].r1), g(colors_list[idx].g1), b(colors_list[idx].b1) {}
 	EncyclopediaPageElementColor(float r, float g, float b): r(r), g(g), b(b) {}
 	EncyclopediaPageElementColor(const xmlNode *node);
+	EncyclopediaPageElementColor(const std::string& desc): r(1.0f), g(1.0f), b(1.0f) { set_from_string(desc); }
+
+	void set_from_string(const std::string& desc);
 };
 
-struct EncyclopediaPageElementText
+struct EncyclopediaPageElementDistance
 {
-	ustring text;
-	bool have_x, have_y;
-	int x, y;
+	float value;
+	bool is_percentage;
 
-	EncyclopediaPageElementText(const xmlNode* node);
+	EncyclopediaPageElementDistance(): value(0.0f), is_percentage(false) {}
+	EncyclopediaPageElementDistance(const std::string& desc);
+
+	int x(const window_info *win) const
+	{
+		if (is_percentage)
+			return std::round(value * (win->len_x - win->box_size) / 100);
+		else
+			return std::round(value * float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH);
+	}
+	int y(const window_info *win) const
+	{
+		if (is_percentage)
+			return std::round(value * win->len_y / 100);
+		else
+			return std::round(value * float(win->default_font_len_y) / DEFAULT_FIXED_FONT_HEIGHT);
+	}
 };
 
 enum class EncyclopediaPageElementImageType
@@ -81,6 +93,23 @@ struct EncyclopediaPageElementImage
 	bool update_x, update_y;
 
 	EncyclopediaPageElementImage(const xmlNode *node, EncyclopediaPageElementImageType type);
+};
+
+struct EncyclopediaPageElementLink
+{
+	ustring text;
+	std::string target;
+	bool have_x, have_y;
+	int x, y;
+
+	EncyclopediaPageElementLink(const xmlNode *node);
+};
+
+enum class EncyclopediaPageElementSize
+{
+	Small,
+	Medium,
+	Big
 };
 
 struct EncyclopediaPageElementPosition
@@ -138,14 +167,23 @@ struct EncyclopediaPageElementPosition
 	}
 };
 
-struct EncyclopediaPageElementLink
+struct EncyclopediaPageElementText
 {
 	ustring text;
-	std::string target;
-	bool have_x, have_y;
-	int x, y;
+	bool have_x, have_y, have_width, have_height;
+	EncyclopediaPageElementDistance x, y, width, height;
+	EncyclopediaPageElementSize size;
+	bool have_color;
+	EncyclopediaPageElementColor color;
 
-	EncyclopediaPageElementLink(const xmlNode *node);
+	EncyclopediaPageElementText(const xmlNode* node);
+};
+
+struct EncyclopediaPageElementTitle
+{
+	ustring text;
+
+	EncyclopediaPageElementTitle(const xmlNode* node): text(node->children->content) {}
 };
 
 class EncyclopediaPageElement
@@ -181,6 +219,11 @@ public:
         _type(EncyclopediaPageElementType::Text)
 	{
 		new(&_text) EncyclopediaPageElementText(std::move(text));
+	}
+    EncyclopediaPageElement(EncyclopediaPageElementTitle&& title):
+        _type(EncyclopediaPageElementType::Title)
+	{
+		new(&_title) EncyclopediaPageElementTitle(std::move(title));
 	}
 	EncyclopediaPageElement(EncyclopediaPageElement&& elem);
 	~EncyclopediaPageElement();
@@ -222,6 +265,12 @@ public:
 			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Element is not a text directive");
 		return _text;
 	}
+	const EncyclopediaPageElementTitle& title() const
+	{
+		if (_type != EncyclopediaPageElementType::Title)
+			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Element is not a title directive");
+		return _title;
+	}
 
 private:
 	EncyclopediaPageElementType _type;
@@ -233,6 +282,7 @@ private:
 		EncyclopediaPageElementPosition _position;
 		EncyclopediaPageElementSize _size;
 		EncyclopediaPageElementText _text;
+		EncyclopediaPageElementTitle _title;
 	};
 };
 
@@ -367,8 +417,8 @@ private:
 class EncyclopediaPage
 {
 public:
-	EncyclopediaPage(const std::string& name): _name(name), _elements(), _laid_out(false),
-		_formatted(), _links(), _height(0) {}
+	EncyclopediaPage(const std::string& name, int version): _name(name), _version(version),
+		_elements(), _laid_out(false), _formatted(), _links(), _height(0) {}
 
 	//! Return the name of this page.
 	const std::string& name() const { return _name; }
@@ -395,13 +445,24 @@ public:
 
 private:
 	std::string _name;
+	int _version;
 	std::vector<EncyclopediaPageElement> _elements;
 	bool _laid_out;
 	std::vector<std::unique_ptr<EncyclopediaFormattedElement>> _formatted;
 	std::vector<EncyclopediaFormattedLink> _links;
 	int _height;
 
-	void layout(const window_info *win);
+	void layout(const window_info *win)
+	{
+		switch (_version)
+		{
+			case 1: layout_v1(win); break;
+			case 2: layout_v2(win); break;
+			default: _laid_out = true ; // unknown version, give up
+		}
+	}
+	void layout_v1(const window_info *win);
+	void layout_v2(const window_info *win);
 };
 
 class EncyclopediaCategory

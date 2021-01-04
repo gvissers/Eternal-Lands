@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <regex>
 #include <sstream>
 #include "new_encyclopedia.h"
 #include "asc.h"
@@ -73,15 +74,15 @@ std::pair<bool, bool> get_xml_bool_attribute(const xmlNode* node, const char* na
 		}
 		catch (const std::exception&)
 		{
-			LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected boolean");
+			LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected boolean", value, name);
 		}
 	}
 	return std::make_pair(false, false);
 }
 
-std::pair<int, bool> get_xml_int_attribute(const xmlNode* node, const char* name, bool required=false)
+std::pair<int, bool> get_xml_int_attribute(const xmlNode* node, const char* name)
 {
-	const char* value = reinterpret_cast<const char*>(get_xml_attribute(node, name, required));
+	const char* value = reinterpret_cast<const char*>(get_xml_attribute(node, name));
 	if (!value)
 		return std::make_pair(0, false);
 
@@ -92,30 +93,28 @@ std::pair<int, bool> get_xml_int_attribute(const xmlNode* node, const char* name
 	}
 	catch (const std::invalid_argument&)
 	{
-		if (required)
-		{
-			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
-				"Invalid value \"" << value << "\" for attribute \"" << name << "\", expected integer");
-		}
-		else
-		{
-			LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected integer", value, name);
-			return std::make_pair(0, false);
-		}
+		LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected integer", value, name);
+		return std::make_pair(0, false);
 	}
 	catch (const std::out_of_range&)
 	{
-		if (required)
-		{
-			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
-				"Value \"" << value << "\" for attribute \"" << name << "\" is out of range");
-		}
-		else
-		{
-			LOG_ERROR("Value \"%s\" for attribute \"%s\" is out of range");
-			return std::make_pair(0, false);
-		}
+		LOG_ERROR("Value \"%s\" for attribute \"%s\" is out of range", value, name);
+		return std::make_pair(0, false);
 	}
+}
+
+int get_xml_int_attribute(const xmlNode* node, const char* name, int default_value)
+{
+	std::pair<int, bool> res = get_xml_int_attribute(node, name);
+	return res.second ? res.first : default_value;
+}
+
+int get_xml_required_int_attribute(const xmlNode* node, const char* name)
+{
+	std::pair<int, bool> res = get_xml_int_attribute(node, name);
+	if (!res.second)
+		EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Failed to get integer attribute " << name);
+	return res.first;
 }
 
 std::pair<float, bool> get_xml_float_attribute(const xmlNode* node, const char* name)
@@ -130,14 +129,47 @@ std::pair<float, bool> get_xml_float_attribute(const xmlNode* node, const char* 
 		}
 		catch (const std::invalid_argument&)
 		{
-			LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected floating point number");
+			LOG_ERROR("Invalid value \"%s\" for attribute \"%s\", expected floating point number",
+				value, name);
 		}
 		catch (const std::out_of_range&)
 		{
-			LOG_ERROR("Value \"%s\" for attribute \"%s\" is out of range");
+			LOG_ERROR("Value \"%s\" for attribute \"%s\" is out of range", value, name);
 		}
 	}
 	return std::make_pair(0.0f, false);
+}
+
+int get_xml_float_attribute(const xmlNode* node, const char* name, float default_value)
+{
+	std::pair<float, bool> res = get_xml_float_attribute(node, name);
+	return res.second ? res.first : default_value;
+}
+
+int get_xml_required_float_attribute(const xmlNode* node, const char* name)
+{
+	std::pair<int, bool> res = get_xml_float_attribute(node, name);
+	if (!res.second)
+		EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Failed to get floating point attribute " << name);
+	return res.first;
+}
+
+std::pair<eternal_lands::EncyclopediaPageElementDistance, bool> get_xml_distance_attribute(const xmlNode* node, const char* name)
+{
+	const char* value = reinterpret_cast<const char*>(get_xml_attribute(node, name));
+	if (!value)
+		return std::make_pair(eternal_lands::EncyclopediaPageElementDistance(), false);
+
+	try
+	{
+		eternal_lands::EncyclopediaPageElementDistance res(value);
+		return std::make_pair(res, true);
+	}
+	catch (const eternal_lands::ExtendedException& exc)
+	{
+		LOG_ERROR("Invalid value \"%s\" for attribute \"%s\": %s", value, name, exc.what());
+		return std::make_pair(eternal_lands::EncyclopediaPageElementDistance(), false);
+	}
 }
 
 std::string trim(const std::string &str)
@@ -156,9 +188,19 @@ const EncyclopediaPageElementColor EncyclopediaFormattedText::link_mouseover_col
 const std::string EncyclopediaWindow::context_menu_help_string = "Right-click for search and bookmark options";
 
 EncyclopediaPageElementColor::EncyclopediaPageElementColor(const xmlNode *node):
-	r(get_xml_float_attribute(node, "r").first),
-	g(get_xml_float_attribute(node, "g").first),
-	b(get_xml_float_attribute(node, "b").first)
+	r(get_xml_float_attribute(node, "r", 1.0f)),
+	g(get_xml_float_attribute(node, "g", 1.0f)),
+	b(get_xml_float_attribute(node, "b", 1.0f))
+{
+	if (node->children && node->children->content)
+	{
+		std::string desc = trim(reinterpret_cast<const char*>(node->children->content));
+		if (!desc.empty())
+			set_from_string(desc);
+	}
+}
+
+void EncyclopediaPageElementColor::set_from_string(const std::string& desc)
 {
 	static const std::array<std::pair<std::string, std::array<unsigned char, 3> >, 16> known_colors {{
 		{ "silver",  std::array<unsigned char, 3>{ 192, 192, 192 } },
@@ -179,32 +221,90 @@ EncyclopediaPageElementColor::EncyclopediaPageElementColor(const xmlNode *node):
 		{ "cyan",    std::array<unsigned char, 3>{   0, 255,   0 } }
 	}};
 
-	if (node->children && node->children->content)
+	if (desc.compare(0, 4, "rgb(") == 0 && desc.back() == ')')
 	{
-		std::string desc = trim(reinterpret_cast<const char*>(node->children->content));
-		if (!desc.empty())
+		std::istringstream is(desc.substr(4, desc.size() - 5));
+		char sep0, sep1;
+		is >> r >> sep0 >> g >> sep1 >> b;
+		if (!is)
 		{
-			for (const auto& color: known_colors)
-			{
-				if (color.first == desc)
-				{
-					r = float(color.second[0]) / 255;
-					g = float(color.second[1]) / 255;
-					b = float(color.second[2]) / 255;
-					return;
-				}
-			}
-
-			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Unknown color \"" << desc << '"');
+			EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter,
+				"Failed to parse color description from \"" << desc << '"');
 		}
+	}
+	else
+	{
+		for (const auto& color: known_colors)
+		{
+			if (color.first == desc)
+			{
+				r = float(color.second[0]) / 255;
+				g = float(color.second[1]) / 255;
+				b = float(color.second[2]) / 255;
+				return;
+			}
+		}
+
+		EXTENDED_EXCEPTION(ExtendedException::ec_invalid_parameter, "Unknown color \"" << desc << '"');
+	}
+}
+
+EncyclopediaPageElementDistance::EncyclopediaPageElementDistance(const std::string& desc):
+	value(0.0f), is_percentage(false)
+{
+	try
+	{
+		if (!desc.empty() && desc.back() == '%')
+		{
+			is_percentage = true;
+			value = std::stof(desc.substr(0, desc.size() - 1));
+		}
+		else
+		{
+			value = std::stof(desc);
+		}
+	}
+	catch (const std::invalid_argument&)
+	{
+		LOG_ERROR("Invalid distance value \"%s\"", desc.c_str());
+	}
+	catch (const std::out_of_range&)
+	{
+		LOG_ERROR("Distance value \"%s\" is out of range", desc.c_str());
 	}
 }
 
 EncyclopediaPageElementText::EncyclopediaPageElementText(const xmlNode *node):
-	text(node->children->content), have_x(false), have_y(false), x(), y()
+	text(), have_x(false), have_y(false), have_width(false), have_height(false),
+	x(), y(), width(), height(), size(EncyclopediaPageElementSize::Small),
+	have_color(false), color(0.9f, 0.9f, 0.9f)
 {
-	std::tie(x, have_x) = get_xml_int_attribute(node, "x");
-	std::tie(y, have_y) = get_xml_int_attribute(node, "y");
+	static const std::regex white("[\\s\\n]{2,}|\\n");
+	static const std::string space(" ");
+
+	const char* begin = reinterpret_cast<const char*>(node->children->content);
+	const char* end = begin + strlen(begin);
+	while (begin < end && std::isspace(*begin))
+		++begin;
+	while (begin < end && std::isspace(*(end-1)))
+		--end;
+	std::regex_replace(std::back_inserter(text), begin, end, white, space);
+
+	std::tie(x, have_x) = get_xml_distance_attribute(node, "x");
+	std::tie(y, have_y) = get_xml_distance_attribute(node, "y");
+	std::tie(width, have_width) = get_xml_distance_attribute(node, "width");
+	std::tie(height, have_height) = get_xml_distance_attribute(node, "height");
+
+	const char* desc = reinterpret_cast<const char*>(get_xml_attribute(node, "color"));
+	if (desc)
+	{
+		try
+		{
+			color.set_from_string(desc);
+			have_color = true;
+		}
+		CATCH_AND_LOG_EXCEPTIONS; // If it fails, too bad.
+	}
 }
 
 EncyclopediaPageElementImage::EncyclopediaPageElementImage(const xmlNode *node,
@@ -234,23 +334,18 @@ EncyclopediaPageElementImage::EncyclopediaPageElementImage(const xmlNode *node,
 
 	if (type == EncyclopediaPageElementImageType::Image)
 	{
-		u_start = get_xml_float_attribute(node, "u").first;
-		v_start = get_xml_float_attribute(node, "v").first;
-		float val;
-		std::tie(val, ok) = get_xml_float_attribute(node, "uend");
-		if (ok)
-			u_end = val;
-		std::tie(val, ok) = get_xml_float_attribute(node, "vend");
-		if (ok)
-			v_end = val;
-		width = get_xml_int_attribute(node, "xlen", true).first;
-		height = get_xml_int_attribute(node, "ylen", true).first;
+		u_start = get_xml_float_attribute(node, "u", 0.0f);
+		v_start = get_xml_float_attribute(node, "v", 0.0f);
+		u_end = get_xml_float_attribute(node, "uend", 1.0f);
+		v_end = get_xml_float_attribute(node, "vend", 1.0f);
+		width = get_xml_required_int_attribute(node, "xlen");
+		height = get_xml_required_int_attribute(node, "ylen");
 	}
 	else if (type == EncyclopediaPageElementImageType::SImage)
 	{
-		int img_size = get_xml_int_attribute(node, "isize", true).first;
-		int block_size = get_xml_int_attribute(node, "tsize", true).first;
-		int img_nr = get_xml_int_attribute(node, "tid", true).first;
+		int img_size = get_xml_required_int_attribute(node, "isize");
+		int block_size = get_xml_required_int_attribute(node, "tsize");
+		int img_nr = get_xml_required_int_attribute(node, "tid");
 		int pixels_per_row = img_size / block_size;
 		int col = img_nr % pixels_per_row;
 		int row = img_nr / pixels_per_row;
@@ -260,22 +355,14 @@ EncyclopediaPageElementImage::EncyclopediaPageElementImage(const xmlNode *node,
 		v_start = row * rel_block_size;
 		v_end = (row + 1) * rel_block_size;
 
-		int scale;
-		std::tie(scale, ok) = get_xml_int_attribute(node, "size");
-		if (ok)
-		{
-			width = height = (block_size * scale) / 100;
-		}
-		else
-		{
-			width = height = block_size;
-		}
+		int scale = get_xml_int_attribute(node, "size", 100);
+		width = height = (block_size * scale) / 100;
 	}
 }
 
 EncyclopediaPageElementPosition::EncyclopediaPageElementPosition(const xmlNode *node):
-	x_pixels(get_xml_int_attribute(node, "x", true).first), x_char_big(0), x_char_small(0),
-	y_pixels(get_xml_int_attribute(node, "x", true).first) {}
+	x_pixels(get_xml_required_int_attribute(node, "x")), x_char_big(0), x_char_small(0),
+	y_pixels(get_xml_required_int_attribute(node, "y")) {}
 
 EncyclopediaPageElementLink::EncyclopediaPageElementLink(const xmlNode *node):
 	text(get_xml_attribute(node, "title", true)),
@@ -309,6 +396,9 @@ EncyclopediaPageElement::EncyclopediaPageElement(EncyclopediaPageElement&& elem)
 		case EncyclopediaPageElementType::Text:
 			new(&_text) EncyclopediaPageElementText(std::move(elem._text));
 			break;
+		case EncyclopediaPageElementType::Title:
+			new(&_title) EncyclopediaPageElementTitle(std::move(elem._title));
+			break;
 		default: /* nothing to copy */ ;
 	}
 }
@@ -317,8 +407,9 @@ EncyclopediaPageElement::~EncyclopediaPageElement()
 {
 	switch (_type)
 	{
-		case EncyclopediaPageElementType::Link: _link.~EncyclopediaPageElementLink(); break;
-		case EncyclopediaPageElementType::Text: _text.~EncyclopediaPageElementText(); break;
+		case EncyclopediaPageElementType::Link:  _link.~EncyclopediaPageElementLink(); break;
+		case EncyclopediaPageElementType::Text:  _text.~EncyclopediaPageElementText(); break;
+		case EncyclopediaPageElementType::Title: _title.~EncyclopediaPageElementTitle(); break;
 		default: /* nothing to destruct */ ;
 	}
 }
@@ -415,6 +506,10 @@ void EncyclopediaPage::read_xml(const xmlNode* node)
 			{
 				_elements.emplace_back(EncyclopediaPageElementText(cur_node));
 			}
+			else if (!strcasecmp(name, "title"))
+			{
+				_elements.emplace_back(EncyclopediaPageElementTitle(cur_node));
+			}
 		}
 		CATCH_AND_LOG_EXCEPTIONS;
 	}
@@ -432,7 +527,7 @@ void EncyclopediaPage::add_page_links(std::set<EncyclopediaPageLink>& links) con
 	}
 }
 
-void EncyclopediaPage::layout(const window_info *win)
+void EncyclopediaPage::layout_v1(const window_info *win)
 {
 	float x_scale = float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH;
 	float y_scale = float(win->default_font_len_y) / DEFAULT_FIXED_FONT_HEIGHT;
@@ -534,8 +629,8 @@ void EncyclopediaPage::layout(const window_info *win)
 			case EncyclopediaPageElementType::Text:
 			{
 				const EncyclopediaPageElementText& text = element.text();
-				int x = text.have_x ? std::round(x_scale * text.x) : cur_position.x_scaled(win);
-				int y = text.have_y ? std::round(y_scale * text.y) : cur_position.y_scaled(win);
+				int x = text.have_x ? text.x.x(win) : cur_position.x_scaled(win);
+				int y = text.have_y ? text.y.y(win) : cur_position.y_scaled(win);
 				float text_scale = cur_size_is_big ? win->current_scale : win->current_scale_small;
 				int width, height;
 				std::tie(width, height) = FontManager::get_instance().dimensions(win->font_category,
@@ -556,19 +651,95 @@ void EncyclopediaPage::layout(const window_info *win)
 				}
 
 				if (text.have_x)
-					cur_position.set_x(text.x);
+					cur_position.set_x(text.x.value);
 				cur_position.add_char_counts(last_len_big, last_len_small);
 				if (text.have_y)
-					cur_position.set_y(text.y);
+					cur_position.set_y(text.y.value);
 
 				break;
 			}
+			default:
+				/* Other elements should not occur in version 1 pages, ignore */
+				break;
 		}
 	}
 
 	_height = 0;
 	for (const auto& element: _formatted)
 		_height = std::max(_height, element->y() + element->height());
+
+	_laid_out = true;
+}
+
+void EncyclopediaPage::layout_v2(const window_info *win)
+{
+	static const EncyclopediaPageElementColor default_text_color(0.9f, 0.9f, 0.9f);
+
+	float x_scale = float(win->default_font_max_len_x) / DEFAULT_FIXED_FONT_WIDTH;
+	float y_scale = float(win->default_font_len_y) / DEFAULT_FIXED_FONT_HEIGHT;
+	int x_margin = std::round(2 * x_scale);
+	int y_margin = std::round(2 * y_scale);
+	int title_height = y_margin, back_height = y_margin, forward_height = y_margin;
+
+	_formatted.clear();
+	// First process only the title and back/forward links to determine the height of the header.
+	// Content follows below the header
+	for (const auto& element: _elements)
+	{
+		switch (element.type())
+		{
+			case EncyclopediaPageElementType::Title:
+			{
+				const EncyclopediaPageElementTitle& title = element.title();
+				float zoom = win->current_scale;
+				int width, height;
+				std::tie(width, height) = FontManager::get_instance().dimensions(win->font_category,
+					title.text.data(), title.text.size(), zoom);
+				int x = (win->len_x - win->box_size - width) / 2;
+				int y = title_height;
+				EncyclopediaPageElementColor color(1.0f, 0.6f, 0.0f);
+				title_height += height;
+				_formatted.emplace_back(
+					new EncyclopediaFormattedText(x, y, width, height, title.text, color, zoom, false)
+				);
+				break;
+			}
+			default:
+				/* ignore all but title and back/forward links here */;
+		}
+	}
+
+	// Now process all other elements
+	int cur_y = std::max({title_height, back_height, forward_height}) + y_margin;
+	int cur_x = x_margin;
+	int cur_width = win->len_x - win->box_size - 2 * x_margin;
+	for (const auto& element: _elements)
+	{
+		switch (element.type())
+		{
+			case EncyclopediaPageElementType::Text:
+			{
+				const EncyclopediaPageElementText& text = element.text();
+
+				int max_width = text.have_width ? text.width.x(win) : win->len_x;
+				float zoom = text.size == EncyclopediaPageElementSize::Small ? win->current_scale_small : win->current_scale;
+				TextDrawOptions options = TextDrawOptions().set_zoom(zoom).set_max_width(max_width);
+				ustring wrapped_text = FontManager::get_instance().reset_soft_breaks(win->font_category,
+					text.text, options).first;
+
+				int width, height;
+				std::tie(width, height) = FontManager::get_instance().dimensions(win->font_category,
+					wrapped_text.data(), wrapped_text.size(), zoom);
+				const EncyclopediaPageElementColor& color = text.have_color ? text.color : default_text_color;
+				int x = text.have_x ? text.x.x(win) : cur_x;
+				int y = text.have_y ? text.y.y(win) : cur_y;
+				_formatted.emplace_back(new EncyclopediaFormattedText(x, y, width, height,
+					wrapped_text, color, zoom, false));
+
+				cur_y = y + height;
+			}
+		}
+	}
 
 	_laid_out = true;
 }
@@ -610,7 +781,8 @@ void EncyclopediaCategory::read_xml(const xmlNode* node)
 			try
 			{
 				const char* name = reinterpret_cast<const char*>(get_xml_attribute(cur_node, "name"));
-				EncyclopediaPage page(name ? name : "");
+				int version = get_xml_int_attribute(cur_node, "version", 1);
+				EncyclopediaPage page(name ? name : "", version);
 				page.read_xml(cur_node);
 				_pages.push_back(std::move(page));
 			}
@@ -1026,7 +1198,7 @@ int EncyclopediaWindow::static_context_menu_handler(window_info *win, int widget
 extern "C"
 void fill_new_help_win(int window_id)
 {
-	static eternal_lands::EncyclopediaWindow window(window_id, "Encyclopedia/Help.xml");
+	static eternal_lands::EncyclopediaWindow window(window_id, "Encyclopedia/Helpv2.xml");
 }
 
 extern "C"
